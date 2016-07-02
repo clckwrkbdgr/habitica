@@ -31,6 +31,22 @@ try:
 except:
     import configparser
 
+def get_data_dir(*args):
+    xdg_data_dir = os.environ.get('XDG_DATA_HOME')
+    if not xdg_data_dir:
+        xdg_data_dir = os.path.join(os.path.expanduser("~"), ".local", "share")
+    app_data_dir = os.path.join(xdg_data_dir, "habitica")
+    os.makedirs(app_data_dir, exist_ok=True)
+    return app_data_dir
+
+def get_cache_dir(*args):
+    xdg_cache_dir = os.environ.get('XDG_CACHE_HOME')
+    if not xdg_cache_dir:
+        xdg_cache_dir = os.path.join(os.path.expanduser("~"), ".cache")
+    app_cache_dir = os.path.join(xdg_cache_dir, "habitica")
+    os.makedirs(app_cache_dir, exist_ok=True)
+    return app_cache_dir
+
 
 VERSION = 'habitica version 0.0.12'
 TASK_VALUE_BASE = 0.9747  # http://habitica.wikia.com/wiki/Task_Value
@@ -40,8 +56,8 @@ HABITICA_TASKS_PAGE = '/#/tasks'
 PRIORITY = {'easy': 1,
             'medium': 1.5,
             'hard': 2}
-AUTH_CONF = os.path.expanduser('~') + '/.config/habitica/auth.cfg'
-CACHE_CONF = os.path.expanduser('~') + '/.config/habitica/cache.cfg'
+AUTH_CONF = os.path.join(get_data_dir(), "auth.cfg")
+CACHE_CONF = os.path.join(get_cache_dir(), "cache.cfg")
 
 SECTION_CACHE_QUEST = 'Quest'
 
@@ -105,7 +121,7 @@ def update_quest_cache(configfile, **kwargs):
     for key, val in kwargs.items():
         cache.set(SECTION_CACHE_QUEST, key, val)
 
-    with open(configfile, 'wb') as f:
+    with open(configfile, 'w') as f:
         cache.write(f)
 
     cache.read(configfile)
