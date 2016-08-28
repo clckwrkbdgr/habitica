@@ -39,6 +39,16 @@ class Habitica(object):
                 return Habitica(auth=self.auth, resource=self.resource,
                                 aspect=m)
 
+    def __getitem__(self, m):
+        try:
+            return object.__getitem__(self, m)
+        except AttributeError:
+            if not self.resource:
+                return Habitica(auth=self.auth, resource=m)
+            else:
+                res = self.resource + '/' + str(m)
+                return Habitica(auth=self.auth, resource=res)
+
     def __call__(self, **kwargs):
         method = kwargs.pop('_method', 'get')
 

@@ -335,7 +335,7 @@ def cli():
             tids = get_task_ids(args['<args>'][1:])
             for tid in tids:
                 tval = habits[tid]['value']
-                hbt.tasks(_id=habits[tid]['id'],
+                hbt.tasks[habits[tid]['id']].score(
                                _direction='up', _method='post')
                 print('incremented task \'%s\''
                       % habits[tid]['text'].encode('utf8'))
@@ -345,7 +345,7 @@ def cli():
             tids = get_task_ids(args['<args>'][1:])
             for tid in tids:
                 tval = habits[tid]['value']
-                hbt.tasks(_id=habits[tid]['id'],
+                hbt.tasks[habits[tid]['id']].score(
                                _direction='down', _method='post')
                 print('decremented task \'%s\''
                       % habits[tid]['text'].encode('utf8'))
@@ -361,7 +361,7 @@ def cli():
         if 'done' in args['<args>']:
             tids = get_task_ids(args['<args>'][1:])
             for tid in tids:
-                hbt.tasks(_id=dailies[tid]['id'],
+                hbt.tasks[dailies[tid]['id']].score(
                                _direction='up', _method='post')
                 print('marked daily \'%s\' completed'
                       % dailies[tid]['text'].encode('utf8'))
@@ -370,8 +370,8 @@ def cli():
         elif 'undo' in args['<args>']:
             tids = get_task_ids(args['<args>'][1:])
             for tid in tids:
-                hbt.tasks(_id=dailies[tid]['id'],
-                               _method='put', completed=False)
+                hbt.tasks[dailies[tid]['id']].score(
+                               _direction='down', _method='post')
                 print('marked daily \'%s\' incomplete'
                       % dailies[tid]['text'].encode('utf8'))
                 dailies[tid]['completed'] = False
@@ -385,7 +385,7 @@ def cli():
         if 'done' in args['<args>']:
             tids = get_task_ids(args['<args>'][1:])
             for tid in tids:
-                hbt.tasks(_id=todos[tid]['id'],
+                hbt.tasks[todos[tid]['id']].score(
                                _direction='up', _method='post')
                 print('marked todo \'%s\' complete'
                       % todos[tid]['text'].encode('utf8'))
