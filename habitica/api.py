@@ -13,7 +13,7 @@ import json
 
 import requests
 
-API_URI_BASE = 'api/v2'
+API_URI_BASE = 'api/v3'
 API_CONTENT_TYPE = 'application/json'
 
 
@@ -76,6 +76,6 @@ class Habitica(object):
 
         # print(res.url)  # debug...
         if res.status_code == requests.codes.ok:
-            return res.json()
+            return res.json()['data']
         else:
             res.raise_for_status()

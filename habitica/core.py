@@ -31,6 +31,10 @@ try:
 except:
     import configparser
 
+def dump_json(obj, filename):
+    with open(filename, 'wb') as f:
+        f.write(json.dumps(obj, indent=4, ensure_ascii=False).encode('utf-8'))
+
 def get_data_dir(*args):
     xdg_data_dir = os.environ.get('XDG_DATA_HOME')
     if not xdg_data_dir:
@@ -272,7 +276,7 @@ def cli():
                 if content.get('quests', {}).get(quest_key, {}).get('collect'):
                     logging.debug("\tOn a collection type of quest")
                     quest_type = 'collect'
-                    clct = content['quests'][quest_key]['collect'].values()[0]
+                    clct = list(content['quests'][quest_key]['collect'].values())[0]
                     quest_max = clct['count']
                 # else if it's a boss, then hit up
                 # content/quests/<quest_key>/boss/hp
@@ -326,12 +330,12 @@ def cli():
 
     # GET/POST habits
     elif args['<command>'] == 'habits':
-        habits = hbt.user.tasks(type='habit')
+        habits = hbt.tasks.user(type='habits')
         if 'up' in args['<args>']:
             tids = get_task_ids(args['<args>'][1:])
             for tid in tids:
                 tval = habits[tid]['value']
-                hbt.user.tasks(_id=habits[tid]['id'],
+                hbt.tasks(_id=habits[tid]['id'],
                                _direction='up', _method='post')
                 print('incremented task \'%s\''
                       % habits[tid]['text'].encode('utf8'))
@@ -341,7 +345,7 @@ def cli():
             tids = get_task_ids(args['<args>'][1:])
             for tid in tids:
                 tval = habits[tid]['value']
-                hbt.user.tasks(_id=habits[tid]['id'],
+                hbt.tasks(_id=habits[tid]['id'],
                                _direction='down', _method='post')
                 print('decremented task \'%s\''
                       % habits[tid]['text'].encode('utf8'))
@@ -353,11 +357,11 @@ def cli():
 
     # GET/PUT tasks:daily
     elif args['<command>'] == 'dailies':
-        dailies = hbt.user.tasks(type='daily')
+        dailies = hbt.tasks.user(type='dailys')
         if 'done' in args['<args>']:
             tids = get_task_ids(args['<args>'][1:])
             for tid in tids:
-                hbt.user.tasks(_id=dailies[tid]['id'],
+                hbt.tasks(_id=dailies[tid]['id'],
                                _direction='up', _method='post')
                 print('marked daily \'%s\' completed'
                       % dailies[tid]['text'].encode('utf8'))
@@ -366,7 +370,7 @@ def cli():
         elif 'undo' in args['<args>']:
             tids = get_task_ids(args['<args>'][1:])
             for tid in tids:
-                hbt.user.tasks(_id=dailies[tid]['id'],
+                hbt.tasks(_id=dailies[tid]['id'],
                                _method='put', completed=False)
                 print('marked daily \'%s\' incomplete'
                       % dailies[tid]['text'].encode('utf8'))
@@ -376,12 +380,12 @@ def cli():
 
     # GET tasks:todo
     elif args['<command>'] == 'todos':
-        todos = [e for e in hbt.user.tasks(type='todo')
+        todos = [e for e in hbt.tasks.user(type='todos')
                  if not e['completed']]
         if 'done' in args['<args>']:
             tids = get_task_ids(args['<args>'][1:])
             for tid in tids:
-                hbt.user.tasks(_id=todos[tid]['id'],
+                hbt.tasks(_id=todos[tid]['id'],
                                _direction='up', _method='post')
                 print('marked todo \'%s\' complete'
                       % todos[tid]['text'].encode('utf8'))
@@ -389,7 +393,7 @@ def cli():
             todos = updated_task_list(todos, tids)
         elif 'add' in args['<args>']:
             ttext = ' '.join(args['<args>'][1:])
-            hbt.user.tasks(type='todo',
+            hbt.tasks(type='todos',
                            text=ttext,
                            priority=PRIORITY[args['--difficulty']],
                            _method='post')
