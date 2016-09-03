@@ -164,7 +164,9 @@ def print_task_list(tasks):
     for i, task in enumerate(tasks):
         completed = 'x' if task['completed'] else ' '
         print('[%s] %s %s' % (completed, i + 1, task['text'].encode('utf8')))
-
+        for j, item in enumerate(task['checklist']):
+            completed = 'x' if item['completed'] else ' '
+            print('    [%s] %s.%s %s' % (completed, i + 1, j + 1, item['text'].encode('utf8')))
 
 def qualitative_task_score_from_value(value):
     # task value/score info: http://habitica.wikia.com/wiki/Task_Value
@@ -358,6 +360,7 @@ def cli():
     # GET/PUT tasks:daily
     elif args['<command>'] == 'dailies':
         dailies = hbt.tasks.user(type='dailys')
+        dump_json(dailies, 'dailies.json')
         if 'done' in args['<args>']:
             tids = get_task_ids(args['<args>'][1:])
             for tid in tids:
