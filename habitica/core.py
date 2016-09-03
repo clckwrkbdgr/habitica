@@ -147,11 +147,13 @@ def get_task_ids(tids):
     for raw_arg in tids:
         for bit in raw_arg.split(','):
             if '-' in bit:
-                start, stop = [int(e) for e in bit.split('-')]
+                start, stop = [int(e) - 1 for e in bit.split('-')]
                 task_ids.extend(range(start, stop + 1))
+            elif '.' in bit:
+                task_ids.append(tuple([int(e) - 1 for e in bit.split('.')]))
             else:
-                task_ids.append(int(bit))
-    return [e - 1 for e in set(task_ids)]
+                task_ids.append(int(bit) - 1)
+    return set(task_ids)
 
 
 def updated_task_list(tasks, tids):
@@ -364,20 +366,38 @@ def cli():
         if 'done' in args['<args>']:
             tids = get_task_ids(args['<args>'][1:])
             for tid in tids:
-                hbt.tasks[dailies[tid]['id']].score(
-                               _direction='up', _method='post')
-                print('marked daily \'%s\' completed'
-                      % dailies[tid]['text'].encode('utf8'))
-                dailies[tid]['completed'] = True
+                item_id = None
+                if isinstance(tid, tuple):
+                    tid, item_id = tid
+                    if not dailies[tid]['checklist'][item_id]['completed']:
+                        hbt.tasks[dailies[tid]['id']]['checklist'][dailies[tid]['checklist'][item_id]['id']].score(
+                                       _method='post')
+                        print("marked daily '{0} : {1}' complete".format(dailies[tid]['text'], dailies[tid]['checklist'][item_id]['text']))
+                        dailies[tid]['checklist'][item_id]['completed'] = True
+                else:
+                    hbt.tasks[dailies[tid]['id']].score(
+                                   _direction='up', _method='post')
+                    print('marked daily \'%s\' completed'
+                          % dailies[tid]['text'].encode('utf8'))
+                    dailies[tid]['completed'] = True
                 sleep(HABITICA_REQUEST_WAIT_TIME)
         elif 'undo' in args['<args>']:
             tids = get_task_ids(args['<args>'][1:])
             for tid in tids:
-                hbt.tasks[dailies[tid]['id']].score(
-                               _direction='down', _method='post')
-                print('marked daily \'%s\' incomplete'
-                      % dailies[tid]['text'].encode('utf8'))
-                dailies[tid]['completed'] = False
+                item_id = None
+                if isinstance(tid, tuple):
+                    tid, item_id = tid
+                    if dailies[tid]['checklist'][item_id]['completed']:
+                        hbt.tasks[dailies[tid]['id']]['checklist'][dailies[tid]['checklist'][item_id]['id']].score(
+                                       _method='post')
+                        print("marked daily '{0} : {1}' incomplete".format(dailies[tid]['text'], dailies[tid]['checklist'][item_id]['text']))
+                        dailies[tid]['checklist'][item_id]['completed'] = False
+                else:
+                    hbt.tasks[dailies[tid]['id']].score(
+                                   _direction='down', _method='post')
+                    print('marked daily \'%s\' incomplete'
+                          % dailies[tid]['text'].encode('utf8'))
+                    dailies[tid]['completed'] = False
                 sleep(HABITICA_REQUEST_WAIT_TIME)
         print_task_list(dailies)
 

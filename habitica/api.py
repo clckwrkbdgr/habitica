@@ -88,4 +88,6 @@ class Habitica(object):
         if res.status_code == requests.codes.ok:
             return res.json()['data']
         else:
+            if res.status_code == 404:
+                print('URI not found: {0}'.format(uri))
             res.raise_for_status()
