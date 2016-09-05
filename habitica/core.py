@@ -17,6 +17,7 @@ import json
 import logging
 import netrc
 import os.path
+import datetime
 from time import sleep
 from webbrowser import open_new_tab
 
@@ -164,6 +165,17 @@ def updated_task_list(tasks, tids):
 
 def print_task_list(tasks):
     for i, task in enumerate(tasks):
+        if 'type' in task and task['type'] == 'daily':
+            if task['frequency'] == 'daily':
+                startdate = datetime.datetime.strptime(task['startDate'], '%Y-%m-%dT%H:%M:%S.%fZ')
+                if (datetime.date.today() - startdate.date()).days % task['everyX'] != 0:
+                    continue
+            elif task['frequency'] == 'weekly':
+                habitica_week = ["m", "t", "w", "th", "f", "s", "su"]
+                if not task['repeat'][habitica_week[datetime.datetime.now().weekday()]]:
+                    continue
+            else:
+                print("Unknown daily frequency: {0}".format(task['frequency']))
         completed = 'x' if task['completed'] else ' '
         print('[%s] %s %s' % (completed, i + 1, task['text'].encode('utf8')))
         for j, item in enumerate(task['checklist']):
@@ -362,7 +374,6 @@ def cli():
     # GET/PUT tasks:daily
     elif args['<command>'] == 'dailies':
         dailies = hbt.tasks.user(type='dailys')
-        dump_json(dailies, 'dailies.json')
         if 'done' in args['<args>']:
             tids = get_task_ids(args['<args>'][1:])
             for tid in tids:
