@@ -168,7 +168,7 @@ def print_task_list(tasks):
         if 'type' in task and task['type'] == 'daily':
             if task['frequency'] == 'daily':
                 startdate = datetime.datetime.strptime(task['startDate'], '%Y-%m-%dT%H:%M:%S.%fZ')
-                if (datetime.date.today() - startdate.date()).days % task['everyX'] != 0:
+                if (datetime.datetime.now() - startdate).days % task['everyX'] != 0:
                     continue
             elif task['frequency'] == 'weekly':
                 habitica_week = ["m", "t", "w", "th", "f", "s", "su"]
