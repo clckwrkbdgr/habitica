@@ -18,6 +18,7 @@ import logging
 import netrc
 import os.path
 import datetime
+import sys
 from time import sleep
 from webbrowser import open_new_tab
 
@@ -159,6 +160,8 @@ def get_task_ids(tids):
 
 def updated_task_list(tasks, tids):
     for tid in sorted(tids, reverse=True):
+        if isinstance(tid, tuple):
+            continue
         del(tasks[tid])
     return tasks
 
@@ -419,10 +422,18 @@ def cli():
         if 'done' in args['<args>']:
             tids = get_task_ids(args['<args>'][1:])
             for tid in tids:
-                hbt.tasks[todos[tid]['id']].score(
-                               _direction='up', _method='post')
-                print('marked todo \'%s\' complete'
-                      % todos[tid]['text'].encode('utf8'))
+                if isinstance(tid, tuple):
+                    tid, item_id = tid
+                    if not todos[tid]['checklist'][item_id]['completed']:
+                        hbt.tasks[todos[tid]['id']]['checklist'][todos[tid]['checklist'][item_id]['id']].score(
+                                       _method='post')
+                        print("marked todo '{0} : {1}' complete".format(todos[tid]['text'], todos[tid]['checklist'][item_id]['text']))
+                        todos[tid]['checklist'][item_id]['completed'] = True
+                else:
+                    hbt.tasks[todos[tid]['id']].score(
+                                   _direction='up', _method='post')
+                    print('marked todo \'%s\' complete'
+                          % todos[tid]['text'].encode('utf8'))
                 sleep(HABITICA_REQUEST_WAIT_TIME)
             todos = updated_task_list(todos, tids)
         elif 'add' in args['<args>']:
