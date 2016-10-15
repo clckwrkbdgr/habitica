@@ -180,14 +180,14 @@ def print_task_list(tasks):
             else:
                 print("Unknown daily frequency: {0}".format(task['frequency']))
         completed = 'x' if task['completed'] else ' '
-        print('[%s] %s %s' % (completed, i + 1, task['text'].encode('utf8')))
+        print('[%s] %s %s' % (completed, i + 1, task['text']))
         for j, item in enumerate(task['checklist']):
             completed = 'x' if item['completed'] else ' '
-            print('    [%s] %s.%s %s' % (completed, i + 1, j + 1, item['text'].encode('utf8')))
+            print('    [%s] %s.%s %s' % (completed, i + 1, j + 1, item['text']))
 
 def qualitative_task_score_from_value(value):
     # task value/score info: http://habitica.wikia.com/wiki/Task_Value
-    scores = ['*', '**', '***', '****', '*****', '******', '*******']
+    scores = ['<<<   ', ' <<   ', '  <   ', '      ', '   >  ', '   >> ', '   >>>']
     breakpoints = [-20, -10, -1, 1, 5, 10]
     return scores[bisect(breakpoints, value)]
 
@@ -350,29 +350,37 @@ def cli():
     # GET/POST habits
     elif args['<command>'] == 'habits':
         habits = hbt.tasks.user(type='habits')
+        dump_json(habits, 'habits.json')
         if 'up' in args['<args>']:
             tids = get_task_ids(args['<args>'][1:])
             for tid in tids:
+                if not habits[tid]['up']:
+                    print("task '{0}' cannot be incremented".format(habits[tid]['text']))
+                    continue
                 tval = habits[tid]['value']
                 hbt.tasks[habits[tid]['id']].score(
                                _direction='up', _method='post')
                 print('incremented task \'%s\''
-                      % habits[tid]['text'].encode('utf8'))
+                      % habits[tid]['text'])
                 habits[tid]['value'] = tval + (TASK_VALUE_BASE ** tval)
                 sleep(HABITICA_REQUEST_WAIT_TIME)
         elif 'down' in args['<args>']:
             tids = get_task_ids(args['<args>'][1:])
             for tid in tids:
+                if not habits[tid]['down']:
+                    print("task '{0}' cannot be decremented".format(habits[tid]['text']))
+                    continue
                 tval = habits[tid]['value']
                 hbt.tasks[habits[tid]['id']].score(
                                _direction='down', _method='post')
                 print('decremented task \'%s\''
-                      % habits[tid]['text'].encode('utf8'))
+                      % habits[tid]['text'])
                 habits[tid]['value'] = tval - (TASK_VALUE_BASE ** tval)
                 sleep(HABITICA_REQUEST_WAIT_TIME)
         for i, task in enumerate(habits):
             score = qualitative_task_score_from_value(task['value'])
-            print('[%s] %s %s' % (score, i + 1, task['text'].encode('utf8')))
+            updown = {0:' ', 1:'-', 2:'+', 3:'±'}[int(task['up'])*2 + int(task['down'])] # [up][down] as binary number
+            print('[{0}] {1} [{3}] {2}'.format(score, i + 1, task['text'], updown))
 
     # GET/PUT tasks:daily
     elif args['<command>'] == 'dailies':
@@ -392,7 +400,7 @@ def cli():
                     hbt.tasks[dailies[tid]['id']].score(
                                    _direction='up', _method='post')
                     print('marked daily \'%s\' completed'
-                          % dailies[tid]['text'].encode('utf8'))
+                          % dailies[tid]['text'])
                     dailies[tid]['completed'] = True
                 sleep(HABITICA_REQUEST_WAIT_TIME)
         elif 'undo' in args['<args>']:
@@ -410,7 +418,7 @@ def cli():
                     hbt.tasks[dailies[tid]['id']].score(
                                    _direction='down', _method='post')
                     print('marked daily \'%s\' incomplete'
-                          % dailies[tid]['text'].encode('utf8'))
+                          % dailies[tid]['text'])
                     dailies[tid]['completed'] = False
                 sleep(HABITICA_REQUEST_WAIT_TIME)
         print_task_list(dailies)
@@ -433,7 +441,7 @@ def cli():
                     hbt.tasks[todos[tid]['id']].score(
                                    _direction='up', _method='post')
                     print('marked todo \'%s\' complete'
-                          % todos[tid]['text'].encode('utf8'))
+                          % todos[tid]['text'])
                 sleep(HABITICA_REQUEST_WAIT_TIME)
             todos = updated_task_list(todos, tids)
         elif 'add' in args['<args>']:
@@ -443,7 +451,7 @@ def cli():
                            priority=PRIORITY[args['--difficulty']],
                            _method='post')
             todos.insert(0, {'completed': False, 'text': ttext})
-            print('added new todo \'%s\'' % ttext.encode('utf8'))
+            print('added new todo \'%s\'' % ttext)
         print_task_list(todos)
 
 
