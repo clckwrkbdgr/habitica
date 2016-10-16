@@ -217,6 +217,7 @@ def cli():
       todos                  List todo tasks
       todos done <task-id>   Mark one or more todo <task-id> completed
       todos add <task>       Add todo with description <task>
+      health                 Buy health potion
       server                 Show status of Habitica service
       home                   Open tasks page in default browser
 
@@ -347,6 +348,17 @@ def cli():
         print('%s %s' % ('Mount:'.rjust(len_ljust, ' '), mount))
         print('%s %s' % ('Quest:'.rjust(len_ljust, ' '), quest))
 
+    # POST buy health potion
+    elif args['<command>'] == 'health':
+        HEALTH_POTION_VALUE = 15.0
+        user = hbt.user()
+        stats = user.get('stats', '')
+        if stats['hp'] + HEALTH_POTION_VALUE > stats['maxHealth']:
+            print('HP is too high, part of health potion would be wasted.')
+            print('HP: {0:.1f}/{1}, need at most {2:.1f}'.format(stats['hp'], stats['maxHealth'], stats['maxHealth'] - HEALTH_POTION_VALUE))
+        else:
+            new_stats = hbt.user['buy-health-potion'](_method='post')
+            print('Bought Health Potion, HP: {0:.1f}/{1}'.format(new_stats['hp'], stats['maxHealth']))
     # GET/POST habits
     elif args['<command>'] == 'habits':
         habits = hbt.tasks.user(type='habits')
