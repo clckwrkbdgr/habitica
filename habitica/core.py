@@ -218,6 +218,7 @@ def cli():
       todos done <task-id>   Mark one or more todo <task-id> completed
       todos add <task>       Add todo with description <task>
       health                 Buy health potion
+      spells                 List available spells
       server                 Show status of Habitica service
       home                   Open tasks page in default browser
 
@@ -359,6 +360,51 @@ def cli():
         else:
             new_stats = hbt.user['buy-health-potion'](_method='post')
             print('Bought Health Potion, HP: {0:.1f}/{1}'.format(new_stats['hp'], stats['maxHealth']))
+
+    # list/POST spells
+    elif args['<command>'] == 'spells':
+        SPELLS = {
+                'mage' : {
+                    'fireball': "Burst of Flames",
+                    'mpHeal': "Ethereal Surge",
+                    'earth': "Earthquake",
+                    'frost': "Chilling Frost",
+                    },
+
+                'warrior' : {
+                    'smash': "Brutal Smash",
+                    'defensiveStance': "Defensive Stance",
+                    'valorousPresence': "Valorous Presence",
+                    'intimidate': "Intimidating Gaze",
+                    },
+
+                'rogue' : {
+                    'pickPocket': "Pickpocket",
+                    'backStab': "Backstab",
+                    'toolsOfTrade': "Tools of the Trade",
+                    'stealth': "Stealth",
+                    },
+
+                'healer' : {
+                    'heal': "Healing Light",
+                    'protectAura': "Protective Aura",
+                    'brightness': "Searing Brightness",
+                    'healAll': "Blessing",
+                    },
+                }
+        user = hbt.user()
+        user_class = user['stats']['class']
+        if args['<args>']:
+            spell_name, targets = args['<args>'][0], args['<args>'][1:]
+            if spell_name not in SPELLS[user_class]:
+                print('{1} cannot cast spell {0}'.format(user_class.title(), spell_name))
+            else:
+                hbt.user['class']['cast'][spell_name](_method='post')
+                print('Casted spell "{0}"'.format(SPELLS[user_class][spell_name]))
+        else:
+            for name, description in SPELLS[user_class].items():
+                print('{0} - {1}'.format(name, description))
+
     # GET/POST habits
     elif args['<command>'] == 'habits':
         habits = hbt.tasks.user(type='habits')
