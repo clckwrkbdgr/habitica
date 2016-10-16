@@ -380,7 +380,7 @@ def cli():
         for i, task in enumerate(habits):
             score = qualitative_task_score_from_value(task['value'])
             updown = {0:' ', 1:'-', 2:'+', 3:'±'}[int(task['up'])*2 + int(task['down'])] # [up][down] as binary number
-            print('[{0}] {1} [{3}] {2}'.format(score, i + 1, task['text'], updown))
+            print('[{3}|{0}] {1} {2}'.format(score, i + 1, task['text'], updown))
 
     # GET/PUT tasks:daily
     elif args['<command>'] == 'dailies':
