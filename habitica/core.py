@@ -408,7 +408,6 @@ def cli():
     # GET/POST habits
     elif args['<command>'] == 'habits':
         habits = hbt.tasks.user(type='habits')
-        dump_json(habits, 'habits.json')
         if 'up' in args['<args>']:
             tids = get_task_ids(args['<args>'][1:])
             for tid in tids:
