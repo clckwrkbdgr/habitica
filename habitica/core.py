@@ -134,6 +134,13 @@ def update_quest_cache(configfile, **kwargs):
 
     return cache
 
+def task_id_key(task_id):
+    SUBTASK_ORDER, TASK_ORDER = 0, 1
+    if isinstance(task_id, int):
+        return (task_id, TASK_ORDER, 0)
+    else:
+        task_id, subtask_id = task_id
+        return (task_id, SUBTASK_ORDER, subtask_id)
 
 def get_task_ids(tids):
     """
@@ -155,7 +162,7 @@ def get_task_ids(tids):
                 task_ids.append(tuple([int(e) - 1 for e in bit.split('.')]))
             else:
                 task_ids.append(int(bit) - 1)
-    return set(task_ids)
+    return sorted(set(task_ids), key=task_id_key)
 
 
 def updated_task_list(tasks, tids):
