@@ -37,6 +37,10 @@ def dump_json(obj, filename):
     with open(filename, 'wb') as f:
         f.write(json.dumps(obj, indent=4, ensure_ascii=False).encode('utf-8'))
 
+def load_json(filename):
+    with open(filename, 'rb') as f:
+        return json.loads(f.read().decode('utf-8'))
+
 def get_data_dir(*args):
     xdg_data_dir = os.environ.get('XDG_DATA_HOME')
     if not xdg_data_dir:
@@ -177,8 +181,9 @@ def print_task_list(tasks):
     for i, task in enumerate(tasks):
         if 'type' in task and task['type'] == 'daily':
             if task['frequency'] == 'daily':
-                startdate = datetime.datetime.strptime(task['startDate'], '%Y-%m-%dT%H:%M:%S.%fZ')
-                if (datetime.datetime.now() - startdate).days % task['everyX'] != 0:
+                startdate = datetime.datetime.strptime(task['startDate'], '%Y-%m-%dT%H:%M:%S.%fZ').date()
+                currentdate = datetime.datetime.today().date()
+                if (currentdate - startdate).days % task['everyX'] != 0:
                     continue
             elif task['frequency'] == 'weekly':
                 habitica_week = ["m", "t", "w", "th", "f", "s", "su"]
