@@ -16,6 +16,8 @@ import requests
 API_URI_BASE = 'api/v3'
 API_CONTENT_TYPE = 'application/json'
 
+TIMEOUT = 10.0
+
 
 class Habitica(object):
     """
@@ -79,10 +81,10 @@ class Habitica(object):
         # actually make the request of the API
         if method in ['put', 'post']:
             res = getattr(requests, method)(uri, headers=self.headers,
-                                            data=json.dumps(kwargs))
+                                            data=json.dumps(kwargs), timeout=TIMEOUT)
         else:
             res = getattr(requests, method)(uri, headers=self.headers,
-                                            params=kwargs)
+                                            params=kwargs, timeout=TIMEOUT)
 
         # print(res.url)  # debug...
         if res.status_code == requests.codes.ok:
