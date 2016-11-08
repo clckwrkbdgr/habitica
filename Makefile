@@ -3,8 +3,8 @@ help:
 	cat README.md | head -n5
 
 # run our roundup tests
-#test:
-#	cd ./tests; sh ./test
+test:
+	cd habitica; python3 -m doctest core.py
 
 # register with pypi
 register:

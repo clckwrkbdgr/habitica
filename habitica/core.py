@@ -25,7 +25,12 @@ from webbrowser import open_new_tab
 
 from docopt import docopt
 
-from . import api
+try:
+    from . import api
+except SystemError:
+    pass # to allow import for doctest
+except ValueError:
+    pass # to allow import for doctest
 
 from pprint import pprint
 
@@ -207,13 +212,43 @@ def strptime_habitica_to_local(time_string):
     '''
     return datetime.datetime.strptime(time_string, '%Y-%m-%dT%H:%M:%S.%fZ').replace(tzinfo=datetime.timezone.utc).astimezone(LocalTZ())
 
+def parse_isodate(isodate):
+    return datetime.datetime.strptime(isodate, "%Y-%m-%d %H:%M:%S.%f")
+
+def days_passed(habitica_startDate, localnow):
+    """
+    >>> days_passed('2016-06-20T21:00:00.000Z', parse_isodate('2016-11-08 16:51:15.930842'))
+    141
+    >>> days_passed('2016-06-20T21:00:00.000Z', parse_isodate('2016-11-08 20:51:15.930842'))
+    141
+    >>> days_passed('2016-06-20T21:00:00.000Z', parse_isodate('2016-11-08 21:51:15.930842'))
+    141
+    >>> days_passed('2016-06-20T21:00:00.000Z', parse_isodate('2016-11-09 16:51:15.930842'))
+    142
+    >>> days_passed('2015-07-01T16:50:07.000Z', parse_isodate('2016-10-23 16:51:15.930842'))
+    480
+    >>> days_passed('2015-07-01T16:50:07.000Z', parse_isodate('2016-10-23 15:51:15.930842'))
+    480
+    >>> days_passed('2015-07-01T16:50:07.000Z', parse_isodate('2016-10-23 21:51:15.930842'))
+    480
+    >>> days_passed('2016-01-01T20:39:15.833Z', parse_isodate('2016-11-06 21:51:15.930842'))
+    310
+    >>> days_passed('2016-01-01T20:39:15.833Z', parse_isodate('2016-11-06 20:31:15.930842'))
+    310
+    >>> days_passed('2016-01-01T20:39:15.833Z', parse_isodate('2016-11-06 15:31:15.930842'))
+    310
+    """
+    #startdate = strptime_habitica_to_local(habitica_startDate).date()
+    startdate = datetime.datetime.strptime(habitica_startDate, '%Y-%m-%dT%H:%M:%S.%fZ').date()
+    currentdate = localnow.date()
+    print(startdate, currentdate, file=sys.stderr)
+    return (currentdate - startdate).days
+
 def print_task_list(tasks):
     for i, task in enumerate(tasks):
         if 'type' in task and task['type'] == 'daily':
             if task['frequency'] == 'daily':
-                startdate = strptime_habitica_to_local(task['startDate']).date()
-                currentdate = datetime.datetime.today().date()
-                if (currentdate - startdate).days % task['everyX'] != 0:
+                if days_passed(task['startDate'], datetime.datetime.now()) % task['everyX'] != 0:
                     continue
             elif task['frequency'] == 'weekly':
                 habitica_week = ["m", "t", "w", "th", "f", "s", "su"]
