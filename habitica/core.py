@@ -241,7 +241,6 @@ def days_passed(habitica_startDate, localnow):
     #startdate = strptime_habitica_to_local(habitica_startDate).date()
     startdate = datetime.datetime.strptime(habitica_startDate, '%Y-%m-%dT%H:%M:%S.%fZ').date()
     currentdate = localnow.date()
-    print(startdate, currentdate, file=sys.stderr)
     return (currentdate - startdate).days
 
 def print_task_list(tasks):
