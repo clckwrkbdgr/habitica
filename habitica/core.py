@@ -243,7 +243,7 @@ def days_passed(habitica_startDate, localnow):
     currentdate = localnow.date()
     return (currentdate - startdate).days
 
-def print_task_list(tasks):
+def print_task_list(tasks, hide_completed=False):
     for i, task in enumerate(tasks):
         if 'type' in task and task['type'] == 'daily':
             if task['frequency'] == 'daily':
@@ -256,6 +256,8 @@ def print_task_list(tasks):
             else:
                 print("Unknown daily frequency: {0}".format(task['frequency']))
         completed = 'x' if task['completed'] else ' '
+        if task['completed'] and hide_completed:
+            continue
         print('[%s] %s %s' % (completed, i + 1, task['text']))
         for j, item in enumerate(task['checklist']):
             completed = 'x' if item['completed'] else ' '
@@ -272,7 +274,7 @@ def cli():
     """Habitica command-line interface.
 
     Usage: habitica [--version] [--help]
-                    <command> [<args>...] [--difficulty=<d>]
+                    <command> [<args>...] [--list-all] [--difficulty=<d>]
                     [--verbose | --debug]
 
     Options:
@@ -281,6 +283,8 @@ def cli():
       --difficulty=<d>  (easy | medium | hard) [default: easy]
       --verbose         Show some logging information
       --debug           Some all logging information
+      --list-all        List all dailies. By default only
+                        not done dailies will be displayed
 
     The habitica commands are:
       status                 Show HP, XP, GP, and more
@@ -554,7 +558,7 @@ def cli():
                           % dailies[tid]['text'])
                     dailies[tid]['completed'] = False
                 sleep(HABITICA_REQUEST_WAIT_TIME)
-        print_task_list(dailies)
+        print_task_list(dailies, hide_completed=not args['--list-all'])
 
     # GET tasks:todo
     elif args['<command>'] == 'todos':
