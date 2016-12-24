@@ -172,11 +172,11 @@ def get_task_ids(tids):
                 task_ids.append(tuple([int(e) - 1 for e in bit.split('.')]))
             else:
                 task_ids.append(int(bit) - 1)
-    return sorted(set(task_ids), key=task_id_key)
+    return sorted(task_ids, key=task_id_key)
 
 
 def updated_task_list(tasks, tids):
-    for tid in sorted(tids, reverse=True):
+    for tid in sorted(tids, key=task_id_key, reverse=True):
         if isinstance(tid, tuple):
             continue
         del(tasks[tid])
