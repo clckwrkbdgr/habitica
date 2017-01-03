@@ -215,39 +215,42 @@ def strptime_habitica_to_local(time_string):
 def parse_isodate(isodate):
     return datetime.datetime.strptime(isodate, "%Y-%m-%d %H:%M:%S.%f")
 
-def days_passed(habitica_startDate, localnow):
+def days_passed(habitica_startDate, localnow, timezoneOffset=0):
     """
-    >>> days_passed('2016-06-20T21:00:00.000Z', parse_isodate('2016-11-08 16:51:15.930842'))
+    >>> days_passed('2016-06-20T21:00:00.000Z', parse_isodate('2016-11-08 16:51:15.930842'), timezoneOffset=-120)
     141
-    >>> days_passed('2016-06-20T21:00:00.000Z', parse_isodate('2016-11-08 20:51:15.930842'))
+    >>> days_passed('2016-06-20T21:00:00.000Z', parse_isodate('2016-11-08 20:51:15.930842'), timezoneOffset=-120)
     141
-    >>> days_passed('2016-06-20T21:00:00.000Z', parse_isodate('2016-11-08 21:51:15.930842'))
+    >>> days_passed('2016-06-20T21:00:00.000Z', parse_isodate('2016-11-08 21:51:15.930842'), timezoneOffset=-120)
     141
-    >>> days_passed('2016-06-20T21:00:00.000Z', parse_isodate('2016-11-09 16:51:15.930842'))
+    >>> days_passed('2016-06-20T21:00:00.000Z', parse_isodate('2016-11-09 16:51:15.930842'), timezoneOffset=-120)
     142
-    >>> days_passed('2015-07-01T16:50:07.000Z', parse_isodate('2016-10-23 16:51:15.930842'))
+    >>> days_passed('2015-07-01T16:50:07.000Z', parse_isodate('2016-10-23 16:51:15.930842'), timezoneOffset=-120)
     480
-    >>> days_passed('2015-07-01T16:50:07.000Z', parse_isodate('2016-10-23 15:51:15.930842'))
+    >>> days_passed('2015-07-01T16:50:07.000Z', parse_isodate('2016-10-23 15:51:15.930842'), timezoneOffset=-120)
     480
-    >>> days_passed('2015-07-01T16:50:07.000Z', parse_isodate('2016-10-23 21:51:15.930842'))
+    >>> days_passed('2015-07-01T16:50:07.000Z', parse_isodate('2016-10-23 21:51:15.930842'), timezoneOffset=-120)
     480
-    >>> days_passed('2016-01-01T20:39:15.833Z', parse_isodate('2016-11-06 21:51:15.930842'))
+    >>> days_passed('2016-01-01T20:39:15.833Z', parse_isodate('2016-11-06 21:51:15.930842'), timezoneOffset=-120)
     310
-    >>> days_passed('2016-01-01T20:39:15.833Z', parse_isodate('2016-11-06 20:31:15.930842'))
+    >>> days_passed('2016-01-01T20:39:15.833Z', parse_isodate('2016-11-06 20:31:15.930842'), timezoneOffset=-120)
     310
-    >>> days_passed('2016-01-01T20:39:15.833Z', parse_isodate('2016-11-06 15:31:15.930842'))
+    >>> days_passed('2016-01-01T20:39:15.833Z', parse_isodate('2016-11-06 15:31:15.930842'), timezoneOffset=-120)
     310
+    >>> days_passed('2016-12-30T22:00:00.000Z', parse_isodate('2017-01-03 19:46:59.290457'), timezoneOffset=-120)
+    3
     """
-    #startdate = strptime_habitica_to_local(habitica_startDate).date()
-    startdate = datetime.datetime.strptime(habitica_startDate, '%Y-%m-%dT%H:%M:%S.%fZ').date()
-    currentdate = localnow.date()
-    return (currentdate - startdate).days
+    #startdate = strptime_habitica_to_local(habitica_startDate)
+    startdate = datetime.datetime.strptime(habitica_startDate, '%Y-%m-%dT%H:%M:%S.%fZ')
+    startdate -= datetime.timedelta(minutes=timezoneOffset)
+    currentdate = localnow
+    return (currentdate.date() - startdate.date()).days
 
-def print_task_list(tasks, hide_completed=False):
+def print_task_list(tasks, hide_completed=False, timezoneOffset=0):
     for i, task in enumerate(tasks):
         if 'type' in task and task['type'] == 'daily':
             if task['frequency'] == 'daily':
-                if days_passed(task['startDate'], datetime.datetime.now()) % task['everyX'] != 0:
+                if days_passed(task['startDate'], datetime.datetime.now(), timezoneOffset=timezoneOffset) % task['everyX'] != 0:
                     continue
             elif task['frequency'] == 'weekly':
                 habitica_week = ["m", "t", "w", "th", "f", "s", "su"]
@@ -521,6 +524,8 @@ def cli():
 
     # GET/PUT tasks:daily
     elif args['<command>'] == 'dailies':
+        user = hbt.user()
+        timezoneOffset = user['preferences']['timezoneOffset']
         dailies = hbt.tasks.user(type='dailys')
         if 'done' in args['<args>']:
             tids = get_task_ids(args['<args>'][1:])
@@ -558,7 +563,7 @@ def cli():
                           % dailies[tid]['text'])
                     dailies[tid]['completed'] = False
                 sleep(HABITICA_REQUEST_WAIT_TIME)
-        print_task_list(dailies, hide_completed=not args['--list-all'])
+        print_task_list(dailies, hide_completed=not args['--list-all'], timezoneOffset=timezoneOffset)
 
     # GET tasks:todo
     elif args['<command>'] == 'todos':
