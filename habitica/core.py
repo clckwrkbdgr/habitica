@@ -20,6 +20,7 @@ import os.path
 import datetime
 import sys
 import time
+import re
 from time import sleep
 from webbrowser import open_new_tab
 
@@ -152,7 +153,42 @@ def task_id_key(task_id):
         task_id, subtask_id = task_id
         return (task_id, SUBTASK_ORDER, subtask_id)
 
-def get_task_ids(tids):
+def parse_task_number_arg(raw_arg):
+    task_ids = []
+    for bit in raw_arg.split(','):
+        if '-' in bit:
+            start, stop = [int(e) - 1 for e in bit.split('-')]
+            task_ids.extend(range(start, stop + 1))
+        elif '.' in bit:
+            task_ids.append(tuple([int(e) - 1 for e in bit.split('.')]))
+        else:
+            task_ids.append(int(bit) - 1)
+    return task_ids
+
+def find_task_in_list(raw_arg, task_list):
+    matching_tasks = []
+    for index, task in enumerate(task_list):
+        if raw_arg in task['text']:
+            matching_tasks.append(index)
+        if 'checklist' in task:
+            for subindex, subitem in enumerate(task['checklist']):
+                if raw_arg in subitem['text']:
+                    matching_tasks.append( (index, subindex) )
+    if not matching_tasks:
+        print("couldn't find task that includes '{0}'".format(raw_arg))
+        return None
+    if len(matching_tasks) > 1:
+        print("task arg '{0}' is ambiguous:".format(raw_arg))
+        for tid in matching_tasks:
+            if isinstance(tid, tuple):
+                tid, item_id = tid
+                print("  '{0} : {1}'".format(task_list[tid]['text'], task_list[tid]['checklist'][item_id]['text']))
+            else:
+                print("  '{0}'".format(task_list[tid]['text']))
+        return None
+    return matching_tasks[0]
+
+def get_task_ids(tids, task_list=None):
     """
     handle task-id formats such as:
         habitica todos done 3
@@ -160,18 +196,21 @@ def get_task_ids(tids):
         habitica todos done 2 3
         habitica todos done 1-3,4 8
     tids is a seq like (last example above) ('1-3,4' '8')
+    subitems could be specified using format '1.1 1.2'
+    titles could be used (full or partial, but ambiguity will trigger an exception)
     """
     logging.debug('raw task ids: %s' % tids)
     task_ids = []
+    TASK_NUMBERS = re.compile(r'^(\d+(-\d+)?,?)+')
     for raw_arg in tids:
-        for bit in raw_arg.split(','):
-            if '-' in bit:
-                start, stop = [int(e) - 1 for e in bit.split('-')]
-                task_ids.extend(range(start, stop + 1))
-            elif '.' in bit:
-                task_ids.append(tuple([int(e) - 1 for e in bit.split('.')]))
-            else:
-                task_ids.append(int(bit) - 1)
+        if TASK_NUMBERS.match(raw_arg):
+            task_ids.extend(parse_task_number_arg(raw_arg))
+        elif task_list is not None:
+            task_id = find_task_in_list(raw_arg, task_list)
+            if task_id is not None:
+                task_ids.append(task_id)
+        else:
+            print("cannot parse task id arg: '{0}'".format(raw_arg))
     return sorted(task_ids, key=task_id_key)
 
 
@@ -492,7 +531,7 @@ def cli():
     elif args['<command>'] == 'habits':
         habits = hbt.tasks.user(type='habits')
         if 'up' in args['<args>']:
-            tids = get_task_ids(args['<args>'][1:])
+            tids = get_task_ids(args['<args>'][1:], task_list=habits)
             for tid in tids:
                 if not habits[tid]['up']:
                     print("task '{0}' cannot be incremented".format(habits[tid]['text']))
@@ -505,7 +544,7 @@ def cli():
                 habits[tid]['value'] = tval + (TASK_VALUE_BASE ** tval)
                 sleep(HABITICA_REQUEST_WAIT_TIME)
         elif 'down' in args['<args>']:
-            tids = get_task_ids(args['<args>'][1:])
+            tids = get_task_ids(args['<args>'][1:], task_list=habits)
             for tid in tids:
                 if not habits[tid]['down']:
                     print("task '{0}' cannot be decremented".format(habits[tid]['text']))
@@ -528,7 +567,7 @@ def cli():
         timezoneOffset = user['preferences']['timezoneOffset']
         dailies = hbt.tasks.user(type='dailys')
         if 'done' in args['<args>']:
-            tids = get_task_ids(args['<args>'][1:])
+            tids = get_task_ids(args['<args>'][1:], task_list=dailies)
             for tid in tids:
                 item_id = None
                 if isinstance(tid, tuple):
@@ -546,7 +585,7 @@ def cli():
                     dailies[tid]['completed'] = True
                 sleep(HABITICA_REQUEST_WAIT_TIME)
         elif 'undo' in args['<args>']:
-            tids = get_task_ids(args['<args>'][1:])
+            tids = get_task_ids(args['<args>'][1:], task_list=dailies)
             for tid in tids:
                 item_id = None
                 if isinstance(tid, tuple):
@@ -570,7 +609,7 @@ def cli():
         todos = [e for e in hbt.tasks.user(type='todos')
                  if not e['completed']]
         if 'done' in args['<args>']:
-            tids = get_task_ids(args['<args>'][1:])
+            tids = get_task_ids(args['<args>'][1:], task_list=todos)
             for tid in tids:
                 if isinstance(tid, tuple):
                     tid, item_id = tid
