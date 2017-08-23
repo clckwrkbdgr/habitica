@@ -20,6 +20,7 @@ import os.path
 import datetime
 import sys
 import time
+import html
 import re
 from time import sleep
 from webbrowser import open_new_tab
@@ -78,6 +79,23 @@ CACHE_CONF = os.path.join(get_cache_dir(), "cache.cfg")
 
 SECTION_CACHE_QUEST = 'Quest'
 
+GROUP_URL = 'https://habitica.com/#/options/groups/guilds/{id}'
+RSS_HEADER = """<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+<channel>
+"""
+# {title, link, datetime, guid, text}
+RSS_ITEM = """<item>
+<title>{title}</title>
+<link>{link}</link>
+<pubDate>{datetime}</pubDate>
+<guid isPermaLink="false">{guid}</guid>
+<description>{text}</description>
+</item>"""
+RSS_FOOTER = """
+</channel>
+</rss>
+"""
 
 def load_auth(configfile):
     """Get authentication data from the AUTH_CONF file."""
@@ -317,6 +335,7 @@ def cli():
 
     Usage: habitica [--version] [--help]
                     <command> [<args>...] [--list-all] [--difficulty=<d>]
+                    [--seen] [--json] [--rss]
                     [--verbose | --debug]
 
     Options:
@@ -324,7 +343,7 @@ def cli():
       --version         Show version
       --difficulty=<d>  (easy | medium | hard) [default: easy]
       --verbose         Show some logging information
-      --debug           Some all logging information
+      --debug           Show all logging information
       --list-all        List all dailies. By default only
                         not done dailies will be displayed
 
@@ -341,6 +360,12 @@ def cli():
       todos add <task>       Add todo with description <task>
       health                 Buy health potion
       spells                 List available spells
+      messages [<count>] [--seen] [--json] [--rss]
+                             Lists last <count> messages for all guilds user is in.
+           <count>           Max count of messages displayed, if 0 (default) displays all.
+           --seen            Mark all messages as read.
+           --json            Print all messages in JSON format.
+           --rss             Print all messages in RSS format.
       server                 Show status of Habitica service
       home                   Open tasks page in default browser
 
@@ -383,6 +408,57 @@ def cli():
         home_url = '%s%s' % (auth['url'], HABITICA_TASKS_PAGE)
         print('Opening %s' % home_url)
         open_new_tab(home_url)
+
+    # messages
+    elif args['<command>'] == 'messages':
+        mark_as_seen = args['--seen']
+        as_json = args['--json']
+        as_rss = args['--rss']
+        if as_json and as_rss:
+            print('Only one type of export could be specified: --rss, --json')
+            sys.exit(1)
+        max_count = 0 # By default no restriction - print all messages.
+        if args['<args>']:
+            max_count = int(args['<args>'][0])
+
+        groups = hbt.groups(type='guilds')
+        json_export = {}
+        if as_rss:
+            print(RSS_HEADER)
+        for group in groups:
+            group_name = group['name']
+            chat_messages = hbt.groups[group['id']].chat()
+            json_export[group_name] = []
+            if max_count:
+                chat_messages = chat_messages[:max_count]
+            for entry in chat_messages:
+                message = {
+                        'username': entry['user'] if 'user' in entry else 'system',
+                        'timestamp': int(int(entry['timestamp']) / 1000),
+                        'text': entry['text'],
+                        }
+                if as_json:
+                    json_export[group_name].append(message)
+                elif as_rss:
+                    timestamp = str(datetime.datetime.fromtimestamp(message['timestamp']))
+                    rss_item = {
+                            'title' : html.escape(group_name + ' ' + timestamp),
+                            'link' : GROUP_URL.format(id=group['id']),
+                            'datetime' : timestamp,
+                            'guid' : entry['id'],
+                            'text' : html.escape(message['text']),
+                    }
+                    print(RSS_ITEM.format(**rss_item))
+                else:
+                    message['group'] = group_name
+                    message['timestamp'] = datetime.datetime.fromtimestamp(message['timestamp']),
+                    print('{group}: {timestamp}: {username}> {text}'.format(**message))
+            if mark_as_seen:
+                hbt.groups[group['id']]['chat'].seen(_method='post')
+        if as_json:
+            print(json.dumps(json_export, indent=2, ensure_ascii=False))
+        elif as_rss:
+            print(RSS_FOOTER)
 
     # GET user
     elif args['<command>'] == 'status':
