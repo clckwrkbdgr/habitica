@@ -437,6 +437,7 @@ def cli():
                         'timestamp': int(int(entry['timestamp']) / 1000),
                         'text': entry['text'],
                         }
+                message['text'] = '{username}> {text}'.format(**message)
                 if as_json:
                     json_export[group_name].append(message)
                 elif as_rss:
