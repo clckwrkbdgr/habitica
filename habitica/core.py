@@ -422,6 +422,7 @@ def cli():
             max_count = int(args['<args>'][0])
 
         groups = hbt.groups(type='guilds')
+        groups.extend(hbt.groups(type='party'))
         json_export = {}
         if as_rss:
             print(RSS_HEADER)
