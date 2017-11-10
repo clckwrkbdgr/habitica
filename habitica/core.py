@@ -79,7 +79,7 @@ CACHE_CONF = os.path.join(get_cache_dir(), "cache.cfg")
 
 SECTION_CACHE_QUEST = 'Quest'
 
-GROUP_URL = 'https://habitica.com/#/options/groups/guilds/{id}'
+GROUP_URL = 'https://habitica.com/groups/guild/{id}'
 RSS_HEADER = """<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0">
 <channel>
