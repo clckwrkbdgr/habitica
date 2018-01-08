@@ -422,6 +422,9 @@ def cli():
             max_count = int(args['<args>'][0])
 
         groups = hbt.groups(type='guilds')
+        if not groups:
+            print('Failed to fetch list of user guilds', file=sys.stderr)
+            return
         groups.extend(hbt.groups(type='party'))
         json_export = {}
         if as_rss:
@@ -429,6 +432,9 @@ def cli():
         for group in groups:
             group_name = group['name']
             chat_messages = hbt.groups[group['id']].chat()
+            if not chat_messages:
+                print('Failed to fetch messages of chat {0}'.format(group_name), file=sys.stderr)
+                continue
             json_export[group_name] = []
             if max_count:
                 chat_messages = chat_messages[:max_count]

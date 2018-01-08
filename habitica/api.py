@@ -9,6 +9,7 @@ http://github.com/philadams/habitica
 """
 
 
+import sys
 import json
 
 import requests
@@ -79,17 +80,21 @@ class Habitica(object):
                                 self.resource)
 
         # actually make the request of the API
-        if method in ['put', 'post']:
-            res = getattr(requests, method)(uri, headers=self.headers,
-                                            data=json.dumps(kwargs), timeout=TIMEOUT)
-        else:
-            res = getattr(requests, method)(uri, headers=self.headers,
-                                            params=kwargs, timeout=TIMEOUT)
+        try:
+            if method in ['put', 'post']:
+                res = getattr(requests, method)(uri, headers=self.headers,
+                                                data=json.dumps(kwargs), timeout=TIMEOUT)
+            else:
+                res = getattr(requests, method)(uri, headers=self.headers,
+                                                params=kwargs, timeout=TIMEOUT)
 
-        # print(res.url)  # debug...
-        if res.status_code == requests.codes.ok:
-            return res.json()['data']
-        else:
-            if res.status_code == 404:
-                print('URI not found: {0}'.format(uri))
-            res.raise_for_status()
+            # print(res.url)  # debug...
+            if res.status_code == requests.codes.ok:
+                return res.json()['data']
+            else:
+                if res.status_code == 404:
+                    print('URI not found: {0}'.format(uri))
+                res.raise_for_status()
+        except requests.exceptions.ReadTimeout as e:
+            print(e, file=sys.stderr)
+            return None
