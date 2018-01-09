@@ -648,6 +648,9 @@ def cli():
     # GET/PUT tasks:daily
     elif args['<command>'] == 'dailies':
         user = hbt.user()
+        if not user:
+            print('Failed to load user dailies', file=sys.stderr)
+            return
         timezoneOffset = user['preferences']['timezoneOffset']
         dailies = hbt.tasks.user(type='dailys')
         if 'done' in args['<args>']:
