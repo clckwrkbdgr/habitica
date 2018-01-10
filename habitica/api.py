@@ -18,7 +18,7 @@ API_URI_BASE = 'api/v3'
 API_CONTENT_TYPE = 'application/json'
 
 TIMEOUT = 10.0
-
+MAX_RETRY = 3
 
 class Habitica(object):
     """
@@ -78,23 +78,30 @@ class Habitica(object):
             uri = '%s/%s/%s' % (self.auth['url'],
                                 API_URI_BASE,
                                 self.resource)
+        return self.try_call(method, uri, kwargs)
 
+    def try_call(self, method, uri, kwargs, tries=MAX_RETRY):
+        if tries <= 0:
+            return None
         # actually make the request of the API
         try:
-            if method in ['put', 'post']:
-                res = getattr(requests, method)(uri, headers=self.headers,
-                                                data=json.dumps(kwargs), timeout=TIMEOUT)
-            else:
-                res = getattr(requests, method)(uri, headers=self.headers,
-                                                params=kwargs, timeout=TIMEOUT)
-
-            # print(res.url)  # debug...
-            if res.status_code == requests.codes.ok:
-                return res.json()['data']
-            else:
-                if res.status_code == 404:
-                    print('URI not found: {0}'.format(uri))
-                res.raise_for_status()
+            return self.actual_call(method, uri, kwargs)
         except requests.exceptions.ReadTimeout as e:
             print(e, file=sys.stderr)
-            return None
+            return self.try_call(method, uri, kwargs, tries - 1)
+
+    def actual_call(self, method, uri, kwargs):
+        if method in ['put', 'post']:
+            res = getattr(requests, method)(uri, headers=self.headers,
+                                            data=json.dumps(kwargs), timeout=TIMEOUT)
+        else:
+            res = getattr(requests, method)(uri, headers=self.headers,
+                                            params=kwargs, timeout=TIMEOUT)
+
+        # print(res.url)  # debug...
+        if res.status_code == requests.codes.ok:
+            return res.json()['data']
+        else:
+            if res.status_code == 404:
+                print('URI not found: {0}'.format(uri), file=sys.stderr)
+            res.raise_for_status()
