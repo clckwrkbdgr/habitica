@@ -89,6 +89,9 @@ class Habitica(object):
         except requests.exceptions.ReadTimeout as e:
             print(e, file=sys.stderr)
             return self.try_call(method, uri, kwargs, tries - 1)
+        except requests.exceptions.ConnectionError as e:
+            print(e, file=sys.stderr)
+            return None
 
     def actual_call(self, method, uri, kwargs):
         if method in ['put', 'post']:
