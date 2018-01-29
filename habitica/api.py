@@ -80,16 +80,22 @@ class Habitica(object):
                                 self.resource)
         return self.try_call(method, uri, kwargs)
 
-    def try_call(self, method, uri, kwargs, tries=MAX_RETRY):
+    def try_call(self, method, uri, kwargs, tries=MAX_RETRY, messages=None):
+        if not messages:
+            messages = set()
         if tries <= 0:
+            for message in messages:
+                print(message, file=sys.stderr)
             return None
         # actually make the request of the API
         try:
             return self.actual_call(method, uri, kwargs)
         except requests.exceptions.ReadTimeout as e:
-            print(e, file=sys.stderr)
-            return self.try_call(method, uri, kwargs, tries - 1)
+            messages.add(str(e))
+            return self.try_call(method, uri, kwargs, tries - 1, messages=messages)
         except requests.exceptions.ConnectionError as e:
+            for message in messages:
+                print(message, file=sys.stderr)
             print(e, file=sys.stderr)
             return None
 
