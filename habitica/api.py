@@ -20,6 +20,11 @@ API_CONTENT_TYPE = 'application/json'
 TIMEOUT = 10.0
 MAX_RETRY = 3
 
+def dump_errors(errors):
+    for message in errors:
+        print(message, file=sys.stderr)
+    return None
+
 class Habitica(object):
     """
     A minimalist Habitica API class.
@@ -81,23 +86,22 @@ class Habitica(object):
         return self.try_call(method, uri, kwargs)
 
     def try_call(self, method, uri, kwargs, tries=MAX_RETRY, messages=None):
-        if not messages:
-            messages = set()
+        messages = messages or []
         if tries <= 0:
-            for message in messages:
-                print(message, file=sys.stderr)
-            return None
+            return dump_errors(messages)
         # actually make the request of the API
         try:
             return self.actual_call(method, uri, kwargs)
         except requests.exceptions.ReadTimeout as e:
-            messages.add(str(e))
+            messages.add(e)
             return self.try_call(method, uri, kwargs, tries - 1, messages=messages)
+        except requests.exceptions.HTTPError as e:
+            if e.response.status_code in [502]:
+                messages.add(e)
+                return self.try_call(method, uri, kwargs, tries - 1, messages=messages)
+            return dump_errors(messages + [e])
         except requests.exceptions.ConnectionError as e:
-            for message in messages:
-                print(message, file=sys.stderr)
-            print(e, file=sys.stderr)
-            return None
+            return dump_errors(messages + [e])
 
     def actual_call(self, method, uri, kwargs):
         if method in ['put', 'post']:
