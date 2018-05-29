@@ -93,11 +93,11 @@ class Habitica(object):
         try:
             return self.actual_call(method, uri, kwargs)
         except requests.exceptions.ReadTimeout as e:
-            messages.add(e)
+            messages.append(e)
             return self.try_call(method, uri, kwargs, tries - 1, messages=messages)
         except requests.exceptions.HTTPError as e:
             if e.response.status_code in [502]:
-                messages.add(e)
+                messages.append(e)
                 return self.try_call(method, uri, kwargs, tries - 1, messages=messages)
             return dump_errors(messages + [e])
         except requests.exceptions.ConnectionError as e:
