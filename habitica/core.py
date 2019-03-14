@@ -428,6 +428,7 @@ def cli():
         groups.extend(hbt.groups(type='party'))
         json_export = {}
         if as_rss:
+            import markdown
             print(RSS_HEADER)
         for group in groups:
             group_name = group['name']
@@ -454,7 +455,7 @@ def cli():
                             'link' : GROUP_URL.format(id=group['id']),
                             'datetime' : timestamp,
                             'guid' : entry['id'],
-                            'text' : html.escape(message['text']),
+                            'text' : html.escape(markdown.markdown(message['text'])),
                     }
                     print(RSS_ITEM.format(**rss_item))
                 else:
