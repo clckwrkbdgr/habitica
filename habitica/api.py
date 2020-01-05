@@ -11,8 +11,14 @@ http://github.com/philadams/habitica
 
 import sys
 import json
+import logging
+logging.captureWarnings(True)
 
 import requests
+import requests.adapters
+import urllib3
+import urllib3.util.retry
+logging.getLogger('urllib3.connectionpool').setLevel(logging.CRITICAL)
 
 API_URI_BASE = 'api/v3'
 API_CONTENT_TYPE = 'application/json'
@@ -104,11 +110,14 @@ class Habitica(object):
             return dump_errors(messages + [e])
 
     def actual_call(self, method, uri, kwargs):
+        session = requests.Session()
+        retries = urllib3.util.retry.Retry(total=5, backoff_factor=0.1)
+        session.mount('https://', requests.adapters.HTTPAdapter(max_retries=retries))
         if method in ['put', 'post']:
-            res = getattr(requests, method)(uri, headers=self.headers,
+            res = getattr(session, method)(uri, headers=self.headers,
                                             data=json.dumps(kwargs), timeout=TIMEOUT)
         else:
-            res = getattr(requests, method)(uri, headers=self.headers,
+            res = getattr(session, method)(uri, headers=self.headers,
                                             params=kwargs, timeout=TIMEOUT)
 
         # print(res.url)  # debug...
