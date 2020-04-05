@@ -22,10 +22,10 @@ import sys
 import time
 import html
 import re
+import argparse
 from time import sleep
 from webbrowser import open_new_tab
 
-from docopt import docopt
 
 try:
     from . import api
@@ -331,60 +331,57 @@ def qualitative_task_score_from_value(value):
 
 
 def cli():
-    """Habitica command-line interface.
+    parser = argparse.ArgumentParser(description='Habitica command-line interface.')
+    parser.add_argument('--version', action='version', version=VERSION)
+    parser.add_argument('--difficulty', choices=['easy', 'medium', 'hard'],
+            default='easy')
+    parser.add_argument('--verbose', action='store_true', default=False,
+            help='Show some logging information')
+    parser.add_argument('--debug', action='store_true', default=False,
+            help='Show all logging information')
+    parser.add_argument('--full', action='store_true', default=False,
+            help='Print tasks details along with the title.')
+    parser.add_argument('--list-alll', action='store_true', default=False,
+            help='List all dailies. By default only not done dailies will be displayed')
 
-    Usage: habitica [--version] [--help]
-                    <command> [<args>...] [--list-all] [--difficulty=<d>]
-                    [--seen] [--json] [--rss]
-                    [--verbose | --debug]
+    commands = parser.add_subparsers(dest='command', help='Habitica commands')
+    commands.add_parser('status', help='Show HP, XP, GP, and more')
+    command_habits = commands.add_parser('habits', help='Manage habit tasks')
+    command_habits.add_argument('action', nargs='?', choices=['up', 'down', 'list'], default='list', help='Habits action: List habit tasks, Up (+) habit, Down (-) habit')
+    command_habits.add_argument('task', nargs='*', default=[],
+            help='You can pass one or more <task-id> parameters, using either comma-separated lists or ranges or both. For example, `todos done 1,3,6-9,11`.')
+    command_dailies = commands.add_parser('dailies', help='Manage daily tasks')
+    command_dailies.add_argument('action', nargs='?', choices=['done', 'undo', 'list'], default='list', help='Habits action: List daily tasks, Mark daily complete, Mark daily incomplete')
+    command_dailies.add_argument('task', nargs='*', default=[],
+            help='You can pass one or more <task-id> parameters, using either comma-separated lists or ranges or both. For example, `todos done 1,3,6-9,11`.')
+    command_todos = commands.add_parser('todos', help='Manage todo tasks')
+    command_todos.add_argument('action', nargs='?', choices=['done', 'add', 'list'], default='list', help='Habits action: List todo tasks, Mark one or more todo completed, Add todo with description')
+    command_todos.add_argument('task', nargs='*', default=[],
+            help='You can pass one or more <task-id> parameters, using either comma-separated lists or ranges or both. For example, `todos done 1,3,6-9,11`. For action "add" it must be a new task title instead.')
+    commands.add_parser('health', help='Buy health potion')
+    command_spells = commands.add_parser('spells', help='Casts or list available spells')
+    command_spells.add_argument('cast', nargs='?', help='Spell to cast. By default lists available spells.')
+    command_spells.add_argument('targets', nargs='*', default=[], help='Targets to cast spell on.')
+    command_messages = commands.add_parser('messages', help='Lists last messages for all guilds user is in.')
+    command_messages.add_argument('count', nargs='?', type=int, default=0, help='Max count of messages displayed, if 0 (default) displays all.')
+    command_messages.add_argument('--seen', action='store_true', default=False, help='Mark all messages as read.')
+    command_messages.add_argument('--json', action='store_true', default=False, help='Print all messages in JSON format.')
+    command_messages.add_argument('--rss', action='store_true', default=False, help='Print all messages in RSS format.')
+    commands.add_parser('server', help='Show status of Habitica service')
+    commands.add_parser('home', help='Open tasks page in default browser')
 
-    Options:
-      -h --help         Show this screen
-      --version         Show version
-      --difficulty=<d>  (easy | medium | hard) [default: easy]
-      --verbose         Show some logging information
-      --debug           Show all logging information
-      --list-all        List all dailies. By default only
-                        not done dailies will be displayed
-
-    The habitica commands are:
-      status                 Show HP, XP, GP, and more
-      habits                 List habit tasks
-      habits up <task-id>    Up (+) habit <task-id>
-      habits down <task-id>  Down (-) habit <task-id>
-      dailies                List daily tasks
-      dailies done           Mark daily <task-id> complete
-      dailies undo           Mark daily <task-id> incomplete
-      todos                  List todo tasks
-      todos done <task-id>   Mark one or more todo <task-id> completed
-      todos add <task>       Add todo with description <task>
-      health                 Buy health potion
-      spells                 List available spells
-      messages [<count>] [--seen] [--json] [--rss]
-                             Lists last <count> messages for all guilds user is in.
-           <count>           Max count of messages displayed, if 0 (default) displays all.
-           --seen            Mark all messages as read.
-           --json            Print all messages in JSON format.
-           --rss             Print all messages in RSS format.
-      server                 Show status of Habitica service
-      home                   Open tasks page in default browser
-
-    For `habits up|down`, `dailies done|undo`, and `todos done`, you can pass
-    one or more <task-id> parameters, using either comma-separated lists or
-    ranges or both. For example, `todos done 1,3,6-9,11`.
-    """
 
     # set up args
-    args = docopt(cli.__doc__, version=VERSION)
+    args = parser.parse_args()
 
     # set up logging
-    if args['--verbose']:
+    if args.verbose:
         logging.basicConfig(level=logging.INFO)
-    if args['--debug']:
+    if args.debug:
         logging.basicConfig(level=logging.DEBUG)
 
     logging.debug('Command line args: {%s}' %
-                  ', '.join("'%s': '%s'" % (k, v) for k, v in args.items()))
+                  ', '.join("'%s': '%s'" % (k, v) for k, v in vars(args).items()))
 
     # Set up auth
     auth = load_auth(AUTH_CONF)
@@ -396,7 +393,7 @@ def cli():
     hbt = api.Habitica(auth=auth)
 
     # GET server status
-    if args['<command>'] == 'server':
+    if args.command == 'server':
         server = hbt.status()
         if server['status'] == 'up':
             print('Habitica server is up')
@@ -404,22 +401,22 @@ def cli():
             print('Habitica server down... or your computer cannot connect')
 
     # open HABITICA_TASKS_PAGE
-    elif args['<command>'] == 'home':
+    elif args.command == 'home':
         home_url = '%s%s' % (auth['url'], HABITICA_TASKS_PAGE)
         print('Opening %s' % home_url)
         open_new_tab(home_url)
 
     # messages
-    elif args['<command>'] == 'messages':
-        mark_as_seen = args['--seen']
-        as_json = args['--json']
-        as_rss = args['--rss']
+    elif args.command == 'messages':
+        mark_as_seen = args.seen
+        as_json = args.json
+        as_rss = args.rss
         if as_json and as_rss:
             print('Only one type of export could be specified: --rss, --json')
             sys.exit(1)
         max_count = 0 # By default no restriction - print all messages.
-        if args['<args>']:
-            max_count = int(args['<args>'][0])
+        if args.count:
+            max_count = int(args.count)
 
         groups = hbt.groups(type='guilds')
         if not groups:
@@ -470,7 +467,7 @@ def cli():
             print(RSS_FOOTER)
 
     # GET user
-    elif args['<command>'] == 'status':
+    elif args.command == 'status':
 
         # gather status info
         user = hbt.user()
@@ -557,7 +554,7 @@ def cli():
         print('%s %s' % ('Quest:'.rjust(len_ljust, ' '), quest))
 
     # POST buy health potion
-    elif args['<command>'] == 'health':
+    elif args.command == 'health':
         HEALTH_POTION_VALUE = 15.0
         user = hbt.user()
         stats = user.get('stats', '')
@@ -569,7 +566,7 @@ def cli():
             print('Bought Health Potion, HP: {0:.1f}/{1}'.format(new_stats['hp'], stats['maxHealth']))
 
     # list/POST spells
-    elif args['<command>'] == 'spells':
+    elif args.command == 'spells':
         SPELLS = {
                 'mage' : {
                     'fireball': "Burst of Flames",
@@ -601,8 +598,8 @@ def cli():
                 }
         user = hbt.user()
         user_class = user['stats']['class']
-        if args['<args>']:
-            spell_name, targets = args['<args>'][0], args['<args>'][1:]
+        if args.cast:
+            spell_name, targets = args.cast, args.targets
             if spell_name not in SPELLS[user_class]:
                 print('{1} cannot cast spell {0}'.format(user_class.title(), spell_name))
             else:
@@ -613,10 +610,10 @@ def cli():
                 print('{0} - {1}'.format(name, description))
 
     # GET/POST habits
-    elif args['<command>'] == 'habits':
+    elif args.command == 'habits':
         habits = hbt.tasks.user(type='habits')
-        if 'up' in args['<args>']:
-            tids = get_task_ids(args['<args>'][1:], task_list=habits)
+        if 'up' == args.action:
+            tids = get_task_ids(args.tasks, task_list=habits)
             for tid in tids:
                 if not habits[tid]['up']:
                     print("task '{0}' cannot be incremented".format(habits[tid]['text']))
@@ -628,8 +625,8 @@ def cli():
                       % habits[tid]['text'])
                 habits[tid]['value'] = tval + (TASK_VALUE_BASE ** tval)
                 sleep(HABITICA_REQUEST_WAIT_TIME)
-        elif 'down' in args['<args>']:
-            tids = get_task_ids(args['<args>'][1:], task_list=habits)
+        elif 'down' == args.action:
+            tids = get_task_ids(args.tasks, task_list=habits)
             for tid in tids:
                 if not habits[tid]['down']:
                     print("task '{0}' cannot be decremented".format(habits[tid]['text']))
@@ -641,21 +638,22 @@ def cli():
                       % habits[tid]['text'])
                 habits[tid]['value'] = tval - (TASK_VALUE_BASE ** tval)
                 sleep(HABITICA_REQUEST_WAIT_TIME)
+        with_notes = args.full
         for i, task in enumerate(habits):
             score = qualitative_task_score_from_value(task['value'])
             updown = {0:' ', 1:'-', 2:'+', 3:'±'}[int(task['up'])*2 + int(task['down'])] # [up][down] as binary number
             print('[{3}|{0}] {1} {2}'.format(score, i + 1, task['text'], updown))
 
     # GET/PUT tasks:daily
-    elif args['<command>'] == 'dailies':
+    elif args.command == 'dailies':
         user = hbt.user()
         if not user:
             print('Failed to load user dailies', file=sys.stderr)
             return
         timezoneOffset = user['preferences']['timezoneOffset']
         dailies = hbt.tasks.user(type='dailys')
-        if 'done' in args['<args>']:
-            tids = get_task_ids(args['<args>'][1:], task_list=dailies)
+        if 'done' == args.action:
+            tids = get_task_ids(args.tasks, task_list=dailies)
             for tid in tids:
                 item_id = None
                 if isinstance(tid, tuple):
@@ -672,8 +670,8 @@ def cli():
                           % dailies[tid]['text'])
                     dailies[tid]['completed'] = True
                 sleep(HABITICA_REQUEST_WAIT_TIME)
-        elif 'undo' in args['<args>']:
-            tids = get_task_ids(args['<args>'][1:], task_list=dailies)
+        elif 'undo' == args.action:
+            tids = get_task_ids(args.tasks, task_list=dailies)
             for tid in tids:
                 item_id = None
                 if isinstance(tid, tuple):
@@ -690,14 +688,15 @@ def cli():
                           % dailies[tid]['text'])
                     dailies[tid]['completed'] = False
                 sleep(HABITICA_REQUEST_WAIT_TIME)
-        print_task_list(dailies, hide_completed=not args['--list-all'], timezoneOffset=timezoneOffset)
+        with_notes = args.full
+        print_task_list(dailies, hide_completed=not args.list_all, timezoneOffset=timezoneOffset)
 
     # GET tasks:todo
-    elif args['<command>'] == 'todos':
+    elif args.command == 'todos':
         todos = [e for e in hbt.tasks.user(type='todos')
                  if not e['completed']]
-        if 'done' in args['<args>']:
-            tids = get_task_ids(args['<args>'][1:], task_list=todos)
+        if 'done' == args.action:
+            tids = get_task_ids(args.tasks, task_list=todos)
             for tid in tids:
                 if isinstance(tid, tuple):
                     tid, item_id = tid
@@ -713,14 +712,15 @@ def cli():
                           % todos[tid]['text'])
                 sleep(HABITICA_REQUEST_WAIT_TIME)
             todos = updated_task_list(todos, tids)
-        elif 'add' in args['<args>']:
-            ttext = ' '.join(args['<args>'][1:])
+        elif 'add' == args.action:
+            ttext = ' '.join(args.tasks)
             hbt.tasks(type='todos',
                            text=ttext,
-                           priority=PRIORITY[args['--difficulty']],
+                           priority=PRIORITY[args.difficulty],
                            _method='post')
             todos.insert(0, {'completed': False, 'text': ttext})
             print('added new todo \'%s\'' % ttext)
+        with_notes = args.full
         print_task_list(todos)
 
 

@@ -171,7 +171,6 @@ thanks
 
 Many thanks to the following excellent projects:
 
-- [docopt](https://github.com/docopt/docopt)
 - [requests](https://github.com/kennethreitz/requests)
 
 And to [contributors to this project](./CONTRIBUTORS.md).

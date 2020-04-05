@@ -14,7 +14,6 @@ setup(
     long_description=readme,
     packages=find_packages(exclude=('dist', 'tests')),
     install_requires=[
-        'docopt',
         'requests',
     ],
     scripts=['bin/habitica'],
