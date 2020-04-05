@@ -343,7 +343,7 @@ def cli():
             help='Show all logging information')
     parser.add_argument('--full', action='store_true', default=False,
             help='Print tasks details along with the title.')
-    parser.add_argument('--list-alll', action='store_true', default=False,
+    parser.add_argument('--list-all', action='store_true', default=False,
             help='List all dailies. By default only not done dailies will be displayed')
 
     commands = parser.add_subparsers(dest='command', help='Habitica commands')
