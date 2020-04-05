@@ -303,7 +303,7 @@ def days_passed(habitica_startDate, localnow, timezoneOffset=0):
     currentdate = localnow
     return (currentdate.date() - startdate.date()).days
 
-def print_task_list(tasks, hide_completed=False, timezoneOffset=0):
+def print_task_list(tasks, hide_completed=False, timezoneOffset=0, with_notes=False):
     for i, task in enumerate(tasks):
         if 'type' in task and task['type'] == 'daily':
             if task['frequency'] == 'daily':
@@ -319,6 +319,8 @@ def print_task_list(tasks, hide_completed=False, timezoneOffset=0):
         if task['completed'] and hide_completed:
             continue
         print('[%s] %s %s' % (completed, i + 1, task['text']))
+        if with_notes:
+            print('\n'.join('      {0}'.format(line) for line in task['notes'].splitlines()))
         for j, item in enumerate(task['checklist']):
             completed = 'x' if item['completed'] else ' '
             print('    [%s] %s.%s %s' % (completed, i + 1, j + 1, item['text']))
@@ -643,6 +645,8 @@ def cli():
             score = qualitative_task_score_from_value(task['value'])
             updown = {0:' ', 1:'-', 2:'+', 3:'±'}[int(task['up'])*2 + int(task['down'])] # [up][down] as binary number
             print('[{3}|{0}] {1} {2}'.format(score, i + 1, task['text'], updown))
+            if with_notes:
+                print('\n'.join('      {0}'.format(line) for line in task['notes'].splitlines()))
 
     # GET/PUT tasks:daily
     elif args.command == 'dailies':
@@ -688,8 +692,7 @@ def cli():
                           % dailies[tid]['text'])
                     dailies[tid]['completed'] = False
                 sleep(HABITICA_REQUEST_WAIT_TIME)
-        with_notes = args.full
-        print_task_list(dailies, hide_completed=not args.list_all, timezoneOffset=timezoneOffset)
+        print_task_list(dailies, hide_completed=not args.list_all, timezoneOffset=timezoneOffset, with_notes=args.full)
 
     # GET tasks:todo
     elif args.command == 'todos':
@@ -721,7 +724,7 @@ def cli():
             todos.insert(0, {'completed': False, 'text': ttext})
             print('added new todo \'%s\'' % ttext)
         with_notes = args.full
-        print_task_list(todos)
+        print_task_list(todos, with_notes=args.full)
 
 
 if __name__ == '__main__':
