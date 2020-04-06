@@ -615,7 +615,7 @@ def cli():
     elif args.command == 'habits':
         habits = hbt.tasks.user(type='habits')
         if 'up' == args.action:
-            tids = get_task_ids(args.tasks, task_list=habits)
+            tids = get_task_ids(args.task, task_list=habits)
             for tid in tids:
                 if not habits[tid]['up']:
                     print("task '{0}' cannot be incremented".format(habits[tid]['text']))
@@ -628,7 +628,7 @@ def cli():
                 habits[tid]['value'] = tval + (TASK_VALUE_BASE ** tval)
                 sleep(HABITICA_REQUEST_WAIT_TIME)
         elif 'down' == args.action:
-            tids = get_task_ids(args.tasks, task_list=habits)
+            tids = get_task_ids(args.task, task_list=habits)
             for tid in tids:
                 if not habits[tid]['down']:
                     print("task '{0}' cannot be decremented".format(habits[tid]['text']))
@@ -657,7 +657,7 @@ def cli():
         timezoneOffset = user['preferences']['timezoneOffset']
         dailies = hbt.tasks.user(type='dailys')
         if 'done' == args.action:
-            tids = get_task_ids(args.tasks, task_list=dailies)
+            tids = get_task_ids(args.task, task_list=dailies)
             for tid in tids:
                 item_id = None
                 if isinstance(tid, tuple):
@@ -675,7 +675,7 @@ def cli():
                     dailies[tid]['completed'] = True
                 sleep(HABITICA_REQUEST_WAIT_TIME)
         elif 'undo' == args.action:
-            tids = get_task_ids(args.tasks, task_list=dailies)
+            tids = get_task_ids(args.task, task_list=dailies)
             for tid in tids:
                 item_id = None
                 if isinstance(tid, tuple):
@@ -699,7 +699,7 @@ def cli():
         todos = [e for e in hbt.tasks.user(type='todos')
                  if not e['completed']]
         if 'done' == args.action:
-            tids = get_task_ids(args.tasks, task_list=todos)
+            tids = get_task_ids(args.task, task_list=todos)
             for tid in tids:
                 if isinstance(tid, tuple):
                     tid, item_id = tid
@@ -716,7 +716,7 @@ def cli():
                 sleep(HABITICA_REQUEST_WAIT_TIME)
             todos = updated_task_list(todos, tids)
         elif 'add' == args.action:
-            ttext = ' '.join(args.tasks)
+            ttext = ' '.join(args.task)
             hbt.tasks(type='todos',
                            text=ttext,
                            priority=PRIORITY[args.difficulty],
