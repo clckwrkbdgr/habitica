@@ -114,8 +114,11 @@ class Habitica(object):
         retries = urllib3.util.retry.Retry(total=5, backoff_factor=0.1)
         session.mount('https://', requests.adapters.HTTPAdapter(max_retries=retries))
         if method in ['put', 'post']:
+            params = kwargs.get('_params', None)
+            if '_params' in kwargs:
+                del kwargs['_params']
             res = getattr(session, method)(uri, headers=self.headers,
-                                            data=json.dumps(kwargs), timeout=TIMEOUT)
+                    params=params, data=json.dumps(kwargs), timeout=TIMEOUT)
         else:
             res = getattr(session, method)(uri, headers=self.headers,
                                             params=kwargs, timeout=TIMEOUT)

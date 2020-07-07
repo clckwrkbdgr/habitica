@@ -23,6 +23,7 @@ import time
 import html
 import re
 import argparse
+import functools, itertools
 from time import sleep
 from webbrowser import open_new_tab
 
@@ -331,6 +332,17 @@ def qualitative_task_score_from_value(value):
     breakpoints = [-20, -10, -1, 1, 5, 10]
     return scores[bisect(breakpoints, value)]
 
+@functools.lru_cache()
+def get_target_list(hbt, target_type):
+    if target_type == 'habit':
+        return hbt.tasks.user(type='habits')
+    else:
+        raise ValueError('Unknown spell target type: {0}'.format(target_type))
+
+def get_target_uuid(hbt, target_type, target_pattern):
+    targets = get_target_list(hbt, target_type)
+    ids = get_task_ids([target_pattern], task_list=targets)
+    return [targets[i]['_id'] for i in ids]
 
 def cli():
     parser = argparse.ArgumentParser(description='Habitica command-line interface.')
@@ -363,6 +375,7 @@ def cli():
     commands.add_parser('health', help='Buy health potion')
     command_spells = commands.add_parser('spells', help='Casts or list available spells')
     command_spells.add_argument('cast', nargs='?', help='Spell to cast. By default lists available spells.')
+    command_spells.add_argument('--habit', action='store_const', dest='target_type', const='habit', help='Indicates that targets are habits.')
     command_spells.add_argument('targets', nargs='*', default=[], help='Targets to cast spell on.')
     command_messages = commands.add_parser('messages', help='Lists last messages for all guilds user is in.')
     command_messages.add_argument('count', nargs='?', type=int, default=0, help='Max count of messages displayed, if 0 (default) displays all.')
@@ -605,8 +618,21 @@ def cli():
             if spell_name not in SPELLS[user_class]:
                 print('{1} cannot cast spell {0}'.format(user_class.title(), spell_name))
             else:
-                hbt.user['class']['cast'][spell_name](_method='post')
-                print('Casted spell "{0}"'.format(SPELLS[user_class][spell_name]))
+                if args.targets and not args.target_type:
+                    print('Target type is not specified!')
+                    sys.exit(1)
+                if args.targets:
+                    target_uuids = itertools.chain.from_iterable(get_target_uuid(hbt, args.target_type, target) for target in args.targets)
+                    for target_uuid in target_uuids:
+                        params = {'targetId' : target_uuid}
+                        result = hbt.user['class']['cast'][spell_name](_params=params, _method='post')
+                        if result is not None:
+                            print('Casted spell "{0}"'.format(SPELLS[user_class][spell_name]))
+                        else:
+                            sys.exit(1)
+                else:
+                    hbt.user['class']['cast'][spell_name](_method='post')
+                    print('Casted spell "{0}"'.format(SPELLS[user_class][spell_name]))
         else:
             for name, description in SPELLS[user_class].items():
                 print('{0} - {1}'.format(name, description))
