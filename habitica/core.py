@@ -316,15 +316,19 @@ def print_task_list(tasks, hide_completed=False, timezoneOffset=0, with_notes=Fa
                     continue
             else:
                 print("Unknown daily frequency: {0}".format(task['frequency']))
-        completed = 'x' if task['completed'] else ' '
-        if task['completed'] and hide_completed:
-            continue
-        print('[%s] %s %s' % (completed, i + 1, task['text']))
+        if 'completed' in task:
+            completed = 'x' if task['completed'] else ' '
+            if task['completed'] and hide_completed:
+                continue
+            print('[%s] %s %s' % (completed, i + 1, task['text']))
+        else:
+            print('%s %s' % (i + 1, task['text']))
         if with_notes:
             print('\n'.join('      {0}'.format(line) for line in task['notes'].splitlines()))
-        for j, item in enumerate(task['checklist']):
-            completed = 'x' if item['completed'] else ' '
-            print('    [%s] %s.%s %s' % (completed, i + 1, j + 1, item['text']))
+        if 'checklist' in task:
+            for j, item in enumerate(task['checklist']):
+                completed = 'x' if item['completed'] else ' '
+                print('    [%s] %s.%s %s' % (completed, i + 1, j + 1, item['text']))
 
 def qualitative_task_score_from_value(value):
     # task value/score info: http://habitica.wikia.com/wiki/Task_Value
@@ -385,6 +389,8 @@ def cli():
     commands.add_parser('server', help='Show status of Habitica service')
     commands.add_parser('home', help='Open tasks page in default browser')
 
+    command_reward = commands.add_parser('reward', help='Buys or lists available items in reward column')
+    command_reward.add_argument('item', nargs='?', help='Item to buy. By default lists available items.')
 
     # set up args
     args = parser.parse_args()
@@ -579,6 +585,19 @@ def cli():
         else:
             new_stats = hbt.user['buy-health-potion'](_method='post')
             print('Bought Health Potion, HP: {0:.1f}/{1}'.format(new_stats['hp'], stats['maxHealth']))
+
+    # list/POST buy reward column's item
+    elif args.command == 'reward':
+        rewards = hbt.tasks.user(type='rewards')
+        if args.item is None:
+            print_task_list(rewards)
+        else:
+            tids = get_task_ids([args.item], task_list=rewards)
+            for tid in tids:
+                hbt.tasks[rewards[tid]['id']].score(
+                               _direction='up', _method='post')
+                print('bought reward \'%s\''
+                      % rewards[tid]['text'])
 
     # list/POST spells
     elif args.command == 'spells':
