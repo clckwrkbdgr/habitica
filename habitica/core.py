@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 """
@@ -109,7 +109,7 @@ def load_auth(configfile):
         logging.error("Unable to find '%s'." % configfile)
         exit(1)
 
-    config = configparser.SafeConfigParser()
+    config = configparser.ConfigParser()
     config.readfp(cf)
 
     cf.close()
@@ -140,7 +140,7 @@ def load_cache(configfile):
     defaults = {'quest_key': '',
                 'quest_s': 'Not currently on a quest'}
 
-    cache = configparser.SafeConfigParser(defaults)
+    cache = configparser.ConfigParser(defaults)
     cache.read(configfile)
 
     if not cache.has_section(SECTION_CACHE_QUEST):
