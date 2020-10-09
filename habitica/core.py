@@ -110,7 +110,7 @@ def load_auth(configfile):
         exit(1)
 
     config = configparser.ConfigParser()
-    config.readfp(cf)
+    config.read_file(cf)
 
     cf.close()
 
