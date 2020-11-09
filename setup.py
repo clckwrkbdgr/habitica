@@ -16,5 +16,9 @@ setup(
     install_requires=[
         'requests',
     ],
-    scripts=['bin/habitica'],
+    entry_points={
+        'console_scripts': [
+            'habitica = habitica.core:cli',
+            ],
+        },
 )
