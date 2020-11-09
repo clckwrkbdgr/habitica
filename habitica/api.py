@@ -48,7 +48,7 @@ MAX_RETRY = 3
 
 def dump_errors(errors):
     for message in errors:
-        print(message, file=sys.stderr)
+        logging.error(message)
     return None
 
 class Habitica(object):
@@ -126,10 +126,10 @@ class Habitica(object):
     def actual_call(self, method, uri, kwargs):
         res = self.api.call(method, uri, kwargs)
 
-        # print(res.url)  # debug...
+        logging.debug(res.url)
         if res.status_code == requests.codes.ok:
             return res.json()['data']
         else:
             if res.status_code == 404:
-                print('URI not found: {0}'.format(uri), file=sys.stderr)
+                logging.error('URI not found: {0}'.format(uri), file=sys.stderr)
             res.raise_for_status()
