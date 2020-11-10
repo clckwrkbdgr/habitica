@@ -12,18 +12,21 @@ logging.getLogger('urllib3.connectionpool').setLevel(logging.CRITICAL)
 
 class API(object):
     """ Basic API facade. """
-    CONTENT_TYPE = 'application/json'
-    URI_BASE = 'api/v3'
     TIMEOUT = 10.0
 
-    def __init__(self, auth):
+    def __init__(self, base_url, login, password):
         """ Creates authenticated API instance. """
-        self.auth = auth
-        self.headers = auth if auth else {}
-        self.headers.update({'content-type': API.CONTENT_TYPE})
+        self.base_url = base_url
+        self.login = login
+        self.password = password
+        self.headers = {
+              'x-api-user': login,
+              'x-api-key': password,
+              'content-type': 'application/json',
+              }
     def get_url(self, *parts):
         """ Makes URL to call specified .../subpath/of/parts. """
-        return '/'.join([self.auth['url'], API.URI_BASE] + list(parts))
+        return '/'.join([self.base_url, 'api', 'v3'] + list(parts))
     def call(self, method, uri, data):
         """ Performs actual call to URI using given method (POST/GET etc).
         Data should correspond to specified method.
@@ -57,7 +60,7 @@ class Habitica(object):
     """
 
     def __init__(self, auth=None, resource=None, aspect=None, _api=None):
-        self.api = _api or API(auth)
+        self.api = _api or API(auth['url'], auth['x-api-user'], auth['x-api-key'])
         self.resource = resource
         self.aspect = aspect
 
