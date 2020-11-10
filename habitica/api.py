@@ -12,7 +12,8 @@ logging.getLogger('urllib3.connectionpool').setLevel(logging.CRITICAL)
 
 class API(object):
     """ Basic API facade. """
-    TIMEOUT = 10.0
+    TIMEOUT = 10.0 # Call timeout.
+    MAX_RETRY = 3 # Amount of retries for server errors (5xx, timeouts etc).
 
     def __init__(self, base_url, login, password):
         """ Creates authenticated API instance. """
@@ -32,7 +33,26 @@ class API(object):
         Data should correspond to specified method.
         For POST/PUT methods, if field '_params' is present,
         it is extracted and passed as request params.
+        May raise exceptions from requests.
         """
+        return self._retry_call(method, uri, data)
+    def _retry_call(self, method, uri, data, tries=MAX_RETRY):
+        try:
+            return self._direct_call(method, uri, data)
+        except requests.exceptions.ReadTimeout as e:
+            if tries <= 0:
+                raise
+        except requests.exceptions.HTTPError as e:
+            if e.response.status_code not in [502]:
+                raise
+            if tries <= 0:
+                raise
+        except requests.exceptions.ConnectionError as e:
+            if tries <= 0:
+                raise
+        return self._retry_call(method, uri, data, tries=tries-1)
+    def _direct_call(self, method, uri, data):
+        """ Direct call without any retry/timeout checks. """
         session = requests.Session()
         retries = urllib3.util.retry.Retry(total=5, backoff_factor=0.1)
         session.mount('https://', requests.adapters.HTTPAdapter(max_retries=retries))
@@ -46,13 +66,6 @@ class API(object):
         else:
             return getattr(session, method)(uri, headers=self.headers,
                                             params=data, timeout=API.TIMEOUT)
-
-MAX_RETRY = 3
-
-def dump_errors(errors):
-    for message in errors:
-        logging.error(message)
-    return None
 
 class Habitica(object):
     """
@@ -106,28 +119,14 @@ class Habitica(object):
                 uri = '%s/%s' % (uri, direction)
         else:
             uri = self.api.get_url(self.resource)
-        return self.try_call(method, uri, kwargs)
 
-    def try_call(self, method, uri, kwargs, tries=MAX_RETRY, messages=None):
-        messages = messages or []
-        if tries <= 0:
-            return dump_errors(messages)
-        # actually make the request of the API
         try:
-            return self.actual_call(method, uri, kwargs)
-        except requests.exceptions.ReadTimeout as e:
-            messages.append(e)
-            return self.try_call(method, uri, kwargs, tries - 1, messages=messages)
-        except requests.exceptions.HTTPError as e:
-            if e.response.status_code in [502]:
-                messages.append(e)
-                return self.try_call(method, uri, kwargs, tries - 1, messages=messages)
-            return dump_errors(messages + [e])
-        except requests.exceptions.ConnectionError as e:
-            return dump_errors(messages + [e])
-
-    def actual_call(self, method, uri, kwargs):
-        res = self.api.call(method, uri, kwargs)
+            res = self.api.call(method, uri, kwargs)
+        except:
+            logging.exception('Failed to perform API call {0} {1} <= {2}'.format(method.upper(), uri, kwargs))
+            return None
+        if not res:
+            return res
 
         logging.debug(res.url)
         if res.status_code == requests.codes.ok:
