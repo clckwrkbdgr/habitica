@@ -30,6 +30,7 @@ from webbrowser import open_new_tab
 
 try:
     from . import api
+    from . import timeutils
 except SystemError:
     pass # to allow import for doctest
 except ValueError:
@@ -240,75 +241,11 @@ def updated_task_list(tasks, tids):
         del(tasks[tid])
     return tasks
 
-class LocalTZ(datetime.tzinfo):
-    STDOFFSET = datetime.timedelta(seconds = -time.timezone)
-    DSTOFFSET = datetime.timedelta(seconds = -time.altzone) if time.daylight else STDOFFSET
-    DSTDIFF = DSTOFFSET - STDOFFSET
-    def utcoffset(self, dt):
-        if self._isdst(dt):
-            return LocalTZ.DSTOFFSET
-        else:
-            return LocalTZ.STDOFFSET
-    def dst(self, dt):
-        if self._isdst(dt):
-            return LocalTZ.DSTDIFF
-        else:
-            return datetime.timedelta(0)
-    def tzname(self, dt):
-        return time.tzname[self._isdst(dt)]
-    def _isdst(self, dt):
-        tt = (dt.year, dt.month, dt.day,
-              dt.hour, dt.minute, dt.second,
-              dt.weekday(), 0, 0)
-        stamp = time.mktime(tt)
-        tt = time.localtime(stamp)
-        return tt.tm_isdst > 0
-
-def strptime_habitica_to_local(time_string):
-    ''' Habitica's task start time is in GMT (apparently?)
-    so it needs to be converted to local TZ before calculating any task repetition.
-    '''
-    return datetime.datetime.strptime(time_string, '%Y-%m-%dT%H:%M:%S.%fZ').replace(tzinfo=datetime.timezone.utc).astimezone(LocalTZ())
-
-def parse_isodate(isodate):
-    return datetime.datetime.strptime(isodate, "%Y-%m-%d %H:%M:%S.%f")
-
-def days_passed(habitica_startDate, localnow, timezoneOffset=0):
-    """
-    >>> days_passed('2016-06-20T21:00:00.000Z', parse_isodate('2016-11-08 16:51:15.930842'), timezoneOffset=-120)
-    141
-    >>> days_passed('2016-06-20T21:00:00.000Z', parse_isodate('2016-11-08 20:51:15.930842'), timezoneOffset=-120)
-    141
-    >>> days_passed('2016-06-20T21:00:00.000Z', parse_isodate('2016-11-08 21:51:15.930842'), timezoneOffset=-120)
-    141
-    >>> days_passed('2016-06-20T21:00:00.000Z', parse_isodate('2016-11-09 16:51:15.930842'), timezoneOffset=-120)
-    142
-    >>> days_passed('2015-07-01T16:50:07.000Z', parse_isodate('2016-10-23 16:51:15.930842'), timezoneOffset=-120)
-    480
-    >>> days_passed('2015-07-01T16:50:07.000Z', parse_isodate('2016-10-23 15:51:15.930842'), timezoneOffset=-120)
-    480
-    >>> days_passed('2015-07-01T16:50:07.000Z', parse_isodate('2016-10-23 21:51:15.930842'), timezoneOffset=-120)
-    480
-    >>> days_passed('2016-01-01T20:39:15.833Z', parse_isodate('2016-11-06 21:51:15.930842'), timezoneOffset=-120)
-    310
-    >>> days_passed('2016-01-01T20:39:15.833Z', parse_isodate('2016-11-06 20:31:15.930842'), timezoneOffset=-120)
-    310
-    >>> days_passed('2016-01-01T20:39:15.833Z', parse_isodate('2016-11-06 15:31:15.930842'), timezoneOffset=-120)
-    310
-    >>> days_passed('2016-12-30T22:00:00.000Z', parse_isodate('2017-01-03 19:46:59.290457'), timezoneOffset=-120)
-    3
-    """
-    #startdate = strptime_habitica_to_local(habitica_startDate)
-    startdate = datetime.datetime.strptime(habitica_startDate, '%Y-%m-%dT%H:%M:%S.%fZ')
-    startdate -= datetime.timedelta(minutes=timezoneOffset)
-    currentdate = localnow
-    return (currentdate.date() - startdate.date()).days
-
 def print_task_list(tasks, hide_completed=False, timezoneOffset=0, with_notes=False):
     for i, task in enumerate(tasks):
         if 'type' in task and task['type'] == 'daily':
             if task['frequency'] == 'daily':
-                if days_passed(task['startDate'], datetime.datetime.now(), timezoneOffset=timezoneOffset) % task['everyX'] != 0:
+                if timeutils.days_passed(task['startDate'], datetime.datetime.now(), timezoneOffset=timezoneOffset) % task['everyX'] != 0:
                     continue
             elif task['frequency'] == 'weekly':
                 habitica_week = ["m", "t", "w", "th", "f", "s", "su"]
