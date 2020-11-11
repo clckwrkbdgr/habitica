@@ -11,42 +11,20 @@ TODO:philadams add logging to .api
 TODO:philadams get logger named, like requests!
 """
 
-
 from bisect import bisect
-import json
 import logging
-import netrc
 import os.path
 import datetime
 import sys
-import time
-import html
 import re
 import argparse
 import functools, itertools
 from time import sleep
 from webbrowser import open_new_tab
 
-
-try:
-    from . import api
-    from . import timeutils, config
-    from . import extra
-except SystemError:
-    pass # to allow import for doctest
-except ValueError:
-    pass # to allow import for doctest
-
-from pprint import pprint
-
-def dump_json(obj, filename):
-    with open(filename, 'wb') as f:
-        f.write(json.dumps(obj, indent=4, ensure_ascii=False).encode('utf-8'))
-
-def load_json(filename):
-    with open(filename, 'rb') as f:
-        return json.loads(f.read().decode('utf-8'))
-
+from . import api
+from . import timeutils, config
+from . import extra
 
 VERSION = 'habitica version 0.0.12'
 TASK_VALUE_BASE = 0.9747  # http://habitica.wikia.com/wiki/Task_Value
