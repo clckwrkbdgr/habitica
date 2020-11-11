@@ -31,6 +31,7 @@ from webbrowser import open_new_tab
 try:
     from . import api
     from . import timeutils, config
+    from . import extra
 except SystemError:
     pass # to allow import for doctest
 except ValueError:
@@ -55,25 +56,6 @@ HABITICA_TASKS_PAGE = '/#/tasks'
 PRIORITY = {'easy': 1,
             'medium': 1.5,
             'hard': 2}
-
-GROUP_URL = 'https://habitica.com/groups/guild/{id}'
-RSS_HEADER = """<?xml version="1.0" encoding="UTF-8"?>
-<rss version="2.0">
-<channel>
-"""
-# {title, link, datetime, guid, text}
-RSS_ITEM = """<item>
-<title>{title}</title>
-<link>{link}</link>
-<pubDate>{datetime}</pubDate>
-<guid isPermaLink="false">{guid}</guid>
-<description>{text}</description>
-</item>"""
-RSS_FOOTER = """
-</channel>
-</rss>
-"""
-
 
 def task_id_key(task_id):
     SUBTASK_ORDER, TASK_ORDER = 0, 1
@@ -291,48 +273,31 @@ def cli():
             print('Failed to fetch list of user guilds', file=sys.stderr)
             return
         groups.extend(hbt.groups(type='party'))
-        json_export = {}
         if as_rss:
-            import markdown
-            print(RSS_HEADER)
+            exporter = extra.RSSMessageFeed()
+        elif as_json:
+            exporter = extra.JsonMessageFeed()
+        else:
+            exporter = extra.TextMessageFeed()
         for group in groups:
             group_name = group['name']
             chat_messages = hbt.groups[group['id']].chat()
             if not chat_messages:
-                print('Failed to fetch messages of chat {0}'.format(group_name), file=sys.stderr)
+                logging.error('Failed to fetch messages of chat {0}'.format(group_name))
                 continue
-            json_export[group_name] = []
             if max_count:
                 chat_messages = chat_messages[:max_count]
             for entry in chat_messages:
                 message = {
+                        'id' : entry['id'],
                         'username': entry['user'] if 'user' in entry else 'system',
                         'timestamp': int(int(entry['timestamp']) / 1000),
                         'text': entry['text'],
                         }
-                message['text'] = '{username}> {text}'.format(**message)
-                if as_json:
-                    json_export[group_name].append(message)
-                elif as_rss:
-                    timestamp = str(datetime.datetime.fromtimestamp(message['timestamp']))
-                    rss_item = {
-                            'title' : html.escape(group_name + ' ' + timestamp),
-                            'link' : GROUP_URL.format(id=group['id']),
-                            'datetime' : timestamp,
-                            'guid' : entry['id'],
-                            'text' : html.escape(markdown.markdown(message['text'])),
-                    }
-                    print(RSS_ITEM.format(**rss_item))
-                else:
-                    message['group'] = group_name
-                    message['timestamp'] = datetime.datetime.fromtimestamp(message['timestamp']),
-                    print('{group}: {timestamp}: {username}> {text}'.format(**message))
+                exporter.add_message(group, message)
             if mark_as_seen:
                 hbt.groups[group['id']]['chat'].seen(_method='post')
-        if as_json:
-            print(json.dumps(json_export, indent=2, ensure_ascii=False))
-        elif as_rss:
-            print(RSS_FOOTER)
+        exporter.done()
 
     # GET user
     elif args.command == 'status':
