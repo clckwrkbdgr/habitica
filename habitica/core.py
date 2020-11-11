@@ -30,18 +30,13 @@ from webbrowser import open_new_tab
 
 try:
     from . import api
-    from . import timeutils
+    from . import timeutils, config
 except SystemError:
     pass # to allow import for doctest
 except ValueError:
     pass # to allow import for doctest
 
 from pprint import pprint
-
-try:
-    import ConfigParser as configparser
-except:
-    import configparser
 
 def dump_json(obj, filename):
     with open(filename, 'wb') as f:
@@ -50,22 +45,6 @@ def dump_json(obj, filename):
 def load_json(filename):
     with open(filename, 'rb') as f:
         return json.loads(f.read().decode('utf-8'))
-
-def get_data_dir(*args):
-    xdg_data_dir = os.environ.get('XDG_DATA_HOME')
-    if not xdg_data_dir:
-        xdg_data_dir = os.path.join(os.path.expanduser("~"), ".local", "share")
-    app_data_dir = os.path.join(xdg_data_dir, "habitica")
-    os.makedirs(app_data_dir, exist_ok=True)
-    return app_data_dir
-
-def get_cache_dir(*args):
-    xdg_cache_dir = os.environ.get('XDG_CACHE_HOME')
-    if not xdg_cache_dir:
-        xdg_cache_dir = os.path.join(os.path.expanduser("~"), ".cache")
-    app_cache_dir = os.path.join(xdg_cache_dir, "habitica")
-    os.makedirs(app_cache_dir, exist_ok=True)
-    return app_cache_dir
 
 
 VERSION = 'habitica version 0.0.12'
@@ -76,10 +55,6 @@ HABITICA_TASKS_PAGE = '/#/tasks'
 PRIORITY = {'easy': 1,
             'medium': 1.5,
             'hard': 2}
-AUTH_CONF = os.path.join(get_data_dir(), "auth.cfg")
-CACHE_CONF = os.path.join(get_cache_dir(), "cache.cfg")
-
-SECTION_CACHE_QUEST = 'Quest'
 
 GROUP_URL = 'https://habitica.com/groups/guild/{id}'
 RSS_HEADER = """<?xml version="1.0" encoding="UTF-8"?>
@@ -99,71 +74,6 @@ RSS_FOOTER = """
 </rss>
 """
 
-def load_auth(configfile):
-    """Get authentication data from the AUTH_CONF file."""
-
-    logging.debug('Loading habitica auth data from %s' % configfile)
-
-    try:
-        cf = open(configfile)
-    except IOError:
-        logging.error("Unable to find '%s'." % configfile)
-        exit(1)
-
-    config = configparser.ConfigParser()
-    config.read_file(cf)
-
-    cf.close()
-
-    # Get data from config
-    rv = {}
-    try:
-        rv = {'url': config.get('Habitica', 'url'),
-              'x-api-user': config.get('Habitica', 'login'),
-              'x-api-key': config.get('Habitica', 'password')}
-
-    except configparser.NoSectionError:
-        logging.error("No 'Habitica' section in '%s'" % configfile)
-        exit(1)
-
-    except configparser.NoOptionError as e:
-        logging.error("Missing option in auth file '%s': %s"
-                      % (configfile, e.message))
-        exit(1)
-
-    # Return auth data as a dictionnary
-    return rv
-
-
-def load_cache(configfile):
-    logging.debug('Loading cached config data (%s)...' % configfile)
-
-    defaults = {'quest_key': '',
-                'quest_s': 'Not currently on a quest'}
-
-    cache = configparser.ConfigParser(defaults)
-    cache.read(configfile)
-
-    if not cache.has_section(SECTION_CACHE_QUEST):
-        cache.add_section(SECTION_CACHE_QUEST)
-
-    return cache
-
-
-def update_quest_cache(configfile, **kwargs):
-    logging.debug('Updating (and caching) config data (%s)...' % configfile)
-
-    cache = load_cache(configfile)
-
-    for key, val in kwargs.items():
-        cache.set(SECTION_CACHE_QUEST, key, val)
-
-    with open(configfile, 'w') as f:
-        cache.write(f)
-
-    cache.read(configfile)
-
-    return cache
 
 def task_id_key(task_id):
     SUBTASK_ORDER, TASK_ORDER = 0, 1
@@ -342,10 +252,10 @@ def cli():
                   ', '.join("'%s': '%s'" % (k, v) for k, v in vars(args).items()))
 
     # Set up auth
-    auth = load_auth(AUTH_CONF)
+    auth = config.load_auth()
 
     # Prepare cache
-    cache = load_cache(CACHE_CONF)
+    cache = config.Cache()
 
     # instantiate api service
     hbt = api.Habitica(auth=auth)
@@ -445,7 +355,7 @@ def cli():
 
             quest_key = party['quest']['key']
 
-            if cache.get(SECTION_CACHE_QUEST, 'quest_key') != quest_key:
+            if cache.get(cache.SECTION_CACHE_QUEST, 'quest_key') != quest_key:
                 # we're on a new quest, update quest key
                 logging.info('Updating quest information...')
                 content = hbt.content()
@@ -469,14 +379,15 @@ def cli():
                     quest_max = content['quests'][quest_key]['boss']['hp']
 
                 # store repr of quest info from /content
-                cache = update_quest_cache(CACHE_CONF,
-                                           quest_key=str(quest_key),
-                                           quest_type=str(quest_type),
-                                           quest_max=str(quest_max),
-                                           quest_title=str(quest_title))
+                cache.update_quest_cache(
+                        quest_key=str(quest_key),
+                        quest_type=str(quest_type),
+                        quest_max=str(quest_max),
+                        quest_title=str(quest_title),
+                        )
 
             # now we use /party and quest_type to figure out our progress!
-            quest_type = cache.get(SECTION_CACHE_QUEST, 'quest_type')
+            quest_type = cache.get(cache.SECTION_CACHE_QUEST, 'quest_type')
             if quest_type == 'collect':
                 qp_tmp = party['quest']['progress']['collect']
                 try:
@@ -488,8 +399,8 @@ def cli():
 
             quest = '%s/%s "%s"' % (
                     str(int(quest_progress)),
-                    cache.get(SECTION_CACHE_QUEST, 'quest_max'),
-                    cache.get(SECTION_CACHE_QUEST, 'quest_title'))
+                    cache.get(cache.SECTION_CACHE_QUEST, 'quest_max'),
+                    cache.get(cache.SECTION_CACHE_QUEST, 'quest_title'))
 
         # prepare and print status strings
         title = 'Level %d %s' % (stats['lvl'], stats['class'].capitalize())
