@@ -95,6 +95,14 @@ class API(object):
         """
         uri = self.get_url(*path)
         return self.call('POST', uri, body=kwargs)
+    def put(self, *path, _body=None, **kwargs):
+        """ Convenience call for PUT /specified/sub/path/
+        PUT fields should be passed as '_body={}'
+        Other kwargs are passed as query params.
+        See call() for details.
+        """
+        uri = self.get_url(*path)
+        return self.call('PUT', uri, body=kwargs)
     def delete(self, *path, **query):
         """ Convenience call for DELETE /specified/sub/path/
         Kwargs are passed as query params.
