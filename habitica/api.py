@@ -87,17 +87,25 @@ class API(object):
     def get_url(self, *parts):
         """ Makes URL to call specified .../subpath/of/parts. """
         return '/'.join([self.base_url, 'api', 'v3'] + list(parts))
-    def post(self, uri, **kwargs):
-        """ Convenience call for POST.
+    def post(self, *path, **kwargs):
+        """ Convenience call for POST /specified/sub/path/
         POST fields should be passed as kwargs
         See call() for details.
         """
+        uri = self.get_url(*path)
         return self.call('POST', uri, {'_params':kwargs})
-    def delete(self, uri):
-        """ Convenience call for DELETE.
+    def delete(self, *path):
+        """ Convenience call for DELETE /specified/sub/path/
         See call() for details.
         """
+        uri = self.get_url(*path)
         return self.call('DELETE', uri, {})
+    def get(self, *path):
+        """ Convenience call for GET /specified/sub/path/
+        See call() for details.
+        """
+        uri = self.get_url(*path)
+        return self.call('GET', uri, {})
     def call(self, method, uri, data):
         """ Performs actual call to URI using given method (GET/POST/PUT/DELETE etc).
         Data should correspond to specified method.
