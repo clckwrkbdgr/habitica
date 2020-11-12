@@ -87,30 +87,33 @@ class API(object):
     def get_url(self, *parts):
         """ Makes URL to call specified .../subpath/of/parts. """
         return '/'.join([self.base_url, 'api', 'v3'] + list(parts))
-    def post(self, *path, **kwargs):
+    def post(self, *path, _body=None, **kwargs):
         """ Convenience call for POST /specified/sub/path/
-        POST fields should be passed as kwargs
+        POST fields should be passed as '_body={}'
+        Other kwargs are passed as query params.
         See call() for details.
         """
         uri = self.get_url(*path)
-        return self.call('POST', uri, {'_params':kwargs})
-    def delete(self, *path):
+        return self.call('POST', uri, body=kwargs)
+    def delete(self, *path, **query):
         """ Convenience call for DELETE /specified/sub/path/
+        Kwargs are passed as query params.
         See call() for details.
         """
         uri = self.get_url(*path)
-        return self.call('DELETE', uri, {})
-    def get(self, *path):
+        return self.call('DELETE', uri, query=query)
+    def get(self, *path, **query):
         """ Convenience call for GET /specified/sub/path/
+        Kwargs are passed as query params.
         See call() for details.
         """
         uri = self.get_url(*path)
-        return self.call('GET', uri, {})
-    def call(self, method, uri, data):
+        return self.call('GET', uri, query=query)
+    def call(self, method, uri, query=None, body=None):
         """ Performs actual call to URI using given method (GET/POST/PUT/DELETE etc).
         Data should correspond to specified method.
-        For POST/PUT methods, if field '_params' is present,
-        it is extracted and passed as request params.
+        Query is a dict and is passed as query params.
+        Body is a dict and is passed as body params (JSON-encoded).
         May raise exceptions from requests.
         May freeze for several seconds to ensure delay between requests
         (see POST_REQUEST_DELAY, GET_REQUEST_DELAY)
@@ -124,12 +127,13 @@ class API(object):
         delay = delay - (time.time() - self._last_request_time)
         if delay > 0:
             time.sleep(delay)
-        return self._retry_call(method, uri, data)
-    def _retry_call(self, method, uri, data, tries=MAX_RETRY):
+        return self._retry_call(method, uri, query=query, body=body)
+    def _retry_call(self, method, uri, query=None, body=None, tries=MAX_RETRY):
         try:
             logging.debug('{0} {1}'.format(method.upper(), uri))
-            logging.debug('=> {0}'.format(data))
-            return self._direct_call(method, uri, data)
+            logging.debug('? {0}'.format(query))
+            logging.debug('=> {0}'.format(body))
+            return self._direct_call(method, uri, query=query, body=body)
         except requests.exceptions.ReadTimeout as e:
             if tries <= 0:
                 raise
@@ -141,8 +145,8 @@ class API(object):
         except requests.exceptions.ConnectionError as e:
             if tries <= 0:
                 raise
-        return self._retry_call(method, uri, data, tries=tries-1)
-    def _direct_call(self, method, uri, data):
+        return self._retry_call(method, uri, query=query, body=body, tries=tries-1)
+    def _direct_call(self, method, uri, query=None, body=None):
         """ Direct call without any retry/timeout checks. """
         session = requests.Session()
         retries = urllib3.util.retry.Retry(total=5, backoff_factor=0.1)
@@ -153,10 +157,10 @@ class API(object):
             if '_params' in data:
                 del data['_params']
             response = getattr(session, method.lower())(uri, headers=self.headers,
-                    params=params, data=json.dumps(data), timeout=API.TIMEOUT)
+                    params=query, data=json.dumps(body or {}), timeout=API.TIMEOUT)
         else:
             response = getattr(session, method.lower())(uri, headers=self.headers,
-                                            params=data, timeout=API.TIMEOUT)
+                                            params=query, timeout=API.TIMEOUT)
         logging.debug('{0} {1}'.format(response.status_code, response.reason))
         if response.status_code != requests.codes.ok:
             logging.debug(response.content)
@@ -217,7 +221,10 @@ class Habitica(object):
             uri = self.api.get_url(self.resource)
 
         try:
-            res = self.api.call(method, uri, kwargs)
+            params = kwargs.get('_params', None)
+            if '_params' in kwargs:
+                del kwargs['_params']
+            res = self.api.call(method, uri, query=kwargs, body=params)
             logging.debug(res.url)
             return res.json()['data']
         except requests.exceptions.HTTPError:
