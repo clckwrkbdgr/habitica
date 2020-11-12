@@ -19,11 +19,17 @@ class API(object):
     # Third-party API tools should introduce delays between calls
     # to reduce load on Habitica server.
     # See https://habitica.fandom.com/wiki/Template:Third_Party_Tool_Rules?section=T-4
-    GET_REQUEST_DELAY = 1 # sec
-    POST_REQUEST_DELAY = 5 # sec
+    DEFAULT_REQUEST_DELAY = 0.5 # sec
+    GET_AUTO_REQUEST_DELAY = 3 # sec
+    POST_AUTO_REQUEST_DELAY = 10 # sec
 
-    def __init__(self, base_url, login, password):
-        """ Creates authenticated API instance. """
+    def __init__(self, base_url, login, password, batch_mode=True):
+        """ Creates authenticated API instance.
+        If batch_mode is True (default), introduces significant delays
+        between consequent requests to reduce load on Habitica server.
+        Otherwise (for user input) uses default nominal delay <1 sec.
+        """
+        self.batch_mode = batch_mode
         self.base_url = base_url
         self.login = login
         self.password = password
@@ -32,8 +38,7 @@ class API(object):
               'x-api-key': password,
               'content-type': 'application/json',
               }
-        self._last_get_time = 0
-        self._last_post_time = 0
+        self._last_request_time = 0
     def get_url(self, *parts):
         """ Makes URL to call specified .../subpath/of/parts. """
         return '/'.join([self.base_url, 'api', 'v3'] + list(parts))
@@ -46,10 +51,13 @@ class API(object):
         May freeze for several seconds to ensure delay between requests
         (see POST_REQUEST_DELAY, GET_REQUEST_DELAY)
         """
-        if method.upper() == 'POST':
-            delay = self.POST_REQUEST_DELAY - (time.time() - self._last_post_time)
+        if self.batch_mode:
+            delay = self.DEFAULT_REQUEST_DELAY
+        elif method.upper() == 'POST':
+            delay = self.POST_REQUEST_DELAY
         else:
-            delay = self.GET_REQUEST_DELAY - (time.time() - self._last_get_time)
+            delay = self.GET_REQUEST_DELAY
+        delay = delay - (time.time() - self._last_request_time)
         if delay > 0:
             time.sleep(delay)
         return self._retry_call(method, uri, data)
