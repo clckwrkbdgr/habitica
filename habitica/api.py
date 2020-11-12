@@ -127,6 +127,8 @@ class API(object):
         return self._retry_call(method, uri, data)
     def _retry_call(self, method, uri, data, tries=MAX_RETRY):
         try:
+            logging.debug('{0} {1}'.format(method.upper(), uri))
+            logging.debug('=> {0}'.format(data))
             return self._direct_call(method, uri, data)
         except requests.exceptions.ReadTimeout as e:
             if tries <= 0:
@@ -150,11 +152,16 @@ class API(object):
             params = data.get('_params', None)
             if '_params' in data:
                 del data['_params']
-            return getattr(session, method.lower())(uri, headers=self.headers,
+            response = getattr(session, method.lower())(uri, headers=self.headers,
                     params=params, data=json.dumps(data), timeout=API.TIMEOUT)
         else:
-            return getattr(session, method.lower())(uri, headers=self.headers,
+            response = getattr(session, method.lower())(uri, headers=self.headers,
                                             params=data, timeout=API.TIMEOUT)
+        logging.debug('{0} {1}'.format(response.status_code, response.reason))
+        if response.status_code != requests.codes.ok:
+            logging.debug(response.content)
+            response.raise_for_status()
+        return response
 
 class Habitica(object):
     """
@@ -211,16 +218,10 @@ class Habitica(object):
 
         try:
             res = self.api.call(method, uri, kwargs)
+            logging.debug(res.url)
+            return res.json()['data']
+        except requests.exceptions.HTTPError:
+            raise
         except:
             logging.exception('Failed to perform API call {0} {1} <= {2}'.format(method.upper(), uri, kwargs))
             return None
-        if not res:
-            return res
-
-        logging.debug(res.url)
-        if res.status_code == requests.codes.ok:
-            return res.json()['data']
-        else:
-            if res.status_code == 404:
-                logging.error('URI not found: {0}'.format(uri), file=sys.stderr)
-            res.raise_for_status()
