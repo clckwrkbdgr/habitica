@@ -4,6 +4,7 @@ import sys
 import json, re
 import time
 import logging
+import contextlib
 import pkg_resources
 from pathlib import Path
 logging.captureWarnings(True)
@@ -37,6 +38,35 @@ class API(object):
     GET_AUTO_REQUEST_DELAY = 3 # sec
     POST_AUTO_REQUEST_DELAY = 10 # sec
 
+    class Exception(Exception):
+        """ Basic API exception.
+        Matches HTTP error code with specified message.
+        Subclasses should have these fields redefined:
+        >>> class MyException(API.Exception):
+        ...     CODE, MESSAGE = 404, 'My object was not found.'
+        """
+        CODE = None
+        MESSAGE = None
+        def __str__(self): return self.MESSAGE
+
+    @contextlib.contextmanager
+    def Exceptions(*exceptions):
+        """ Context manager to capture and convert HTTP errors
+        to known API exceptions. All other exceptions will be re-raised.
+        Exceptions should be subclasses of API.Exception
+        and are matched by class field CODE. See API.Exception for details.
+        Being a proper context manager, can be also used as function decorator.
+        >>> with API.Exceptions(ValidationFailed, ObjectNotFound):
+        ...     return api.call(...)
+        """
+        try:
+            yield
+        except requests.exceptions.HTTPError as e:
+            for exc in exceptions:
+                if exc.CODE == e.response.status_code:
+                    raise exc()
+            raise
+
     def __init__(self, base_url, login, password, batch_mode=True):
         """ Creates authenticated API instance.
         If batch_mode is True (default), introduces significant delays
@@ -57,8 +87,19 @@ class API(object):
     def get_url(self, *parts):
         """ Makes URL to call specified .../subpath/of/parts. """
         return '/'.join([self.base_url, 'api', 'v3'] + list(parts))
+    def post(self, uri, **kwargs):
+        """ Convenience call for POST.
+        POST fields should be passed as kwargs
+        See call() for details.
+        """
+        return self.call('POST', uri, {'_params':kwargs})
+    def delete(self, uri):
+        """ Convenience call for DELETE.
+        See call() for details.
+        """
+        return self.call('DELETE', uri, {})
     def call(self, method, uri, data):
-        """ Performs actual call to URI using given method (POST/GET etc).
+        """ Performs actual call to URI using given method (GET/POST/PUT/DELETE etc).
         Data should correspond to specified method.
         For POST/PUT methods, if field '_params' is present,
         it is extracted and passed as request params.
@@ -68,7 +109,7 @@ class API(object):
         """
         if self.batch_mode:
             delay = self.DEFAULT_REQUEST_DELAY
-        elif method.upper() == 'POST':
+        elif method.upper() in ['PUT', 'POST', 'DELETE']:
             delay = self.POST_REQUEST_DELAY
         else:
             delay = self.GET_REQUEST_DELAY
@@ -97,14 +138,14 @@ class API(object):
         retries = urllib3.util.retry.Retry(total=5, backoff_factor=0.1)
         session.mount('https://', requests.adapters.HTTPAdapter(max_retries=retries))
 
-        if method in ['put', 'post']:
+        if method.upper() in ['PUT', 'POST', 'DELETE']:
             params = data.get('_params', None)
             if '_params' in data:
                 del data['_params']
-            return getattr(session, method)(uri, headers=self.headers,
+            return getattr(session, method.lower())(uri, headers=self.headers,
                     params=params, data=json.dumps(data), timeout=API.TIMEOUT)
         else:
-            return getattr(session, method)(uri, headers=self.headers,
+            return getattr(session, method.lower())(uri, headers=self.headers,
                                             params=data, timeout=API.TIMEOUT)
 
 class Habitica(object):
