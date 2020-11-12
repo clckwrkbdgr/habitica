@@ -28,7 +28,6 @@ from . import extra
 
 VERSION = 'habitica version 0.0.12'
 TASK_VALUE_BASE = 0.9747  # http://habitica.wikia.com/wiki/Task_Value
-HABITICA_REQUEST_WAIT_TIME = 0.5  # time to pause between concurrent requests
 HABITICA_TASKS_PAGE = '/#/tasks'
 # https://trello.com/c/4C8w1z5h/17-task-difficulty-settings-v2-priority-multiplier
 PRIORITY = {'easy': 1,
@@ -464,7 +463,6 @@ def cli():
                 print('incremented task \'%s\''
                       % habits[tid]['text'])
                 habits[tid]['value'] = tval + (TASK_VALUE_BASE ** tval)
-                sleep(HABITICA_REQUEST_WAIT_TIME)
         elif 'down' == args.action:
             tids = get_task_ids(args.task, task_list=habits)
             for tid in tids:
@@ -477,7 +475,6 @@ def cli():
                 print('decremented task \'%s\''
                       % habits[tid]['text'])
                 habits[tid]['value'] = tval - (TASK_VALUE_BASE ** tval)
-                sleep(HABITICA_REQUEST_WAIT_TIME)
         with_notes = args.full
         for i, task in enumerate(habits):
             score = qualitative_task_score_from_value(task['value'])
@@ -511,7 +508,6 @@ def cli():
                     print('marked daily \'%s\' completed'
                           % dailies[tid]['text'])
                     dailies[tid]['completed'] = True
-                sleep(HABITICA_REQUEST_WAIT_TIME)
         elif 'undo' == args.action:
             tids = get_task_ids(args.task, task_list=dailies)
             for tid in tids:
@@ -529,7 +525,6 @@ def cli():
                     print('marked daily \'%s\' incomplete'
                           % dailies[tid]['text'])
                     dailies[tid]['completed'] = False
-                sleep(HABITICA_REQUEST_WAIT_TIME)
         print_task_list(dailies, hide_completed=not args.list_all, timezoneOffset=timezoneOffset, with_notes=args.full)
 
     # GET tasks:todo
@@ -551,7 +546,6 @@ def cli():
                                    _direction='up', _method='post')
                     print('marked todo \'%s\' complete'
                           % todos[tid]['text'])
-                sleep(HABITICA_REQUEST_WAIT_TIME)
             todos = updated_task_list(todos, tids)
         elif 'add' == args.action:
             ttext = ' '.join(args.task)
