@@ -1,15 +1,29 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import sys
-import json
+import json, re
 import time
 import logging
+import pkg_resources
+from pathlib import Path
 logging.captureWarnings(True)
 import requests
 import requests.adapters
 import urllib3
 import urllib3.util.retry
 logging.getLogger('urllib3.connectionpool').setLevel(logging.CRITICAL)
+
+USER_ID_FILE = Path(pkg_resources.resource_filename('habitica', 'data/USER_ID'))
+if not USER_ID_FILE.exists(): # TODO duplicates code from setup.py. Needs to be moved to habitica.config and re-used.
+    print('File {0} is missing.'.format(USER_ID_FILE))
+    print('File {0} should be present in the root directory and should contain Habitica User ID of the author of the package.'.format(USER_ID_FILE))
+    print('For forked project it is advisable to use your own User ID (see https://habitica.com/user/settings/api)')
+    sys.exit(1)
+USER_ID = USER_ID_FILE.read_text().strip()
+if not re.match(r'^[0-9A-F]{8}-[0-9A-F]{4}-4[0-9A-F]{3}-[89AB][0-9A-F]{3}-[0-9A-F]{12}$', USER_ID, flags=re.I):
+    print('File {0} contains invalid user_id: {1}'.format(USER_ID_FILE, repr(USER_ID)))
+    print('Please ensure that proper User ID is used (see https://habitica.com/user/settings/api)')
+    sys.exit(1)
 
 class API(object):
     """ Basic API facade. """
@@ -36,6 +50,7 @@ class API(object):
         self.headers = {
               'x-api-user': login,
               'x-api-key': password,
+              'x-client': USER_ID + '-habitica', # TODO take appName from package?
               'content-type': 'application/json',
               }
         self._last_request_time = 0

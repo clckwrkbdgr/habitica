@@ -4,3 +4,4 @@ fabfile.py
 habitica.egg-info
 build/
 dist/
+habitica/data/USER_ID

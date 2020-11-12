@@ -26,7 +26,7 @@ from . import api
 from . import timeutils, config
 from . import extra
 
-VERSION = 'habitica version 0.0.12'
+VERSION = 'habitica version 0.1.0'
 TASK_VALUE_BASE = 0.9747  # http://habitica.wikia.com/wiki/Task_Value
 HABITICA_TASKS_PAGE = '/#/tasks'
 # https://trello.com/c/4C8w1z5h/17-task-difficulty-settings-v2-priority-multiplier
