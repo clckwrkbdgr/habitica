@@ -22,7 +22,8 @@ import functools, itertools
 from time import sleep
 from webbrowser import open_new_tab
 
-from . import api, core
+from . import api
+from .core import Habitica, Group
 from . import timeutils, config
 from . import extra
 
@@ -210,22 +211,21 @@ def cli():
     logging.debug('Command line args: {%s}' %
                   ', '.join("'%s': '%s'" % (k, v) for k, v in vars(args).items()))
 
-    habitica = core.Habitica(auth=config.load_auth())
+    habitica = Habitica(auth=config.load_auth())
     auth = habitica.auth # FIXME remove with api.Habitica after proper CLI.
     cache = habitica.cache # FIXME remove with api.Habitica after proper CLI.
     hbt = habitica.hbt # FIXME remove with api.Habitica after proper CLI.
 
     # GET server status
     if args.command == 'server':
-        server = hbt.status()
-        if server['status'] == 'up':
+        if habitica.server_is_up():
             print('Habitica server is up')
         else:
             print('Habitica server down... or your computer cannot connect')
 
     # open HABITICA_TASKS_PAGE
     elif args.command == 'home':
-        home_url = '%s%s' % (auth['url'], HABITICA_TASKS_PAGE)
+        home_url = habitica.home_url()
         print('Opening %s' % home_url)
         open_new_tab(home_url)
 
@@ -241,11 +241,10 @@ def cli():
         if args.count:
             max_count = int(args.count)
 
-        groups = hbt.groups(type='guilds')
+        groups = habitica.groups(Group.GUILDS, Group.PARTY)
         if not groups:
             print('Failed to fetch list of user guilds', file=sys.stderr)
             return
-        groups.extend(hbt.groups(type='party'))
         if as_rss:
             exporter = extra.RSSMessageFeed()
         elif as_json:
@@ -253,23 +252,22 @@ def cli():
         else:
             exporter = extra.TextMessageFeed()
         for group in groups:
-            group_name = group['name']
-            chat_messages = hbt.groups[group['id']].chat()
+            chat_messages = group.chat()
             if not chat_messages:
-                logging.error('Failed to fetch messages of chat {0}'.format(group_name))
+                logging.error('Failed to fetch messages of chat {0}'.format(group.name))
                 continue
             if max_count:
                 chat_messages = chat_messages[:max_count]
             for entry in chat_messages:
                 message = {
-                        'id' : entry['id'],
-                        'username': entry['user'] if 'user' in entry else 'system',
-                        'timestamp': int(int(entry['timestamp']) / 1000),
-                        'text': entry['text'],
+                        'id' : entry.id,
+                        'username': entry.user,
+                        'timestamp': int(entry.timestamp / 1000),
+                        'text': entry.text,
                         }
-                exporter.add_message(group, message)
+                exporter.add_message(group._data, message) # FIXME: Use Group and ChatMessage objects instead.
             if mark_as_seen:
-                hbt.groups[group['id']]['chat'].seen(_method='post')
+                group.mark_chat_as_read()
         exporter.done()
 
     # GET user
