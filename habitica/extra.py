@@ -45,13 +45,12 @@ class BaseMessageFeed(object):
 		raise NotImplementedError
 	def done(self):
 		""" Finalize feed, dump collected messages etc. """
-		raise NotImplementedError
 
 class TextMessageFeed(BaseMessageFeed):
 	""" Prints plain text to stdout. """
 	def add_message(self, group, message):
 		message['group'] = group['name']
-		message['timestamp'] = datetime.datetime.fromtimestamp(message['timestamp']),
+		message['timestamp'] = datetime.datetime.fromtimestamp(message['timestamp'])
 		print('{group}: {timestamp}: {username}> {text}'.format(**message))
 
 class JsonMessageFeed(BaseMessageFeed):
