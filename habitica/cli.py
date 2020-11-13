@@ -22,7 +22,7 @@ import functools, itertools
 from time import sleep
 from webbrowser import open_new_tab
 
-from . import api
+from . import api, core
 from . import timeutils, config
 from . import extra
 
@@ -210,14 +210,10 @@ def cli():
     logging.debug('Command line args: {%s}' %
                   ', '.join("'%s': '%s'" % (k, v) for k, v in vars(args).items()))
 
-    # Set up auth
-    auth = config.load_auth()
-
-    # Prepare cache
-    cache = config.Cache()
-
-    # instantiate api service
-    hbt = api.Habitica(auth=auth)
+    habitica = core.Habitica(auth=config.load_auth())
+    auth = habitica.auth # FIXME remove with api.Habitica after proper CLI.
+    cache = habitica.cache # FIXME remove with api.Habitica after proper CLI.
+    hbt = habitica.hbt # FIXME remove with api.Habitica after proper CLI.
 
     # GET server status
     if args.command == 'server':
