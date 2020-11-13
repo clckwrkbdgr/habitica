@@ -39,7 +39,7 @@ setup(
     ],
     entry_points={
         'console_scripts': [
-            'habitica = habitica.core:cli',
+            'habitica = habitica.cli:cli',
             ],
         },
 )
