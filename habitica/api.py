@@ -126,13 +126,17 @@ class API(object):
         May freeze for several seconds to ensure delay between requests
         (see POST_REQUEST_DELAY, GET_REQUEST_DELAY)
         """
-        if self.batch_mode:
+        if not self.batch_mode:
             delay = self.DEFAULT_REQUEST_DELAY
         elif method.upper() in ['PUT', 'POST', 'DELETE']:
             delay = self.POST_REQUEST_DELAY
         else:
             delay = self.GET_REQUEST_DELAY
-        delay = delay - (time.time() - self._last_request_time)
+        passed = (time.time() - self._last_request_time)
+        logging.debug('Last request time: {0}, passed since then: {1}'.format(self._last_request_time, passed))
+        logging.debug('Max delay: {0}'.format(delay))
+        delay = delay - passed
+        logging.debug('Actual delay: {0}'.format(delay))
         if delay > 0:
             time.sleep(delay)
         return self._retry_call(method, uri, query=query, body=body)
