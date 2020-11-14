@@ -124,14 +124,14 @@ class API(object):
         Body is a dict and is passed as body params (JSON-encoded).
         May raise exceptions from requests.
         May freeze for several seconds to ensure delay between requests
-        (see POST_REQUEST_DELAY, GET_REQUEST_DELAY)
+        (see POST_AUTO_REQUEST_DELAY, GET_AUTO_REQUEST_DELAY)
         """
         if not self.batch_mode:
             delay = self.DEFAULT_REQUEST_DELAY
         elif method.upper() in ['PUT', 'POST', 'DELETE']:
-            delay = self.POST_REQUEST_DELAY
+            delay = self.POST_AUTO_REQUEST_DELAY
         else:
-            delay = self.GET_REQUEST_DELAY
+            delay = self.GET_AUTO_REQUEST_DELAY
         passed = (time.time() - self._last_request_time)
         logging.debug('Last request time: {0}, passed since then: {1}'.format(self._last_request_time, passed))
         logging.debug('Max delay: {0}'.format(delay))
@@ -165,9 +165,6 @@ class API(object):
         session.mount('https://', requests.adapters.HTTPAdapter(max_retries=retries))
 
         if method.upper() in ['PUT', 'POST', 'DELETE']:
-            params = data.get('_params', None)
-            if '_params' in data:
-                del data['_params']
             response = getattr(session, method.lower())(uri, headers=self.headers,
                     params=query, data=json.dumps(body or {}), timeout=API.TIMEOUT)
         else:
