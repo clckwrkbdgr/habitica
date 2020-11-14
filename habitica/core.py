@@ -1,5 +1,7 @@
 from . import api, config
 
+HEALTH_POTION_VALUE = 15.0
+
 class ChatMessage:
 	def __init__(self, _data=None):
 		self._data = _data
@@ -40,6 +42,41 @@ class Group:
 	def mark_chat_as_read(self):
 		self.hbt.groups[self.id]['chat'].seen(_method='post')
 
+class UserStats:
+	def __init__(self, _data=None):
+		self._data = _data
+	@property
+	def hp(self):
+		return self._data['hp']
+	@property
+	def maxHealth(self):
+		return self._data['maxHealth']
+
+class HealthOverflowError(Exception):
+	def __init__(self, hp, maxHealth):
+		self.hp, self.maxHealth = hp, maxHealth
+	def __str__(self):
+		return 'HP is too high, part of health potion would be wasted.'
+
+class User:
+	def __init__(self, _data=None, _hbt=None):
+		self.hbt = _hbt
+		self._data = _data
+	@property
+	def stats(self):
+		return UserStats(_data=self._data['stats'])
+	def buy_health_potion(self, overflow_check=True):
+		""" Buys health potion (+15hp).
+
+		If overflow_check is True and there is less than 15 hp damage,
+		so buying potion will result in hp bar overflow and wasting of potion,
+		raises HealthOverflowError.
+		"""
+		# TODO gold check?
+		if overflow_check and self.stats.hp + HEALTH_POTION_VALUE > self.stats.maxHealth:
+			raise HealthOverflowError(self.stats.hp, self.stats.maxHealth)
+		self._data = self.hbt.user['buy-health-potion'](_method='post')
+
 class Habitica:
 	""" Main Habitica entry point. """
 	def __init__(self, auth=None):
@@ -56,6 +93,12 @@ class Habitica:
 		server = self.hbt.status()
 		return server['status'] == 'up'
 
+	def user(self):
+		""" Returns current user. """
+		return User(_data=self.hbt.user(), _hbt=self.hbt)
 	def groups(self, *group_types):
+		""" Returns list of groups of given types.
+		Supported types are: PARTY, GUILDS, PRIVATE_GUILDS, PUBLIC_GUILDS, TAVERN
+		"""
 		result = self.hbt.groups(type=','.join(group_types))
 		return [Group(_data=entry, _hbt=self.hbt) for entry in result]

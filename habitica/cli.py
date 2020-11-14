@@ -22,7 +22,7 @@ import functools, itertools
 from time import sleep
 from webbrowser import open_new_tab
 
-from . import api
+from . import api, core
 from .core import Habitica, Group
 from . import timeutils, config
 from . import extra
@@ -363,14 +363,13 @@ def cli():
     # POST buy health potion
     elif args.command == 'health':
         HEALTH_POTION_VALUE = 15.0
-        user = hbt.user()
-        stats = user.get('stats', '')
-        if stats['hp'] + HEALTH_POTION_VALUE > stats['maxHealth']:
-            print('HP is too high, part of health potion would be wasted.')
-            print('HP: {0:.1f}/{1}, need at most {2:.1f}'.format(stats['hp'], stats['maxHealth'], stats['maxHealth'] - HEALTH_POTION_VALUE))
-        else:
-            new_stats = hbt.user['buy-health-potion'](_method='post')
-            print('Bought Health Potion, HP: {0:.1f}/{1}'.format(new_stats['hp'], stats['maxHealth']))
+        user = habitica.user()
+        try:
+            user.buy_health_potion()
+            print('Bought Health Potion, HP: {0:.1f}/{1}'.format(user.stats.hp, user.stats.maxHealth))
+        except core.HealthOverflowError as e:
+            print(e)
+            print('HP: {0:.1f}/{1}, need at most {2:.1f}'.format(user.stats.hp, user.stats.maxHealth, user.stats.maxHealth - core.HEALTH_POTION_VALUE))
 
     # list/POST buy reward column's item
     elif args.command == 'reward':
