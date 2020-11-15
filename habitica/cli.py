@@ -288,39 +288,26 @@ def cli():
         if quest and quest.active:
             quest_key = quest.key
 
-            if cache.get(cache.SECTION_CACHE_QUEST, 'quest_key') != quest_key:
-                # we're on a new quest, update quest key
-                logging.info('Updating quest information...')
-                content = hbt.content()
-                quest_type = ''
-                quest_max = '-1'
-                quest_title = content['quests'][quest_key]['text']
+            content = habitica.content()
+            quest_type = ''
+            quest_max = '-1'
+            quest_title = content['quests'][quest.key]['text']
 
-                # if there's a content/quests/<quest_key/collect,
-                # then drill into .../collect/<whatever>/count and
-                # .../collect/<whatever>/text and get those values
-                if content.get('quests', {}).get(quest_key, {}).get('collect'):
-                    logging.debug("\tOn a collection type of quest")
-                    quest_type = 'collect'
-                    clct = list(content['quests'][quest_key]['collect'].values())[0]
-                    quest_max = clct['count']
-                # else if it's a boss, then hit up
-                # content/quests/<quest_key>/boss/hp
-                elif content.get('quests', {}).get(quest_key, {}).get('boss'):
-                    logging.debug("\tOn a boss/hp type of quest")
-                    quest_type = 'hp'
-                    quest_max = content['quests'][quest_key]['boss']['hp']
+            # if there's a content/quests/<quest_key/collect,
+            # then drill into .../collect/<whatever>/count and
+            # .../collect/<whatever>/text and get those values
+            if content['quests'][quest.key].get('collect'):
+                logging.debug("\tOn a collection type of quest")
+                quest_type = 'collect'
+                clct = list(content['quests'][quest.key]['collect'].values())[0]
+                quest_max = clct['count']
+            # else if it's a boss, then hit up
+            # content/quests/<quest_key>/boss/hp
+            elif content['quests'][quest.key].get('boss'):
+                logging.debug("\tOn a boss/hp type of quest")
+                quest_type = 'hp'
+                quest_max = content['quests'][quest.key]['boss']['hp']
 
-                # store repr of quest info from /content
-                cache.update_quest_cache(
-                        quest_key=str(quest_key),
-                        quest_type=str(quest_type),
-                        quest_max=str(quest_max),
-                        quest_title=str(quest_title),
-                        )
-
-            # now we use /party and quest_type to figure out our progress!
-            quest_type = cache.get(cache.SECTION_CACHE_QUEST, 'quest_type')
             if quest_type == 'collect':
                 qp_tmp = quest._data['progress']['collect']
                 try:
@@ -332,8 +319,8 @@ def cli():
 
             quest_info = '%s/%s "%s"' % (
                     str(int(quest_progress)),
-                    cache.get(cache.SECTION_CACHE_QUEST, 'quest_max'),
-                    cache.get(cache.SECTION_CACHE_QUEST, 'quest_title'))
+                    quest_max,
+                    quest_title)
 
         # prepare and print status strings
         title = 'Level %d %s' % (stats.level, stats.class_name.capitalize())

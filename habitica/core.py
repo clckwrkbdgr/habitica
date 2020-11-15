@@ -1,6 +1,26 @@
+import os
+import json
+import time
+from pathlib import Path
 from . import api, config
 
 HEALTH_POTION_VALUE = 15.0
+
+class Content:
+	""" Cache for all Habitica content. """
+	def __init__(self, _hbt=None):
+		self.hbt = _hbt
+		self.cache_file = Path(config.get_cache_dir())/"content.cache.json"
+		if not self.cache_file.exists() or time.time() > self.cache_file.stat().st_mtime + 60*60*24: # TODO how to invalidate Habitica content cache?
+			self._data = self.hbt.content()
+			self.cache_file.write_text(json.dumps(self._data))
+		else:
+			self._data = json.loads(self.cache_file.read_text())
+	def __getitem__(self, key):
+		try:
+			return object.__getitem__(self, key)
+		except AttributeError:
+			return self._data[key]
 
 class ChatMessage:
 	def __init__(self, _data=None):
@@ -167,6 +187,8 @@ class Habitica:
 		""" Retruns True if main Habitica service is available. """
 		server = self.hbt.status()
 		return server['status'] == 'up'
+	def content(self):
+		return Content(_hbt=self.hbt)
 
 	def user(self):
 		""" Returns current user. """
