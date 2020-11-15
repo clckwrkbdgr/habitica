@@ -19,6 +19,7 @@ import sys
 import re
 import argparse
 import functools, itertools
+import operator
 from time import sleep
 from webbrowser import open_new_tab
 
@@ -275,74 +276,33 @@ def cli():
 
         # gather status info
         user = habitica.user()
-        party = user.party()
         stats = user.stats
-        food_count = len(user.inventory.food)
 
-        # gather quest progress information (yes, janky. the API
-        # doesn't make this stat particularly easy to grab...).
-        # because hitting /content downloads a crapload of stuff, we
-        # cache info about the current quest in cache.
-        quest_info = 'Not currently on a quest'
-        quest = party.quest
+        quest = user.party().quest
         if quest and quest.active:
-            quest_key = quest.key
-
-            content = habitica.content()
-            quest_type = ''
-            quest_max = '-1'
-            quest_title = content['quests'][quest.key]['text']
-
-            # if there's a content/quests/<quest_key/collect,
-            # then drill into .../collect/<whatever>/count and
-            # .../collect/<whatever>/text and get those values
-            if content['quests'][quest.key].get('collect'):
-                logging.debug("\tOn a collection type of quest")
-                quest_type = 'collect'
-                clct = list(content['quests'][quest.key]['collect'].values())[0]
-                quest_max = clct['count']
-            # else if it's a boss, then hit up
-            # content/quests/<quest_key>/boss/hp
-            elif content['quests'][quest.key].get('boss'):
-                logging.debug("\tOn a boss/hp type of quest")
-                quest_type = 'hp'
-                quest_max = content['quests'][quest.key]['boss']['hp']
-
-            if quest_type == 'collect':
-                qp_tmp = quest._data['progress']['collect']
-                try:
-                    quest_progress = list(qp_tmp.values())[0]['count']
-                except TypeError:
-                    quest_progress = list(qp_tmp.values())[0]
-            else:
-                quest_progress = quest._data['progress']['hp']
-
-            quest_info = '%s/%s "%s"' % (
-                    str(int(quest_progress)),
-                    quest_max,
-                    quest_title)
+            quest_info = '{0}/{1} "{2}"'.format(int(quest.progress),
+                    quest.max_progress,
+                    quest.title)
+        else:
+            quest_info = 'Not currently on a quest'
 
         # prepare and print status strings
         title = 'Level %d %s' % (stats.level, stats.class_name.capitalize())
-        health = '%d/%d' % (stats.hp, stats.maxHealth)
-        xp = '%d/%d' % (int(stats.experience), stats.maxExperience)
-        mana = '%d/%d' % (int(stats.mana), stats.maxMana)
-        gold = '%d' % (int(stats.gold),)
-        currentPet = user.inventory.pet
-        pet = '%s (%d food items)' % (currentPet, food_count)
-        mount = user.inventory.mount
-        summary_items = ('health', 'xp', 'mana', 'gold', 'quest', 'pet', 'mount')
-        len_ljust = max(map(len, summary_items)) + 1
         print('-' * len(title))
         print(title)
         print('-' * len(title))
-        print('%s %s' % ('Health:'.rjust(len_ljust, ' '), health))
-        print('%s %s' % ('XP:'.rjust(len_ljust, ' '), xp))
-        print('%s %s' % ('Mana:'.rjust(len_ljust, ' '), mana))
-        print('%s %s' % ('Gold:'.rjust(len_ljust, ' '), gold))
-        print('%s %s' % ('Pet:'.rjust(len_ljust, ' '), pet))
-        print('%s %s' % ('Mount:'.rjust(len_ljust, ' '), mount))
-        print('%s %s' % ('Quest:'.rjust(len_ljust, ' '), quest_info))
+        rows = [
+                ('Health', '%d/%d' % (stats.hp, stats.maxHealth)),
+                ('XP', '%d/%d' % (int(stats.experience), stats.maxExperience)),
+                ('Mana', '%d/%d' % (int(stats.mana), stats.maxMana)),
+                ('Gold', '%d' % (int(stats.gold),)),
+                ('Pet', '%s (%d food items)' % (user.inventory.pet, len(user.inventory.food))),
+                ('Mount', user.inventory.mount),
+                ('Quest', quest_info),
+                ]
+        len_ljust = max(map(len, map(operator.itemgetter(0), rows))) + 2
+        for row_title, value in rows:
+            print('%s: %s' % (row_title.rjust(len_ljust, ' '), value))
 
     # POST buy health potion
     elif args.command == 'health':

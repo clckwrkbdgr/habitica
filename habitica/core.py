@@ -2,6 +2,7 @@ import os
 import json
 import time
 from pathlib import Path
+from functools import lru_cache
 from . import api, config
 
 HEALTH_POTION_VALUE = 15.0
@@ -66,12 +67,34 @@ class Quest:
 	def __init__(self, _data=None, _hbt=None):
 		self.hbt = _hbt
 		self._data = _data
+	@lru_cache()
+	def _content(self):
+		return Content()['quests'][self.key] # TODO reuse Content object from Habitica.
 	@property
 	def active(self):
 		return bool(self._data['active'])
 	@property
 	def key(self):
 		return self._data['key']
+	@property
+	def title(self):
+		return self._content()['text']
+	@property
+	def progress(self):
+		if self._content().get('collect'):
+			qp_tmp = self._data['progress']['collect']
+			try:
+				quest_progress = list(qp_tmp.values())[0]['count']
+			except TypeError:
+				quest_progress = list(qp_tmp.values())[0]
+		else:
+			return self._data['progress']['hp']
+	@property
+	def max_progress(self):
+		if self._content().get('collect'):
+			return sum([int(item['count']) for item in content['quests'][quest.key]['collect'].values()])
+		else:
+			return self._content()['boss']['hp']
 
 class Party(Group):
 	def __init__(self, _data=None, _hbt=None):
