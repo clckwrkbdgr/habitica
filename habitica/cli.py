@@ -274,22 +274,19 @@ def cli():
     elif args.command == 'status':
 
         # gather status info
-        user = hbt.user()
-        party = hbt.groups.party()
-        stats = user.get('stats', '')
-        items = user.get('items', '')
-        food_count = sum(items['food'].values())
+        user = habitica.user()
+        party = user.party()
+        stats = user.stats
+        food_count = len(user.inventory.food)
 
         # gather quest progress information (yes, janky. the API
         # doesn't make this stat particularly easy to grab...).
         # because hitting /content downloads a crapload of stuff, we
         # cache info about the current quest in cache.
-        quest = 'Not currently on a quest'
-        if (party is not None and
-                party.get('quest', '') and
-                party.get('quest').get('active')):
-
-            quest_key = party['quest']['key']
+        quest_info = 'Not currently on a quest'
+        quest = party.quest
+        if quest and quest.active:
+            quest_key = quest.key
 
             if cache.get(cache.SECTION_CACHE_QUEST, 'quest_key') != quest_key:
                 # we're on a new quest, update quest key
@@ -325,28 +322,28 @@ def cli():
             # now we use /party and quest_type to figure out our progress!
             quest_type = cache.get(cache.SECTION_CACHE_QUEST, 'quest_type')
             if quest_type == 'collect':
-                qp_tmp = party['quest']['progress']['collect']
+                qp_tmp = quest._data['progress']['collect']
                 try:
                     quest_progress = list(qp_tmp.values())[0]['count']
                 except TypeError:
                     quest_progress = list(qp_tmp.values())[0]
             else:
-                quest_progress = party['quest']['progress']['hp']
+                quest_progress = quest._data['progress']['hp']
 
-            quest = '%s/%s "%s"' % (
+            quest_info = '%s/%s "%s"' % (
                     str(int(quest_progress)),
                     cache.get(cache.SECTION_CACHE_QUEST, 'quest_max'),
                     cache.get(cache.SECTION_CACHE_QUEST, 'quest_title'))
 
         # prepare and print status strings
-        title = 'Level %d %s' % (stats['lvl'], stats['class'].capitalize())
-        health = '%d/%d' % (stats['hp'], stats['maxHealth'])
-        xp = '%d/%d' % (int(stats['exp']), stats['toNextLevel'])
-        mana = '%d/%d' % (int(stats['mp']), stats['maxMP'])
-        gold = '%d' % (int(stats['gp']),)
-        currentPet = items.get('currentPet', '')
+        title = 'Level %d %s' % (stats.level, stats.class_name.capitalize())
+        health = '%d/%d' % (stats.hp, stats.maxHealth)
+        xp = '%d/%d' % (int(stats.experience), stats.maxExperience)
+        mana = '%d/%d' % (int(stats.mana), stats.maxMana)
+        gold = '%d' % (int(stats.gold),)
+        currentPet = user.inventory.pet
         pet = '%s (%d food items)' % (currentPet, food_count)
-        mount = items.get('currentMount', '')
+        mount = user.inventory.mount
         summary_items = ('health', 'xp', 'mana', 'gold', 'quest', 'pet', 'mount')
         len_ljust = max(map(len, summary_items)) + 1
         print('-' * len(title))
@@ -358,7 +355,7 @@ def cli():
         print('%s %s' % ('Gold:'.rjust(len_ljust, ' '), gold))
         print('%s %s' % ('Pet:'.rjust(len_ljust, ' '), pet))
         print('%s %s' % ('Mount:'.rjust(len_ljust, ' '), mount))
-        print('%s %s' % ('Quest:'.rjust(len_ljust, ' '), quest))
+        print('%s %s' % ('Quest:'.rjust(len_ljust, ' '), quest_info))
 
     # POST buy health potion
     elif args.command == 'health':
