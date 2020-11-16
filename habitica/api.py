@@ -170,6 +170,7 @@ class API(object):
         else:
             response = getattr(session, method.lower())(uri, headers=self.headers,
                                             params=query, timeout=API.TIMEOUT)
+        self._last_request_time = time.time()
         logging.debug('{0} {1}'.format(response.status_code, response.reason))
         if response.status_code != requests.codes.ok:
             logging.debug(response.content)
