@@ -59,6 +59,8 @@ def parse_task_number_arg(raw_arg):
 def find_task_in_list(raw_arg, task_list):
     matching_tasks = []
     for index, task in enumerate(task_list):
+        if hasattr(task, '_data'): # FIXME temporary
+            task = task._data
         if raw_arg in task['text']:
             matching_tasks.append(index)
         if 'checklist' in task:
@@ -114,6 +116,8 @@ def updated_task_list(tasks, tids):
 
 def print_task_list(tasks, hide_completed=False, timezoneOffset=0, with_notes=False):
     for i, task in enumerate(tasks):
+        if hasattr(task, '_data'): # FIXME temporary
+            task = task._data
         if 'type' in task and task['type'] == 'daily':
             if task['frequency'] == 'daily':
                 if timeutils.days_passed(task['startDate'], datetime.datetime.now(), timezoneOffset=timezoneOffset) % task['everyX'] != 0:
@@ -306,27 +310,25 @@ def cli():
 
     # POST buy health potion
     elif args.command == 'health':
-        HEALTH_POTION_VALUE = 15.0
         user = habitica.user()
         try:
-            user.buy_health_potion()
+            user.buy(core.HealthPotion())
             print('Bought Health Potion, HP: {0:.1f}/{1}'.format(user.stats.hp, user.stats.maxHealth))
         except core.HealthOverflowError as e:
             print(e)
-            print('HP: {0:.1f}/{1}, need at most {2:.1f}'.format(user.stats.hp, user.stats.maxHealth, user.stats.maxHealth - core.HEALTH_POTION_VALUE))
+            print('HP: {0:.1f}/{1}, need at most {2:.1f}'.format(user.stats.hp, user.stats.maxHealth, user.stats.maxHealth - core.HealthPotion.VALUE))
 
     # list/POST buy reward column's item
     elif args.command == 'reward':
-        rewards = hbt.tasks.user(type='rewards')
+        user = habitica.user()
+        rewards = user.rewards()
         if args.item is None:
             print_task_list(rewards)
         else:
             tids = get_task_ids([args.item], task_list=rewards)
             for tid in tids:
-                hbt.tasks[rewards[tid]['id']].score(
-                               _direction='up', _method='post')
-                print('bought reward \'%s\''
-                      % rewards[tid]['text'])
+                user.buy(rewards[tid])
+                print('bought reward \'%s\'' % rewards[tid].text)
 
     # list/POST spells
     elif args.command == 'spells':

@@ -5,8 +5,6 @@ from pathlib import Path
 from functools import lru_cache
 from . import api, config
 
-HEALTH_POTION_VALUE = 15.0
-
 class Content:
 	""" Cache for all Habitica content. """
 	def __init__(self, _hbt=None):
@@ -144,6 +142,21 @@ class Item:
 	def __init__(self, _data=None):
 		self._data = _data
 
+class HealthPotion:
+	""" Health potion (+15 hp). """
+	VALUE = 15.0
+	def __init__(self, overflow_check=True, _hbt=None):
+		""" If overflow_check is True and there is less than 15 hp damage,
+		so buying potion will result in hp bar overflow and wasting of potion,
+		raises HealthOverflowError.
+		"""
+		self.hbt = _hbt
+		self.overflow_check = overflow_check
+	def _buy(self, user):
+		if self.overflow_check and user.stats.hp + self.VALUE > user.stats.maxHealth:
+			raise HealthOverflowError(user.stats.hp, user.stats.maxHealth)
+		self._data = self.hbt.user['buy-health-potion'](_method='post')
+
 class Pet:
 	def __init__(self, _data=None):
 		self._data = _data
@@ -170,6 +183,16 @@ class Inventory:
 	def mount(self):
 		return Mount(_data=self._data['currentMount'])
 
+class Reward:
+	def __init__(self, _data=None, _hbt=None):
+		self.hbt = _hbt
+		self._data = _data
+	@property
+	def text(self):
+		return self._data['text']
+	def _buy(self, user):
+		self.hbt.tasks[self._data['id']].score(_direction='up', _method='post')
+
 class User:
 	def __init__(self, _data=None, _hbt=None):
 		self.hbt = _hbt
@@ -183,17 +206,11 @@ class User:
 	def party(self):
 		""" Returns user's party. """
 		return Party(_data=self.hbt.groups.party(), _hbt=self.hbt)
-	def buy_health_potion(self, overflow_check=True):
-		""" Buys health potion (+15hp).
-
-		If overflow_check is True and there is less than 15 hp damage,
-		so buying potion will result in hp bar overflow and wasting of potion,
-		raises HealthOverflowError.
-		"""
+	def buy(self, item):
 		# TODO gold check?
-		if overflow_check and self.stats.hp + HEALTH_POTION_VALUE > self.stats.maxHealth:
-			raise HealthOverflowError(self.stats.hp, self.stats.maxHealth)
-		self._data = self.hbt.user['buy-health-potion'](_method='post')
+		item._buy(user=self)
+	def rewards(self):
+		return [Reward(_data=entry, _hbt=self.hbt) for entry in self.hbt.tasks.user(type='rewards')]
 
 class Habitica:
 	""" Main Habitica entry point. """
