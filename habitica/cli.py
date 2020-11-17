@@ -22,6 +22,7 @@ import functools, itertools
 import operator
 from time import sleep
 from webbrowser import open_new_tab
+from collections import namedtuple
 
 from . import api, core
 from .core import Habitica, Group
@@ -152,6 +153,8 @@ def qualitative_task_score_from_value(value):
 def get_target_list(hbt, target_type):
     if target_type == 'habit':
         return hbt.tasks.user(type='habits')
+    elif target_type == 'todo':
+        return hbt.tasks.user(type='todos')
     else:
         raise ValueError('Unknown spell target type: {0}'.format(target_type))
 
@@ -192,6 +195,7 @@ def cli():
     command_spells = commands.add_parser('spells', help='Casts or list available spells')
     command_spells.add_argument('cast', nargs='?', help='Spell to cast. By default lists available spells.')
     command_spells.add_argument('--habit', action='store_const', dest='target_type', const='habit', help='Indicates that targets are habits.')
+    command_spells.add_argument('--todo', action='store_const', dest='target_type', const='todo', help='Indicates that targets are todos.')
     command_spells.add_argument('targets', nargs='*', default=[], help='Targets to cast spell on.')
     command_messages = commands.add_parser('messages', help='Lists last messages for all guilds user is in.')
     command_messages.add_argument('count', nargs='?', type=int, default=0, help='Max count of messages displayed, if 0 (default) displays all.')
@@ -332,40 +336,12 @@ def cli():
 
     # list/POST spells
     elif args.command == 'spells':
-        SPELLS = {
-                'mage' : {
-                    'fireball': "Burst of Flames",
-                    'mpHeal': "Ethereal Surge",
-                    'earth': "Earthquake",
-                    'frost': "Chilling Frost",
-                    },
-
-                'warrior' : {
-                    'smash': "Brutal Smash",
-                    'defensiveStance': "Defensive Stance",
-                    'valorousPresence': "Valorous Presence",
-                    'intimidate': "Intimidating Gaze",
-                    },
-
-                'rogue' : {
-                    'pickPocket': "Pickpocket",
-                    'backStab': "Backstab",
-                    'toolsOfTrade': "Tools of the Trade",
-                    'stealth': "Stealth",
-                    },
-
-                'healer' : {
-                    'heal': "Healing Light",
-                    'protectAura': "Protective Aura",
-                    'brightness': "Searing Brightness",
-                    'healAll': "Blessing",
-                    },
-                }
-        user = hbt.user()
-        user_class = user['stats']['class']
+        user = habitica.user()
+        user_class = user.stats.class_name
         if args.cast:
             spell_name, targets = args.cast, args.targets
-            if spell_name not in SPELLS[user_class]:
+            spell = user.get_spell(spell_name)
+            if not spell:
                 print('{1} cannot cast spell {0}'.format(user_class.title(), spell_name))
             else:
                 if args.targets and not args.target_type:
@@ -374,18 +350,18 @@ def cli():
                 if args.targets:
                     target_uuids = itertools.chain.from_iterable(get_target_uuid(hbt, args.target_type, target) for target in args.targets)
                     for target_uuid in target_uuids:
-                        params = {'targetId' : target_uuid}
-                        result = hbt.user['class']['cast'][spell_name](_params=params, _method='post')
-                        if result is not None:
-                            print('Casted spell "{0}"'.format(SPELLS[user_class][spell_name]))
+                        Target = namedtuple('Target', 'id extra') # TODO remove when every model has corresponding class with '.id'
+                        target = Target(target_uuid, None)
+                        if user.cast(spell, target):
+                            print('Casted spell "{0}"'.format(spell.name))
                         else:
                             sys.exit(1)
                 else:
-                    hbt.user['class']['cast'][spell_name](_method='post')
-                    print('Casted spell "{0}"'.format(SPELLS[user_class][spell_name]))
+                    user.cast(spell)
+                    print('Casted spell "{0}"'.format(spell.name))
         else:
-            for name, description in SPELLS[user_class].items():
-                print('{0} - {1}'.format(name, description))
+            for spell in user.spells():
+                print('{0} - {1}'.format(spell.name, spell.description))
 
     # GET/POST habits
     elif args.command == 'habits':

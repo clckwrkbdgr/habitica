@@ -193,6 +193,17 @@ class Reward:
 	def _buy(self, user):
 		self.hbt.tasks[self._data['id']].score(_direction='up', _method='post')
 
+class Spell:
+	def __init__(self, _name, _description):
+		self._name = _name
+		self._description = _description
+	@property
+	def name(self):
+		return self._name
+	@property
+	def description(self):
+		return self._description
+
 class User:
 	def __init__(self, _data=None, _hbt=None):
 		self.hbt = _hbt
@@ -211,6 +222,46 @@ class User:
 		item._buy(user=self)
 	def rewards(self):
 		return [Reward(_data=entry, _hbt=self.hbt) for entry in self.hbt.tasks.user(type='rewards')]
+	def spells(self):
+		""" Returns list of available spells. """
+		SPELLS = { # TODO apparently /content lists these.
+			'mage' : {
+				Spell('fireball', "Burst of Flames"),
+				Spell('mpHeal', "Ethereal Surge"),
+				Spell('earth', "Earthquake"),
+				Spell('frost', "Chilling Frost"),
+				},
+			'warrior' : {
+				Spell('smash', "Brutal Smash"),
+				Spell('defensiveStance', "Defensive Stance"),
+				Spell('valorousPresence', "Valorous Presence"),
+				Spell('intimidate', "Intimidating Gaze"),
+				},
+			'rogue' : {
+				Spell('pickPocket', "Pickpocket"),
+				Spell('backStab', "Backstab"),
+				Spell('toolsOfTrade', "Tools of the Trade"),
+				Spell('stealth', "Stealth"),
+				},
+			'healer' : {
+				Spell('heal', "Healing Light"),
+				Spell('protectAura', "Protective Aura"),
+				Spell('brightness', "Searing Brightness"),
+				Spell('healAll', "Blessing"),
+				},
+			}
+		return SPELLS[self.stats.class_name]
+	def get_spell(self, spell_name):
+		""" Returns spell by its short name if available to the user, otherwise None. """
+		for spell in self.spells():
+			if spell.name == spell_name:
+				return spell
+		return None
+	def cast(self, spell, target=None):
+		params = {}
+		if target:
+			params = {'targetId' : target.id}
+		return self.hbt.user['class']['cast'][spell.name](**params, _method='post')
 
 class Habitica:
 	""" Main Habitica entry point. """
