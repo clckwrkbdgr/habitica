@@ -193,6 +193,50 @@ class Reward:
 	def _buy(self, user):
 		self.hbt.tasks[self._data['id']].score(_direction='up', _method='post')
 
+class CannotScoreUp(Exception):
+	def __init__(self, habit):
+		self.habit = habit
+	def __str__(self):
+		return "Habit '{0}' cannot be incremented".format(self.habit.text)
+
+class CannotScoreDown(Exception):
+	def __init__(self, habit):
+		self.habit = habit
+	def __str__(self):
+		return "Habit '{0}' cannot be decremented".format(self.habit.text)
+
+class Habit:
+	def __init__(self, _data=None, _hbt=None):
+		self.hbt = _hbt
+		self._data = _data
+	@property
+	def text(self):
+		return self._data['text']
+	@property
+	def notes(self):
+		return self._data['notes']
+	@property
+	def value(self):
+		return self._data['value']
+	@property
+	def can_score_up(self):
+		return self._data['up']
+	@property
+	def can_score_down(self):
+		return self._data['down']
+	def up(self):
+		if not self._data['up']:
+			raise CannotScoreUp(self)
+		tval = self._data['value']
+		result = self.hbt.tasks[self._data['id']].score(_direction='up', _method='post')
+		self._data['value'] += result['delta']
+	def down(self):
+		if not self._data['down']:
+			raise CannotScoreDown(self)
+		tval = self._data['value']
+		result = self.hbt.tasks[self._data['id']].score(_direction='down', _method='post')
+		self._data['value'] += result['delta']
+
 class Spell:
 	def __init__(self, _name, _description):
 		self._name = _name
@@ -205,9 +249,10 @@ class Spell:
 		return self._description
 
 class User:
-	def __init__(self, _data=None, _hbt=None):
+	def __init__(self, _data=None, _hbt=None, _proxy=None):
 		self.hbt = _hbt
 		self._data = _data
+		self._proxy = _proxy or _UserProxy(_hbt=self.hbt)
 	@property
 	def stats(self):
 		return UserStats(_data=self._data['stats'])
@@ -216,12 +261,14 @@ class User:
 		return Inventory(_data=self._data['items'])
 	def party(self):
 		""" Returns user's party. """
-		return Party(_data=self.hbt.groups.party(), _hbt=self.hbt)
+		return self._proxy.party()
 	def buy(self, item):
 		# TODO gold check?
 		item._buy(user=self)
+	def habits(self):
+		return self._proxy.habits()
 	def rewards(self):
-		return [Reward(_data=entry, _hbt=self.hbt) for entry in self.hbt.tasks.user(type='rewards')]
+		return self._proxy.rewards()
 	def spells(self):
 		""" Returns list of available spells. """
 		SPELLS = { # TODO apparently /content lists these.
@@ -263,6 +310,18 @@ class User:
 			params = {'targetId' : target.id}
 		return self.hbt.user['class']['cast'][spell.name](**params, _method='post')
 
+class _UserProxy:
+	def __init__(self, _hbt=None):
+		self.hbt = _hbt
+	def __call__(self):
+		return User(_data=self.hbt.user(), _hbt=self.hbt)
+	def party(self):
+		return Party(_data=self.hbt.groups.party(), _hbt=self.hbt)
+	def habits(self):
+		return [Habit(_data=entry, _hbt=self.hbt) for entry in self.hbt.tasks.user(type='habits')]
+	def rewards(self):
+		return [Reward(_data=entry, _hbt=self.hbt) for entry in self.hbt.tasks.user(type='rewards')]
+
 class Habitica:
 	""" Main Habitica entry point. """
 	def __init__(self, auth=None):
@@ -281,9 +340,14 @@ class Habitica:
 	def content(self):
 		return Content(_hbt=self.hbt)
 
+	@property
 	def user(self):
-		""" Returns current user. """
-		return User(_data=self.hbt.user(), _hbt=self.hbt)
+		""" Returns current user: `habitica.user()`
+		May be used as direct proxy to user task list without redundant user() call:
+			habitica.user.habits()
+			habitica.user.rewards()
+		"""
+		return _UserProxy(_hbt=self.hbt)
 	def groups(self, *group_types):
 		""" Returns list of groups of given types.
 		Supported types are: PARTY, GUILDS, PRIVATE_GUILDS, PUBLIC_GUILDS, TAVERN

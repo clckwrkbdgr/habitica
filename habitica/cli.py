@@ -30,8 +30,6 @@ from . import timeutils, config
 from . import extra
 
 VERSION = 'habitica version 0.1.0'
-TASK_VALUE_BASE = 0.9747  # http://habitica.wikia.com/wiki/Task_Value
-HABITICA_TASKS_PAGE = '/#/tasks'
 # https://trello.com/c/4C8w1z5h/17-task-difficulty-settings-v2-priority-multiplier
 PRIORITY = {'easy': 1,
             'medium': 1.5,
@@ -365,38 +363,32 @@ def cli():
 
     # GET/POST habits
     elif args.command == 'habits':
-        habits = hbt.tasks.user(type='habits')
+        habits = habitica.user.habits()
         if 'up' == args.action:
             tids = get_task_ids(args.task, task_list=habits)
             for tid in tids:
-                if not habits[tid]['up']:
-                    print("task '{0}' cannot be incremented".format(habits[tid]['text']))
+                try:
+                    habits[tid].up()
+                    print('incremented task \'%s\'' % habits[tid].text)
+                except CannotScoreUp as e:
+                    print(e)
                     continue
-                tval = habits[tid]['value']
-                hbt.tasks[habits[tid]['id']].score(
-                               _direction='up', _method='post')
-                print('incremented task \'%s\''
-                      % habits[tid]['text'])
-                habits[tid]['value'] = tval + (TASK_VALUE_BASE ** tval)
         elif 'down' == args.action:
             tids = get_task_ids(args.task, task_list=habits)
             for tid in tids:
-                if not habits[tid]['down']:
-                    print("task '{0}' cannot be decremented".format(habits[tid]['text']))
+                try:
+                    habits[tid].down()
+                    print('decremented task \'%s\'' % habits[tid].text)
+                except CannotScoreDown as e:
+                    print(e)
                     continue
-                tval = habits[tid]['value']
-                hbt.tasks[habits[tid]['id']].score(
-                               _direction='down', _method='post')
-                print('decremented task \'%s\''
-                      % habits[tid]['text'])
-                habits[tid]['value'] = tval - (TASK_VALUE_BASE ** tval)
         with_notes = args.full
         for i, task in enumerate(habits):
-            score = qualitative_task_score_from_value(task['value'])
-            updown = {0:' ', 1:'-', 2:'+', 3:'±'}[int(task['up'])*2 + int(task['down'])] # [up][down] as binary number
-            print('[{3}|{0}] {1} {2}'.format(score, i + 1, task['text'], updown))
+            score = qualitative_task_score_from_value(task.value)
+            updown = {0:' ', 1:'-', 2:'+', 3:'±'}[int(task.can_score_up)*2 + int(task.can_score_down)] # [up][down] as binary number
+            print('[{3}|{0}] {1} {2}'.format(score, i + 1, task.text, updown))
             if with_notes:
-                print('\n'.join('      {0}'.format(line) for line in task['notes'].splitlines()))
+                print('\n'.join('      {0}'.format(line) for line in task.notes.splitlines()))
 
     # GET/PUT tasks:daily
     elif args.command == 'dailies':
