@@ -147,20 +147,6 @@ def qualitative_task_score_from_value(value):
     breakpoints = [-20, -10, -1, 1, 5, 10]
     return scores[bisect(breakpoints, value)]
 
-@functools.lru_cache()
-def get_target_list(hbt, target_type):
-    if target_type == 'habit':
-        return hbt.tasks.user(type='habits')
-    elif target_type == 'todo':
-        return hbt.tasks.user(type='todos')
-    else:
-        raise ValueError('Unknown spell target type: {0}'.format(target_type))
-
-def get_target_uuid(hbt, target_type, target_pattern):
-    targets = get_target_list(hbt, target_type)
-    ids = get_task_ids([target_pattern], task_list=targets)
-    return [targets[i]['_id'] for i in ids]
-
 def cli():
     parser = argparse.ArgumentParser(description='Habitica command-line interface.')
     parser.add_argument('--version', action='version', version=VERSION)
@@ -346,10 +332,14 @@ def cli():
                     print('Target type is not specified!')
                     sys.exit(1)
                 if args.targets:
-                    target_uuids = itertools.chain.from_iterable(get_target_uuid(hbt, args.target_type, target) for target in args.targets)
-                    for target_uuid in target_uuids:
-                        Target = namedtuple('Target', 'id extra') # TODO remove when every model has corresponding class with '.id'
-                        target = Target(target_uuid, None)
+                    if args.target_type == 'habit':
+                        tasks = user.habits()
+                    elif args.target_type == 'todo':
+                        tasks = user.todos()
+                    else:
+                        raise ValueError('Unknown spell target type: {0}'.format(args.target_type))
+                    tids = get_task_ids(args.targets, task_list=tasks)
+                    for target in [tasks[tid] for tid in tids]:
                         if user.cast(spell, target):
                             print('Casted spell "{0}"'.format(spell.name))
                         else:
