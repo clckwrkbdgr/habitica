@@ -101,6 +101,13 @@ class Party(Group):
 	def quest(self):
 		return Quest(_data=self._data['quest'], _hbt=self.hbt)
 
+class UserPreferences:
+	def __init__(self, _data=None):
+		self._data = _data
+	@property
+	def timezoneOffset(self):
+		return self._data['timezoneOffset']
+
 class UserStats:
 	def __init__(self, _data=None):
 		self._data = _data
@@ -237,6 +244,81 @@ class Habit:
 		result = self.hbt.tasks[self._data['id']].score(_direction='down', _method='post')
 		self._data['value'] += result['delta']
 
+class SubItem:
+	def __init__(self, _data=None, _hbt=None, _parent_data=None):
+		self.hbt = _hbt
+		self._data = _data
+		self._parent_data = _parent_data
+	@property
+	def id(self):
+		return self._data['id']
+	@property
+	def text(self):
+		return self._data['text']
+	@property
+	def is_completed(self):
+		return self._data['completed']
+	def complete(self):
+		""" Marks subitem as completed. """
+		if self.is_completed:
+			return
+		self.hbt.tasks[self._parent_data['id']]['checklist'][self._data['id']].score(
+					   _method='post')
+		self._data['completed'] = True
+	def undo(self):
+		""" Marks subitem as completed. """
+		if not self.is_completed:
+			return
+		self.hbt.tasks[self._parent_data['id']]['checklist'][self._data['id']].score(
+					   _method='post')
+		self._data['completed'] = False
+
+class Daily:
+	def __init__(self, _data=None, _hbt=None):
+		self.hbt = _hbt
+		self._data = _data
+	@property
+	def id(self):
+		return self._data['id']
+	@property
+	def text(self):
+		return self._data['text']
+	@property
+	def checklist(self):
+		""" Returns dist with daily's subitems: {<item_id>:<SubItem>}.
+		You can also get subitem directly from dailys:
+		>>> daily.checklist[item_id]
+		>>> daily[item_id]
+		"""
+		return {item_id:SubItem(
+			_hbt=self.hbt,
+			_data=self._data['checklist'][item_id],
+			_parent_data=self._data,
+			)
+			for item_id
+			in self._data['checklist']
+			}
+	def __getitem__(self, key):
+		""" Returns SubItem object for given item ID. """
+		try:
+			return object.__getitem__(self, key)
+		except AttributeError:
+			return SubItem(
+					_hbt=self.hbt,
+					_data=self._data['checklist'][key],
+					_parent_data=self._data,
+					)
+	def complete(self):
+		""" Marks daily as completed. """
+		self.hbt.tasks[self._data['id']].score(
+				_direction='up', _method='post')
+		self._data['completed'] = True
+	def undo(self):
+		""" Marks daily as not completed. """
+		self.hbt.tasks[self._data['id']].score(
+				_direction='down', _method='post')
+		self._data['completed'] = False
+
 class Spell:
 	def __init__(self, _name, _description):
 		self._name = _name
@@ -257,6 +339,9 @@ class User:
 	def stats(self):
 		return UserStats(_data=self._data['stats'])
 	@property
+	def preferences(self):
+		return UserPreferences(_data=self._data['preferences'])
+	@property
 	def inventory(self):
 		return Inventory(_data=self._data['items'])
 	def party(self):
@@ -267,6 +352,8 @@ class User:
 		item._buy(user=self)
 	def habits(self):
 		return self._proxy.habits()
+	def dailies(self):
+		return self._proxy.dailies()
 	def rewards(self):
 		return self._proxy.rewards()
 	def spells(self):
@@ -319,6 +406,8 @@ class _UserProxy:
 		return Party(_data=self.hbt.groups.party(), _hbt=self.hbt)
 	def habits(self):
 		return [Habit(_data=entry, _hbt=self.hbt) for entry in self.hbt.tasks.user(type='habits')]
+	def dailies(self):
+		return [Daily(_data=entry, _hbt=self.hbt) for entry in self.hbt.tasks.user(type='dailys')]
 	def rewards(self):
 		return [Reward(_data=entry, _hbt=self.hbt) for entry in self.hbt.tasks.user(type='rewards')]
 

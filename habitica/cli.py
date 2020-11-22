@@ -392,46 +392,36 @@ def cli():
 
     # GET/PUT tasks:daily
     elif args.command == 'dailies':
-        user = hbt.user()
+        user = habitica.user()
         if not user:
-            print('Failed to load user dailies', file=sys.stderr)
-            return
-        timezoneOffset = user['preferences']['timezoneOffset']
-        dailies = hbt.tasks.user(type='dailys')
+            logging.error('Failed to load user dailies')
+            return False
+        timezoneOffset = user.preferences.timezoneOffset
+        dailies = user.dailies()
         if 'done' == args.action:
             tids = get_task_ids(args.task, task_list=dailies)
             for tid in tids:
                 item_id = None
                 if isinstance(tid, tuple):
                     tid, item_id = tid
-                    if not dailies[tid]['checklist'][item_id]['completed']:
-                        hbt.tasks[dailies[tid]['id']]['checklist'][dailies[tid]['checklist'][item_id]['id']].score(
-                                       _method='post')
-                        print("marked daily '{0} : {1}' complete".format(dailies[tid]['text'], dailies[tid]['checklist'][item_id]['text']))
-                        dailies[tid]['checklist'][item_id]['completed'] = True
+                    dailies[tid][item_id].complete()
+                    print("marked daily '{0} : {1}' complete".format(dailies[tid].text, dailies[tid][item_id].text))
                 else:
-                    hbt.tasks[dailies[tid]['id']].score(
-                                   _direction='up', _method='post')
+                    dailies[tid].complete()
                     print('marked daily \'%s\' completed'
-                          % dailies[tid]['text'])
-                    dailies[tid]['completed'] = True
+                          % dailies[tid].text)
         elif 'undo' == args.action:
             tids = get_task_ids(args.task, task_list=dailies)
             for tid in tids:
                 item_id = None
                 if isinstance(tid, tuple):
                     tid, item_id = tid
-                    if dailies[tid]['checklist'][item_id]['completed']:
-                        hbt.tasks[dailies[tid]['id']]['checklist'][dailies[tid]['checklist'][item_id]['id']].score(
-                                       _method='post')
-                        print("marked daily '{0} : {1}' incomplete".format(dailies[tid]['text'], dailies[tid]['checklist'][item_id]['text']))
-                        dailies[tid]['checklist'][item_id]['completed'] = False
+                    dailies[tid][item_id].undo()
+                    print("marked daily '{0} : {1}' incomplete".format(dailies[tid].text, dailies[tid][item_id].text))
                 else:
-                    hbt.tasks[dailies[tid]['id']].score(
-                                   _direction='down', _method='post')
+                    dailies[tid].undo()
                     print('marked daily \'%s\' incomplete'
-                          % dailies[tid]['text'])
-                    dailies[tid]['completed'] = False
+                          % dailies[tid].text)
         print_task_list(dailies, hide_completed=not args.list_all, timezoneOffset=timezoneOffset, with_notes=args.full)
 
     # GET tasks:todo
