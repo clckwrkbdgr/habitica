@@ -426,27 +426,22 @@ def cli():
 
     # GET tasks:todo
     elif args.command == 'todos':
-        todos = [e for e in hbt.tasks.user(type='todos')
-                 if not e['completed']]
+        todos = [e for e in habitica.user.todos() if not e.is_completed]
         if 'done' == args.action:
             tids = get_task_ids(args.task, task_list=todos)
             for tid in tids:
                 if isinstance(tid, tuple):
                     tid, item_id = tid
-                    if not todos[tid]['checklist'][item_id]['completed']:
-                        hbt.tasks[todos[tid]['id']]['checklist'][todos[tid]['checklist'][item_id]['id']].score(
-                                       _method='post')
-                        print("marked todo '{0} : {1}' complete".format(todos[tid]['text'], todos[tid]['checklist'][item_id]['text']))
-                        todos[tid]['checklist'][item_id]['completed'] = True
+                    todos[tid][item_id].complete()
+                    print("marked todo '{0} : {1}' complete".format(todos[tid].text, todos[tid][item_id].text))
                 else:
-                    hbt.tasks[todos[tid]['id']].score(
-                                   _direction='up', _method='post')
+                    todos[tid].complete()
                     print('marked todo \'%s\' complete'
-                          % todos[tid]['text'])
+                          % todos[tid].text)
             todos = updated_task_list(todos, tids)
-        elif 'add' == args.action:
+        elif 'add' == args.action: # FIXME not tested and probably not working, should replace with proper creation action.
             ttext = ' '.join(args.task)
-            hbt.tasks(type='todos',
+            habitica.hbt.tasks(type='todos',
                            text=ttext,
                            priority=PRIORITY[args.difficulty],
                            _method='post')

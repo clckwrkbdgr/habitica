@@ -284,6 +284,9 @@ class Daily:
 	def text(self):
 		return self._data['text']
 	@property
+	def is_completed(self):
+		return self._data['completed']
+	@property
 	def checklist(self):
 		""" Returns dist with daily's subitems: {<item_id>:<SubItem>}.
 		You can also get subitem directly from dailys:
@@ -315,6 +318,55 @@ class Daily:
 		self._data['completed'] = True
 	def undo(self):
 		""" Marks daily as not completed. """
+		self.hbt.tasks[self._data['id']].score(
+				_direction='down', _method='post')
+		self._data['completed'] = False
+
+class Todo:
+	def __init__(self, _data=None, _hbt=None):
+		self.hbt = _hbt
+		self._data = _data
+	@property
+	def id(self):
+		return self._data['id']
+	@property
+	def text(self):
+		return self._data['text']
+	@property
+	def is_completed(self):
+		return self._data['completed']
+	@property
+	def checklist(self):
+		""" Returns dist with todo's subitems: {<item_id>:<SubItem>}.
+		You can also get subitem directly from todos:
+		>>> todo.checklist[item_id]
+		>>> todo[item_id]
+		"""
+		return {item_id:SubItem(
+			_hbt=self.hbt,
+			_data=self._data['checklist'][item_id],
+			_parent_data=self._data,
+			)
+			for item_id
+			in self._data['checklist']
+			}
+	def __getitem__(self, key):
+		""" Returns SubItem object for given item ID. """
+		try:
+			return object.__getitem__(self, key)
+		except AttributeError:
+			return SubItem(
+					_hbt=self.hbt,
+					_data=self._data['checklist'][key],
+					_parent_data=self._data,
+					)
+	def complete(self):
+		""" Marks todo as completed. """
+		self.hbt.tasks[self._data['id']].score(
+				_direction='up', _method='post')
+		self._data['completed'] = True
+	def undo(self):
+		""" Marks todo as not completed. """
 		self.hbt.tasks[self._data['id']].score(
 				_direction='down', _method='post')
 		self._data['completed'] = False
@@ -353,6 +405,8 @@ class User:
 	def habits(self):
 		return self._proxy.habits()
 	def dailies(self):
+		return self._proxy.dailies()
+	def todos(self):
 		return self._proxy.dailies()
 	def rewards(self):
 		return self._proxy.rewards()
@@ -408,6 +462,8 @@ class _UserProxy:
 		return [Habit(_data=entry, _hbt=self.hbt) for entry in self.hbt.tasks.user(type='habits')]
 	def dailies(self):
 		return [Daily(_data=entry, _hbt=self.hbt) for entry in self.hbt.tasks.user(type='dailys')]
+	def todos(self):
+		return [Todo(_data=entry, _hbt=self.hbt) for entry in self.hbt.tasks.user(type='todos')]
 	def rewards(self):
 		return [Reward(_data=entry, _hbt=self.hbt) for entry in self.hbt.tasks.user(type='rewards')]
 
