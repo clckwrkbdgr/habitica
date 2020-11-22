@@ -1,6 +1,7 @@
 import os
 import json
 import time
+from bisect import bisect
 from pathlib import Path
 from functools import lru_cache
 from . import api, config
@@ -212,7 +213,13 @@ class CannotScoreDown(Exception):
 	def __str__(self):
 		return "Habit '{0}' cannot be decremented".format(self.habit.text)
 
-class Habit:
+class Task:
+	""" Parent class for any task (habit, daily, todo). """
+	DARK_RED, RED, ORANGE = -20, -10, -1
+	YELLOW = 0
+	GREEN, LIGHT_BLUE, BRIGHT_BLUE = 1, 5, 10
+
+class Habit(Task):
 	def __init__(self, _data=None, _hbt=None):
 		self.hbt = _hbt
 		self._data = _data
@@ -225,6 +232,12 @@ class Habit:
 	@property
 	def value(self):
 		return self._data['value']
+	@property
+	def color(self):
+		""" Returns virtual Task Color (see Task). """
+		scores = [self.DARK_RED, self.RED, self.ORANGE, self.YELLOW, self.GREEN, self.LIGHT_BLUE, self.BRIGHT_BLUE]
+		breakpoints = [-20, -10, -1, 1, 5, 10]
+		return scores[bisect(breakpoints, self.value)]
 	@property
 	def can_score_up(self):
 		return self._data['up']

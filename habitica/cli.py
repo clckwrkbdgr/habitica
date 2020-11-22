@@ -11,7 +11,6 @@ TODO:philadams add logging to .api
 TODO:philadams get logger named, like requests!
 """
 
-from bisect import bisect
 import logging
 import os.path
 import datetime
@@ -141,11 +140,15 @@ def print_task_list(tasks, hide_completed=False, timezoneOffset=0, with_notes=Fa
                 completed = 'x' if item['completed'] else ' '
                 print('    [%s] %s.%s %s' % (completed, i + 1, j + 1, item['text']))
 
-def qualitative_task_score_from_value(value):
-    # task value/score info: http://habitica.wikia.com/wiki/Task_Value
-    scores = ['<<<   ', ' <<   ', '  <   ', '      ', '   >  ', '   >> ', '   >>>']
-    breakpoints = [-20, -10, -1, 1, 5, 10]
-    return scores[bisect(breakpoints, value)]
+TASK_SCORES = {
+        core.Task.DARK_RED    : '<<<   ',
+        core.Task.RED         : ' <<   ',
+        core.Task.ORANGE      : '  <   ',
+        core.Task.YELLOW      : '      ',
+        core.Task.GREEN       : '   >  ',
+        core.Task.LIGHT_BLUE  : '   >> ',
+        core.Task.BRIGHT_BLUE : '   >>>',
+        }
 
 def cli():
     parser = argparse.ArgumentParser(description='Habitica command-line interface.')
@@ -374,7 +377,7 @@ def cli():
                     continue
         with_notes = args.full
         for i, task in enumerate(habits):
-            score = qualitative_task_score_from_value(task.value)
+            score = TASK_SCORES[task.color]
             updown = {0:' ', 1:'-', 2:'+', 3:'±'}[int(task.can_score_up)*2 + int(task.can_score_down)] # [up][down] as binary number
             print('[{3}|{0}] {1} {2}'.format(score, i + 1, task.text, updown))
             if with_notes:
