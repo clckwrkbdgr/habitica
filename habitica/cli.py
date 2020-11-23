@@ -104,14 +104,6 @@ def get_task_ids(tids, task_list=None):
             print("cannot parse task id arg: '{0}'".format(raw_arg))
     return sorted(task_ids, key=task_id_key)
 
-
-def updated_task_list(tasks, tids):
-    for tid in sorted(tids, key=task_id_key, reverse=True):
-        if isinstance(tid, tuple):
-            continue
-        del(tasks[tid])
-    return tasks
-
 def print_task_list(tasks, hide_completed=False, timezoneOffset=0, with_notes=False):
     for i, task in enumerate(tasks):
         if isinstance(task, core.Daily) and not task.is_due(datetime.datetime.now(), timezoneOffset=timezoneOffset):
@@ -420,7 +412,6 @@ def cli():
                     todos[tid].complete()
                     print('marked todo \'%s\' complete'
                           % todos[tid].text)
-            todos = updated_task_list(todos, tids)
         elif 'add' == args.action: # FIXME not tested and probably not working, should replace with proper creation action.
             ttext = ' '.join(args.task)
             habitica.hbt.tasks(type='todos',
@@ -430,7 +421,7 @@ def cli():
             todos.insert(0, {'completed': False, 'text': ttext})
             print('added new todo \'%s\'' % ttext)
         with_notes = args.full
-        print_task_list(todos, with_notes=args.full)
+        print_task_list(todos, with_notes=args.full, hide_completed=True)
 
 
 if __name__ == '__main__':
