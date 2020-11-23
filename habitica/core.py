@@ -5,6 +5,10 @@ from bisect import bisect
 from pathlib import Path
 from functools import lru_cache
 from . import api, config
+from . import timeutils
+
+# Weekday abbreviations used in task frequencies.
+HABITICA_WEEK = ["m", "t", "w", "th", "f", "s", "su"]
 
 class Content:
 	""" Cache for all Habitica content. """
@@ -257,7 +261,20 @@ class Habit(Task):
 		result = self.hbt.tasks[self._data['id']].score(_direction='down', _method='post')
 		self._data['value'] += result['delta']
 
-class SubItem:
+class Checkable:
+	""" Base class for task or sub-item that can be checked (completed) or unchecked.
+	"""
+	@property
+	def is_completed(self):
+		return self._data['completed']
+	def complete(self):
+		""" Marks entry as completed. """
+		raise NotImplementedError
+	def undo(self):
+		""" Marks entry as not completed. """
+		raise NotImplementedError
+
+class SubItem(Checkable):
 	def __init__(self, _data=None, _hbt=None, _parent_data=None):
 		self.hbt = _hbt
 		self._data = _data
@@ -268,9 +285,6 @@ class SubItem:
 	@property
 	def text(self):
 		return self._data['text']
-	@property
-	def is_completed(self):
-		return self._data['completed']
 	def complete(self):
 		""" Marks subitem as completed. """
 		if self.is_completed:
@@ -279,14 +293,42 @@ class SubItem:
 					   _method='post')
 		self._data['completed'] = True
 	def undo(self):
-		""" Marks subitem as completed. """
+		""" Marks subitem as not completed. """
 		if not self.is_completed:
 			return
 		self.hbt.tasks[self._parent_data['id']]['checklist'][self._data['id']].score(
 					   _method='post')
 		self._data['completed'] = False
 
-class Daily:
+class Checklist:
+	""" Base class for task that provides list of checkable sub-items. """
+	@property
+	def checklist(self):
+		""" Returns list of task's subitems.
+		You can also get subitem directly from task:
+		>>> task.checklist[item_id]
+		>>> task[item_id]
+		"""
+		return [SubItem(
+			_hbt=self.hbt,
+			_data=item,
+			_parent_data=self._data,
+			)
+			for item
+			in self._data['checklist']
+			]
+	def __getitem__(self, key):
+		""" Returns SubItem object for given item index. """
+		try:
+			return object.__getitem__(self, key)
+		except AttributeError:
+			return SubItem(
+					_hbt=self.hbt,
+					_data=self._data['checklist'][key],
+					_parent_data=self._data,
+					)
+
+class Daily(Task, Checkable, Checklist):
 	def __init__(self, _data=None, _hbt=None):
 		self.hbt = _hbt
 		self._data = _data
@@ -297,33 +339,22 @@ class Daily:
 	def text(self):
 		return self._data['text']
 	@property
-	def is_completed(self):
-		return self._data['completed']
-	@property
-	def checklist(self):
-		""" Returns dist with daily's subitems: {<item_id>:<SubItem>}.
-		You can also get subitem directly from dailys:
-		>>> daily.checklist[item_id]
-		>>> daily[item_id]
+	def notes(self):
+		return self._data['notes']
+	def is_due(self, today, timezoneOffset=None):
+		""" Should return True is task is available for given day
+		considering its repeat pattern and start date.
 		"""
-		return {item_id:SubItem(
-			_hbt=self.hbt,
-			_data=self._data['checklist'][item_id],
-			_parent_data=self._data,
-			)
-			for item_id
-			in self._data['checklist']
-			}
-	def __getitem__(self, key):
-		""" Returns SubItem object for given item ID. """
-		try:
-			return object.__getitem__(self, key)
-		except AttributeError:
-			return SubItem(
-					_hbt=self.hbt,
-					_data=self._data['checklist'][key],
-					_parent_data=self._data,
-					)
+		if self._data['frequency'] == 'daily':
+			if timeutils.days_passed(self._data['startDate'], today, timezoneOffset=timezoneOffset) % self._data['everyX'] != 0:
+				return False
+		elif self._data['frequency'] == 'weekly':
+			if not self._data['repeat'][HABITICA_WEEK[today.weekday()]]:
+				return False
+		else:
+			raise ValueError("Unknown daily frequency: {0}".format(self._data['frequency']))
+		return True
+
 	def complete(self):
 		""" Marks daily as completed. """
 		self.hbt.tasks[self._data['id']].score(
@@ -335,7 +366,7 @@ class Daily:
 				_direction='down', _method='post')
 		self._data['completed'] = False
 
-class Todo:
+class Todo(Task, Checkable, Checklist):
 	def __init__(self, _data=None, _hbt=None):
 		self.hbt = _hbt
 		self._data = _data
@@ -346,33 +377,8 @@ class Todo:
 	def text(self):
 		return self._data['text']
 	@property
-	def is_completed(self):
-		return self._data['completed']
-	@property
-	def checklist(self):
-		""" Returns dist with todo's subitems: {<item_id>:<SubItem>}.
-		You can also get subitem directly from todos:
-		>>> todo.checklist[item_id]
-		>>> todo[item_id]
-		"""
-		return {item_id:SubItem(
-			_hbt=self.hbt,
-			_data=self._data['checklist'][item_id],
-			_parent_data=self._data,
-			)
-			for item_id
-			in self._data['checklist']
-			}
-	def __getitem__(self, key):
-		""" Returns SubItem object for given item ID. """
-		try:
-			return object.__getitem__(self, key)
-		except AttributeError:
-			return SubItem(
-					_hbt=self.hbt,
-					_data=self._data['checklist'][key],
-					_parent_data=self._data,
-					)
+	def notes(self):
+		return self._data['notes']
 	def complete(self):
 		""" Marks todo as completed. """
 		self.hbt.tasks[self._data['id']].score(

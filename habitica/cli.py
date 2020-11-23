@@ -114,31 +114,20 @@ def updated_task_list(tasks, tids):
 
 def print_task_list(tasks, hide_completed=False, timezoneOffset=0, with_notes=False):
     for i, task in enumerate(tasks):
-        if hasattr(task, '_data'): # FIXME temporary
-            task = task._data
-        if 'type' in task and task['type'] == 'daily':
-            if task['frequency'] == 'daily':
-                if timeutils.days_passed(task['startDate'], datetime.datetime.now(), timezoneOffset=timezoneOffset) % task['everyX'] != 0:
-                    continue
-            elif task['frequency'] == 'weekly':
-                habitica_week = ["m", "t", "w", "th", "f", "s", "su"]
-                if not task['repeat'][habitica_week[datetime.datetime.now().weekday()]]:
-                    continue
-            else:
-                print("Unknown daily frequency: {0}".format(task['frequency']))
-        if 'completed' in task:
-            completed = 'x' if task['completed'] else ' '
-            if task['completed'] and hide_completed:
+        if isinstance(task, core.Daily) and not task.is_due(datetime.datetime.now(), timezoneOffset=timezoneOffset):
+            continue
+        if isinstance(task, core.Checkable):
+            if task.is_completed and hide_completed:
                 continue
-            print('[%s] %s %s' % (completed, i + 1, task['text']))
+            print('[%s] %s %s' % ('X' if task.is_completed else '_', i + 1, task.text))
         else:
-            print('%s %s' % (i + 1, task['text']))
-        if with_notes:
-            print('\n'.join('      {0}'.format(line) for line in task['notes'].splitlines()))
-        if 'checklist' in task:
-            for j, item in enumerate(task['checklist']):
-                completed = 'x' if item['completed'] else ' '
-                print('    [%s] %s.%s %s' % (completed, i + 1, j + 1, item['text']))
+            print('%s %s' % (i + 1, task.text))
+        if with_notes and task.notes:
+            print('\n'.join('      {0}'.format(line) for line in task.notes.splitlines()))
+        if isinstance(task, core.Checklist):
+            for j, item in enumerate(task.checklist):
+                completed = 'X' if item.is_completed else '_'
+                print('    [%s] %s.%s %s' % (completed, i + 1, j + 1, item.text))
 
 TASK_SCORES = {
         core.Task.DARK_RED    : '<<<   ',
