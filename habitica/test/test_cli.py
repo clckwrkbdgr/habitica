@@ -60,9 +60,12 @@ class TestTaskFilter(unittest.TestCase):
 						],
 					}),
 				]
-		self.assertEqual(cli.get_task_ids(
+		self.assertEqual([item.text for item in cli.filter_tasks(todos,
 			['1', '1.1', 'complete', 'rest', 'Complete'],
-			task_list=todos,
-			), [
-				(0, 0), 0, (1, 1), (1, 2), 1,
+			)], [
+				'wake up',
+				'Wake up and yawn',
+				'complete all tasks',
+				'rest',
+				'Complete all tasks',
 				])

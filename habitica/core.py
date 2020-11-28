@@ -275,13 +275,16 @@ class Checkable:
 		raise NotImplementedError
 
 class SubItem(Checkable):
-	def __init__(self, _data=None, _hbt=None, _parent_data=None):
+	def __init__(self, _data=None, _hbt=None, _parent=None):
 		self.hbt = _hbt
 		self._data = _data
-		self._parent_data = _parent_data
+		self._parent = _parent
 	@property
 	def id(self):
 		return self._data['id']
+	@property
+	def parent(self):
+		return self._parent
 	@property
 	def text(self):
 		return self._data['text']
@@ -289,14 +292,14 @@ class SubItem(Checkable):
 		""" Marks subitem as completed. """
 		if self.is_completed:
 			return
-		self.hbt.tasks[self._parent_data['id']]['checklist'][self._data['id']].score(
+		self.hbt.tasks[self._parent._data['id']]['checklist'][self._data['id']].score(
 					   _method='post')
 		self._data['completed'] = True
 	def undo(self):
 		""" Marks subitem as not completed. """
 		if not self.is_completed:
 			return
-		self.hbt.tasks[self._parent_data['id']]['checklist'][self._data['id']].score(
+		self.hbt.tasks[self._parent._data['id']]['checklist'][self._data['id']].score(
 					   _method='post')
 		self._data['completed'] = False
 
@@ -312,7 +315,7 @@ class Checklist:
 		return [SubItem(
 			_hbt=self.hbt,
 			_data=item,
-			_parent_data=self._data,
+			_parent=self,
 			)
 			for item
 			in self._data['checklist']
@@ -325,7 +328,7 @@ class Checklist:
 			return SubItem(
 					_hbt=self.hbt,
 					_data=self._data['checklist'][key],
-					_parent_data=self._data,
+					_parent=self,
 					)
 
 class Daily(Task, Checkable, Checklist):

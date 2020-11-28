@@ -102,6 +102,19 @@ def get_task_ids(tids, task_list=None):
             raise ValueError("cannot parse task id arg: '{0}'".format(raw_arg))
     return sorted(task_ids, key=task_id_key)
 
+def filter_tasks(tasks, patterns):
+    """
+    Yields tasks or checklist items.
+    """
+    tasks = list(tasks)
+    tids = get_task_ids(patterns, tasks)
+    for index in tids:
+        if isinstance(index, tuple):
+            index, subitem_index = index
+            yield tasks[index][subitem_index]
+        else:
+            yield tasks[index]
+
 def print_task_list(tasks, hide_completed=False, timezoneOffset=0, with_notes=False):
     for i, task in enumerate(tasks):
         if isinstance(task, core.Daily) and not task.is_due(datetime.datetime.now(), timezoneOffset=timezoneOffset):
@@ -295,10 +308,9 @@ def cli():
         if args.item is None:
             print_task_list(rewards)
         else:
-            tids = get_task_ids([args.item], task_list=rewards)
-            for tid in tids:
-                user.buy(rewards[tid])
-                print('bought reward \'%s\'' % rewards[tid].text)
+            for reward in filter_tasks(rewards, [args.item]):
+                user.buy(reward)
+                print('bought reward \'%s\'' % reward.text)
 
     # list/POST spells
     elif args.command == 'spells':
@@ -320,8 +332,7 @@ def cli():
                         tasks = user.todos()
                     else:
                         raise ValueError('Unknown spell target type: {0}'.format(args.target_type))
-                    tids = get_task_ids(args.targets, task_list=tasks)
-                    for target in [tasks[tid] for tid in tids]:
+                    for target in filter_tasks(tasks, args.targets):
                         if user.cast(spell, target):
                             print('Casted spell "{0}"'.format(spell.name))
                         else:
@@ -337,20 +348,18 @@ def cli():
     elif args.command == 'habits':
         habits = habitica.user.habits()
         if 'up' == args.action:
-            tids = get_task_ids(args.task, task_list=habits)
-            for tid in tids:
+            for habit in filter_tasks(habits, args.task):
                 try:
-                    habits[tid].up()
-                    print('incremented task \'%s\'' % habits[tid].text)
+                    habit.up()
+                    print('incremented task \'%s\'' % habit.text)
                 except CannotScoreUp as e:
                     print(e)
                     continue
         elif 'down' == args.action:
-            tids = get_task_ids(args.task, task_list=habits)
-            for tid in tids:
+            for habit in filter_tasks(habits, args.task):
                 try:
-                    habits[tid].down()
-                    print('decremented task \'%s\'' % habits[tid].text)
+                    habit.down()
+                    print('decremented task \'%s\'' % habit.text)
                 except CannotScoreDown as e:
                     print(e)
                     continue
@@ -371,45 +380,31 @@ def cli():
         timezoneOffset = user.preferences.timezoneOffset
         dailies = user.dailies()
         if 'done' == args.action:
-            tids = get_task_ids(args.task, task_list=dailies)
-            for tid in tids:
-                item_id = None
-                if isinstance(tid, tuple):
-                    tid, item_id = tid
-                    dailies[tid][item_id].complete()
-                    print("marked daily '{0} : {1}' complete".format(dailies[tid].text, dailies[tid][item_id].text))
-                else:
-                    dailies[tid].complete()
-                    print('marked daily \'%s\' completed'
-                          % dailies[tid].text)
+            for task in filter_tasks(dailies, args.task):
+                title = task.text
+                if hasattr(task, 'parent'):
+                    title = task.parent.text + ' : ' + title
+                task.complete()
+                print('marked daily \'%s\' completed' % title)
         elif 'undo' == args.action:
-            tids = get_task_ids(args.task, task_list=dailies)
-            for tid in tids:
-                item_id = None
-                if isinstance(tid, tuple):
-                    tid, item_id = tid
-                    dailies[tid][item_id].undo()
-                    print("marked daily '{0} : {1}' incomplete".format(dailies[tid].text, dailies[tid][item_id].text))
-                else:
-                    dailies[tid].undo()
-                    print('marked daily \'%s\' incomplete'
-                          % dailies[tid].text)
+            for task in filter_tasks(dailies, args.task):
+                title = task.text
+                if hasattr(task, 'parent'):
+                    title = task.parent.text + ' : ' + title
+                task.undo()
+                print('marked daily \'%s\' incomplete' % title)
         print_task_list(dailies, hide_completed=not args.list_all, timezoneOffset=timezoneOffset, with_notes=args.full)
 
     # GET tasks:todo
     elif args.command == 'todos':
         todos = [e for e in habitica.user.todos() if not e.is_completed]
         if 'done' == args.action:
-            tids = get_task_ids(args.task, task_list=todos)
-            for tid in tids:
-                if isinstance(tid, tuple):
-                    tid, item_id = tid
-                    todos[tid][item_id].complete()
-                    print("marked todo '{0} : {1}' complete".format(todos[tid].text, todos[tid][item_id].text))
-                else:
-                    todos[tid].complete()
-                    print('marked todo \'%s\' complete'
-                          % todos[tid].text)
+            for task in filter_tasks(todos, args.task):
+                title = task.text
+                if hasattr(task, 'parent'):
+                    title = task.parent.text + ' : ' + title
+                task.complete()
+                print('marked todo \'%s\' completed' % title)
         elif 'add' == args.action: # FIXME not tested and probably not working, should replace with proper creation action.
             ttext = ' '.join(args.task)
             habitica.hbt.tasks(type='todos',
