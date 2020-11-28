@@ -66,17 +66,16 @@ def find_task_in_list(raw_arg, task_list):
                 if raw_arg in subitem['text']:
                     matching_tasks.append( (index, subindex) )
     if not matching_tasks:
-        print("couldn't find task that includes '{0}'".format(raw_arg))
-        return None
+        raise RuntimeError("couldn't find task that includes '{0}'".format(raw_arg))
     if len(matching_tasks) > 1:
-        print("task arg '{0}' is ambiguous:".format(raw_arg))
+        message = "task arg '{0}' is ambiguous:\n".format(raw_arg)
         for tid in matching_tasks:
             if isinstance(tid, tuple):
                 tid, item_id = tid
-                print("  '{0} : {1}'".format(task_list[tid]['text'], task_list[tid]['checklist'][item_id]['text']))
+                message += "  '{0} : {1}'\n".format(task_list[tid].text, task_list[tid].checklist[item_id].text)
             else:
-                print("  '{0}'".format(task_list[tid]['text']))
-        return None
+                message += "  '{0}'\n".format(task_list[tid].text)
+        raise RuntimeError(message)
     return matching_tasks[0]
 
 def get_task_ids(tids, task_list=None):
@@ -98,10 +97,9 @@ def get_task_ids(tids, task_list=None):
             task_ids.extend(parse_task_number_arg(raw_arg))
         elif task_list is not None:
             task_id = find_task_in_list(raw_arg, task_list)
-            if task_id is not None:
-                task_ids.append(task_id)
+            task_ids.append(task_id)
         else:
-            print("cannot parse task id arg: '{0}'".format(raw_arg))
+            raise ValueError("cannot parse task id arg: '{0}'".format(raw_arg))
     return sorted(task_ids, key=task_id_key)
 
 def print_task_list(tasks, hide_completed=False, timezoneOffset=0, with_notes=False):
