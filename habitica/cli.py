@@ -54,29 +54,16 @@ def parse_task_number_arg(raw_arg):
             task_ids.append(int(bit) - 1)
     return task_ids
 
-def find_task_in_list(raw_arg, task_list):
-    matching_tasks = []
-    for index, task in enumerate(task_list):
-        if hasattr(task, '_data'): # FIXME temporary
-            task = task._data
-        if raw_arg in task['text']:
-            matching_tasks.append(index)
-        if 'checklist' in task:
-            for subindex, subitem in enumerate(task['checklist']):
-                if raw_arg in subitem['text']:
-                    matching_tasks.append( (index, subindex) )
-    if not matching_tasks:
-        raise RuntimeError("couldn't find task that includes '{0}'".format(raw_arg))
-    if len(matching_tasks) > 1:
-        message = "task arg '{0}' is ambiguous:\n".format(raw_arg)
-        for tid in matching_tasks:
-            if isinstance(tid, tuple):
-                tid, item_id = tid
-                message += "  '{0} : {1}'\n".format(task_list[tid].text, task_list[tid].checklist[item_id].text)
-            else:
-                message += "  '{0}'\n".format(task_list[tid].text)
-        raise RuntimeError(message)
-    return matching_tasks[0]
+def enumerate_with_subitems(tasks):
+    """ Yields pairs: <index>, <task>
+    If task has checklist, yields subitems before the parent task.
+    For subitems indexes are tuples: (<parent task index>, <checklist item index>).
+    """
+    for index, task in enumerate(tasks):
+        if isinstance(task, core.Checklist):
+            for subindex, subitem in enumerate(task.checklist):
+                yield (index, subindex), subitem
+        yield index, task
 
 def filter_tasks(tasks, patterns):
     """ Filters task list by user-input patterns (like command line args).
@@ -89,25 +76,33 @@ def filter_tasks(tasks, patterns):
       If two or more tasks match same pattern, RuntimeError is raised.
       If pattern is not found at all, RuntimeError is raised.
     Yields tasks or checklist items.
+    Checklist items are yielded before their parent task: 1.1, 1.2, 1
     """
-    tasks = list(tasks)
-
-    tids = []
+    indexes, text_patterns = [], set()
     TASK_NUMBERS = re.compile(r'^(\d+(-\d+)?,?)+')
     for raw_arg in patterns:
         if TASK_NUMBERS.match(raw_arg):
-            tids.extend(parse_task_number_arg(raw_arg))
+            indexes.extend(parse_task_number_arg(raw_arg))
         else:
-            task_id = find_task_in_list(raw_arg, tasks)
-            tids.append(task_id)
-    tids = sorted(tids, key=task_id_key)
+            text_patterns.add(raw_arg)
 
-    for index in tids:
-        if isinstance(index, tuple):
-            index, subitem_index = index
-            yield tasks[index][subitem_index]
-        else:
-            yield tasks[index]
+    processed_patterns = set()
+    for index, task in enumerate_with_subitems(tasks):
+        if index in indexes:
+            yield task
+            continue
+        matched = {pattern for pattern in text_patterns if pattern in task.text}
+        if not matched:
+            continue
+        if len(matched) > 1:
+            raise RuntimeError("Several patterns match single task '{0}':\n" + '\n'.join(matched))
+        if matched & processed_patterns:
+            raise RuntimeError("Pattern {0} matches multiple tasks!".format(', '.join(map(repr, matched & processed_patterns))))
+        processed_patterns |= matched
+        yield task
+    unprocessed = text_patterns - processed_patterns
+    if unprocessed:
+        raise RuntimeError("couldn't find task that includes {0}".format(', '.join(map(repr, unprocessed))))
 
 def print_task_list(tasks, hide_completed=False, timezoneOffset=0, with_notes=False):
     for i, task in enumerate(tasks):

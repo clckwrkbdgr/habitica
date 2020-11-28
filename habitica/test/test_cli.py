@@ -17,31 +17,6 @@ class TestTaskFilter(unittest.TestCase):
 		actual = sorted(tids, key=cli.task_id_key)
 		expected = self._parse_args(['1.1', '1.2', '1', '2.1', '2.2', '3'])
 		self.assertEqual(actual, expected)
-	def should_find_task_in_list_by_pattern(self):
-		tasks = [
-				core.Habit(_data={'text':'Behave well'}),
-				core.Daily(_data={
-					'text':'Wake up and yawn',
-					'checklist' : [
-						{'text':'wake up'},
-						{'text':'yawn'},
-						],
-					}),
-				core.Todo(_data={
-					'text':'Complete all tasks',
-					'checklist' : [
-						{'text':'cross this item'},
-						{'text':'complete all tasks'},
-						{'text':'rest'},
-						],
-					}),
-				]
-		self.assertEqual(cli.find_task_in_list('Behave', tasks), 0)
-		self.assertEqual(cli.find_task_in_list('wake up', tasks), (1,0))
-		with self.assertRaises(RuntimeError) as e:
-			cli.find_task_in_list('Unknown', tasks)
-		with self.assertRaises(RuntimeError) as e:
-			cli.find_task_in_list('all tasks', tasks)
 	def should_filter_tasks_by_patterns(self):
 		todos = [
 				core.Todo(_data={
@@ -69,3 +44,9 @@ class TestTaskFilter(unittest.TestCase):
 				'rest',
 				'Complete all tasks',
 				])
+		with self.assertRaises(RuntimeError) as e:
+			list(cli.filter_tasks(todos, ['this', 'item']))
+		with self.assertRaises(RuntimeError) as e:
+			list(cli.filter_tasks(todos, ['Unknown']))
+		with self.assertRaises(RuntimeError) as e:
+			list(cli.filter_tasks(todos, ['all tasks']))
