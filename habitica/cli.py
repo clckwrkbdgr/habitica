@@ -78,36 +78,30 @@ def find_task_in_list(raw_arg, task_list):
         raise RuntimeError(message)
     return matching_tasks[0]
 
-def get_task_ids(tids, task_list=None):
-    """
-    handle task-id formats such as:
-        habitica todos done 3
-        habitica todos done 1,2,3
-        habitica todos done 2 3
-        habitica todos done 1-3,4 8
-    tids is a seq like (last example above) ('1-3,4' '8')
-    subitems could be specified using format '1.1 1.2'
-    titles could be used (full or partial, but ambiguity will trigger an exception)
-    """
-    logging.debug('raw task ids: %s' % tids)
-    task_ids = []
-    TASK_NUMBERS = re.compile(r'^(\d+(-\d+)?,?)+')
-    for raw_arg in tids:
-        if TASK_NUMBERS.match(raw_arg):
-            task_ids.extend(parse_task_number_arg(raw_arg))
-        elif task_list is not None:
-            task_id = find_task_in_list(raw_arg, task_list)
-            task_ids.append(task_id)
-        else:
-            raise ValueError("cannot parse task id arg: '{0}'".format(raw_arg))
-    return sorted(task_ids, key=task_id_key)
-
 def filter_tasks(tasks, patterns):
-    """
+    """ Filters task list by user-input patterns (like command line args).
+    Patterns can be of two kinds:
+    - Indexes in the task list.
+      Indexes can be separated by commas or grouped in ranges: 1,2-5
+      Sub-items (tasks' checklist items) are addressed via dot: 1.1 1.2 etc.
+      Indexing starts with 1.
+    - Full or partial task caption.
+      If two or more tasks match same pattern, RuntimeError is raised.
+      If pattern is not found at all, RuntimeError is raised.
     Yields tasks or checklist items.
     """
     tasks = list(tasks)
-    tids = get_task_ids(patterns, tasks)
+
+    tids = []
+    TASK_NUMBERS = re.compile(r'^(\d+(-\d+)?,?)+')
+    for raw_arg in patterns:
+        if TASK_NUMBERS.match(raw_arg):
+            tids.extend(parse_task_number_arg(raw_arg))
+        else:
+            task_id = find_task_in_list(raw_arg, tasks)
+            tids.append(task_id)
+    tids = sorted(tids, key=task_id_key)
+
     for index in tids:
         if isinstance(index, tuple):
             index, subitem_index = index
