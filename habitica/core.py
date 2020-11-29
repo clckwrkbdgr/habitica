@@ -159,17 +159,19 @@ class Item:
 class HealthPotion:
 	""" Health potion (+15 hp). """
 	VALUE = 15.0
-	def __init__(self, overflow_check=True, _hbt=None):
+	def __init__(self, overflow_check=True, _api=None):
 		""" If overflow_check is True and there is less than 15 hp damage,
 		so buying potion will result in hp bar overflow and wasting of potion,
 		raises HealthOverflowError.
 		"""
-		self.hbt = _hbt
+		self.api = _api
 		self.overflow_check = overflow_check
 	def _buy(self, user):
+		if self.api is None:
+			self.api = user.api
 		if self.overflow_check and user.stats.hp + self.VALUE > user.stats.maxHealth:
 			raise HealthOverflowError(user.stats.hp, user.stats.maxHealth)
-		self._data = self.hbt.user['buy-health-potion'](_method='post')
+		self._data = self.api.post('user', 'buy-health-potion').data
 
 class Pet:
 	def __init__(self, _data=None):
@@ -184,8 +186,8 @@ class Mount:
 		return self._data
 
 class Inventory:
-	def __init__(self, _data=None, _hbt=None):
-		self.hbt = _hbt
+	def __init__(self, _data=None, _api=None):
+		self.api = _api
 		self._data = _data
 	@property
 	def food(self):
@@ -198,14 +200,19 @@ class Inventory:
 		return Mount(_data=self._data['currentMount'])
 
 class Reward:
-	def __init__(self, _data=None, _hbt=None):
-		self.hbt = _hbt
+	def __init__(self, _data=None, _api=None):
+		self.api = _api
 		self._data = _data
+	@property
+	def id(self):
+		return self._data['id']
 	@property
 	def text(self):
 		return self._data['text']
 	def _buy(self, user):
-		self.hbt.tasks[self._data['id']].score(_direction='up', _method='post')
+		if self.api is None:
+			self.api = user.api
+		self.api.post('tasks', self.id, 'score', 'up')
 
 class CannotScoreUp(Exception):
 	def __init__(self, habit):
@@ -226,9 +233,12 @@ class Task:
 	GREEN, LIGHT_BLUE, BRIGHT_BLUE = 1, 5, 10
 
 class Habit(Task):
-	def __init__(self, _data=None, _hbt=None):
-		self.hbt = _hbt
+	def __init__(self, _data=None, _api=None):
+		self.api = _api
 		self._data = _data
+	@property
+	def id(self):
+		return self._data['id']
 	@property
 	def text(self):
 		return self._data['text']
@@ -254,13 +264,13 @@ class Habit(Task):
 		if not self._data['up']:
 			raise CannotScoreUp(self)
 		tval = self._data['value']
-		result = self.hbt.tasks[self._data['id']].score(_direction='up', _method='post')
+		result = self.api.post('tasks', self.id, 'score', 'up').data
 		self._data['value'] += result['delta']
 	def down(self):
 		if not self._data['down']:
 			raise CannotScoreDown(self)
 		tval = self._data['value']
-		result = self.hbt.tasks[self._data['id']].score(_direction='down', _method='post')
+		result = self.api.post('tasks', self.id, 'score', 'down').data
 		self._data['value'] += result['delta']
 
 class Checkable:
@@ -277,8 +287,8 @@ class Checkable:
 		raise NotImplementedError
 
 class SubItem(Checkable):
-	def __init__(self, _data=None, _hbt=None, _parent=None):
-		self.hbt = _hbt
+	def __init__(self, _data=None, _api=None, _parent=None):
+		self.api = _api
 		self._data = _data
 		self._parent = _parent
 	@property
@@ -294,15 +304,13 @@ class SubItem(Checkable):
 		""" Marks subitem as completed. """
 		if self.is_completed:
 			return
-		self.hbt.tasks[self._parent._data['id']]['checklist'][self._data['id']].score(
-					   _method='post')
+		self.api.post('tasks', self._parent.id, 'checklist', self.id, 'score')
 		self._data['completed'] = True
 	def undo(self):
 		""" Marks subitem as not completed. """
 		if not self.is_completed:
 			return
-		self.hbt.tasks[self._parent._data['id']]['checklist'][self._data['id']].score(
-					   _method='post')
+		self.api.post('tasks', self._parent.id, 'checklist', self.id, 'score')
 		self._data['completed'] = False
 
 class Checklist:
@@ -315,7 +323,7 @@ class Checklist:
 		>>> task[item_id]
 		"""
 		return [SubItem(
-			_hbt=self.hbt,
+			_api=self.api,
 			_data=item,
 			_parent=self,
 			)
@@ -328,14 +336,14 @@ class Checklist:
 			return object.__getitem__(self, key)
 		except AttributeError:
 			return SubItem(
-					_hbt=self.hbt,
+					_api=self.api,
 					_data=self._data['checklist'][key],
 					_parent=self,
 					)
 
 class Daily(Task, Checkable, Checklist):
-	def __init__(self, _data=None, _hbt=None):
-		self.hbt = _hbt
+	def __init__(self, _data=None, _api=None):
+		self.api = _api
 		self._data = _data
 	@property
 	def id(self):
@@ -362,18 +370,16 @@ class Daily(Task, Checkable, Checklist):
 
 	def complete(self):
 		""" Marks daily as completed. """
-		self.hbt.tasks[self._data['id']].score(
-				_direction='up', _method='post')
+		self.api.post('tasks', self.id, 'score', 'up')
 		self._data['completed'] = True
 	def undo(self):
 		""" Marks daily as not completed. """
-		self.hbt.tasks[self._data['id']].score(
-				_direction='down', _method='post')
+		self.api.post('tasks', self.id, 'score', 'down')
 		self._data['completed'] = False
 
 class Todo(Task, Checkable, Checklist):
-	def __init__(self, _data=None, _hbt=None):
-		self.hbt = _hbt
+	def __init__(self, _data=None, _api=None):
+		self.api = _api
 		self._data = _data
 	@property
 	def id(self):
@@ -386,13 +392,11 @@ class Todo(Task, Checkable, Checklist):
 		return self._data['notes']
 	def complete(self):
 		""" Marks todo as completed. """
-		self.hbt.tasks[self._data['id']].score(
-				_direction='up', _method='post')
+		self.api.post('tasks', self.id, 'score', 'up')
 		self._data['completed'] = True
 	def undo(self):
 		""" Marks todo as not completed. """
-		self.hbt.tasks[self._data['id']].score(
-				_direction='down', _method='post')
+		self.api.post('tasks', self.id, 'score', 'down')
 		self._data['completed'] = False
 
 class Spell:
@@ -407,11 +411,10 @@ class Spell:
 		return self._description
 
 class User:
-	def __init__(self, _data=None, _hbt=None, _api=None, _proxy=None):
-		self.hbt = _hbt
+	def __init__(self, _data=None, _api=None, _proxy=None):
 		self.api = _api
 		self._data = _data
-		self._proxy = _proxy or _UserProxy(_hbt=self.hbt, _api=self.api)
+		self._proxy = _proxy or _UserProxy(_api=self.api)
 	@property
 	def stats(self):
 		return UserStats(_data=self._data['stats'])
@@ -474,24 +477,23 @@ class User:
 		params = {}
 		if target:
 			params = {'targetId' : target.id}
-		return self.hbt.user['class']['cast'][spell.name](**params, _method='post')
+		return self.api.post('user', 'class', 'cast', spell.name, **params).data
 
 class _UserProxy:
-	def __init__(self, _hbt=None, _api=None):
-		self.hbt = _hbt
+	def __init__(self, _api=None):
 		self.api = _api
 	def __call__(self):
-		return User(_data=self.hbt.user(), _hbt=self.hbt, _api=self.api)
+		return User(_data=self.api.get('user').data, _api=self.api)
 	def party(self):
 		return Party(_data=self.api.get('groups', 'party').data, _api=self.api)
 	def habits(self):
-		return [Habit(_data=entry, _hbt=self.hbt) for entry in self.hbt.tasks.user(type='habits')]
+		return [Habit(_data=entry, _api=self.api) for entry in self.api.get('tasks', 'user', type='habits').data]
 	def dailies(self):
-		return [Daily(_data=entry, _hbt=self.hbt) for entry in self.hbt.tasks.user(type='dailys')]
+		return [Daily(_data=entry, _api=self.api) for entry in self.api.get('tasks', 'user', type='dailys').data]
 	def todos(self):
-		return [Todo(_data=entry, _hbt=self.hbt) for entry in self.hbt.tasks.user(type='todos')]
+		return [Todo(_data=entry, _api=self.api) for entry in self.api.get('tasks', 'user', type='todos').data]
 	def rewards(self):
-		return [Reward(_data=entry, _hbt=self.hbt) for entry in self.hbt.tasks.user(type='rewards')]
+		return [Reward(_data=entry, _api=self.api) for entry in self.api.get('tasks', 'user', type='rewards').data]
 
 class Habitica:
 	""" Main Habitica entry point. """
@@ -500,7 +502,6 @@ class Habitica:
 
 		self.auth = auth
 		self.cache = config.Cache()
-		self.hbt = api.Habitica(auth=auth, _api=self.api)
 	def home_url(self):
 		""" Returns main Habitica Web URL to open in browser. """
 		return self.api.base_url + '/#/tasks'
@@ -518,11 +519,11 @@ class Habitica:
 			habitica.user.habits()
 			habitica.user.rewards()
 		"""
-		return _UserProxy(_hbt=self.hbt, _api=self.api)
+		return _UserProxy(_api=self.api)
 	def groups(self, *group_types):
 		""" Returns list of groups of given types.
 		Supported types are: PARTY, GUILDS, PRIVATE_GUILDS, PUBLIC_GUILDS, TAVERN
 		"""
-		result = self.hbt.groups(type=','.join(group_types))
+		result = self.api.get('groups', type=','.join(group_types)).data
 		# TODO recognize party and return Party object instead.
 		return [Group(_data=entry, _api=self.api) for entry in result]
