@@ -12,11 +12,11 @@ HABITICA_WEEK = ["m", "t", "w", "th", "f", "s", "su"]
 
 class Content:
 	""" Cache for all Habitica content. """
-	def __init__(self, _hbt=None):
-		self.hbt = _hbt
+	def __init__(self, _api=None):
+		self.api = _api
 		self.cache_file = Path(config.get_cache_dir())/"content.cache.json"
 		if not self.cache_file.exists() or time.time() > self.cache_file.stat().st_mtime + 60*60*24: # TODO how to invalidate Habitica content cache?
-			self._data = self.hbt.content()
+			self._data = self.api.get('content').data
 			self.cache_file.write_text(json.dumps(self._data))
 		else:
 			self._data = json.loads(self.cache_file.read_text())
@@ -52,8 +52,8 @@ class Group:
 	PUBLIC_GUILDS = 'publicGuilds'
 	TAVERN = 'tavern'
 
-	def __init__(self, _data=None, _hbt=None):
-		self.hbt = _hbt
+	def __init__(self, _data=None, _api=None):
+		self.api = _api
 		self._data = _data
 	@property
 	def id(self):
@@ -62,17 +62,17 @@ class Group:
 	def name(self):
 		return self._data['name']
 	def chat(self):
-		return [ChatMessage(entry) for entry in self.hbt.groups[self.id].chat()]
+		return [ChatMessage(entry) for entry in self.api.get('groups', self.id, 'chat').data]
 	def mark_chat_as_read(self):
-		self.hbt.groups[self.id]['chat'].seen(_method='post')
+		self.api.post('groups', self.id, 'chat', 'seen')
 
 class Quest:
-	def __init__(self, _data=None, _hbt=None):
-		self.hbt = _hbt
+	def __init__(self, _data=None, _api=None):
+		self.api = _api
 		self._data = _data
 	@lru_cache()
 	def _content(self):
-		return Content(_hbt=self.hbt)['quests'][self.key] # TODO reuse Content object from Habitica.
+		return Content(_api=self.api)['quests'][self.key] # TODO reuse Content object from Habitica.
 	@property
 	def active(self):
 		return bool(self._data['active'])
@@ -102,11 +102,11 @@ class Quest:
 			return content['boss']['hp']
 
 class Party(Group):
-	def __init__(self, _data=None, _hbt=None):
-		super().__init__(_data=_data, _hbt=_hbt)
+	def __init__(self, _data=None, _api=None):
+		super().__init__(_data=_data, _api=_api)
 	@property
 	def quest(self):
-		return Quest(_data=self._data['quest'], _hbt=self.hbt)
+		return Quest(_data=self._data['quest'], _api=self.api)
 
 class UserPreferences:
 	def __init__(self, _data=None):
@@ -407,10 +407,11 @@ class Spell:
 		return self._description
 
 class User:
-	def __init__(self, _data=None, _hbt=None, _proxy=None):
+	def __init__(self, _data=None, _hbt=None, _api=None, _proxy=None):
 		self.hbt = _hbt
+		self.api = _api
 		self._data = _data
-		self._proxy = _proxy or _UserProxy(_hbt=self.hbt)
+		self._proxy = _proxy or _UserProxy(_hbt=self.hbt, _api=self.api)
 	@property
 	def stats(self):
 		return UserStats(_data=self._data['stats'])
@@ -476,12 +477,13 @@ class User:
 		return self.hbt.user['class']['cast'][spell.name](**params, _method='post')
 
 class _UserProxy:
-	def __init__(self, _hbt=None):
+	def __init__(self, _hbt=None, _api=None):
 		self.hbt = _hbt
+		self.api = _api
 	def __call__(self):
-		return User(_data=self.hbt.user(), _hbt=self.hbt)
+		return User(_data=self.hbt.user(), _hbt=self.hbt, _api=self.api)
 	def party(self):
-		return Party(_data=self.hbt.groups.party(), _hbt=self.hbt)
+		return Party(_data=self.api.get('groups', 'party').data, _api=self.api)
 	def habits(self):
 		return [Habit(_data=entry, _hbt=self.hbt) for entry in self.hbt.tasks.user(type='habits')]
 	def dailies(self):
@@ -498,7 +500,7 @@ class Habitica:
 
 		self.auth = auth
 		self.cache = config.Cache()
-		self.hbt = api.Habitica(auth=auth)
+		self.hbt = api.Habitica(auth=auth, _api=self.api)
 	def home_url(self):
 		""" Returns main Habitica Web URL to open in browser. """
 		return self.api.base_url + '/#/tasks'
@@ -507,7 +509,7 @@ class Habitica:
 		server = self.api.get('status').data
 		return server.status == 'up'
 	def content(self):
-		return Content(_hbt=self.hbt)
+		return Content(_api=self.api)
 
 	@property
 	def user(self):
@@ -516,11 +518,11 @@ class Habitica:
 			habitica.user.habits()
 			habitica.user.rewards()
 		"""
-		return _UserProxy(_hbt=self.hbt)
+		return _UserProxy(_hbt=self.hbt, _api=self.api)
 	def groups(self, *group_types):
 		""" Returns list of groups of given types.
 		Supported types are: PARTY, GUILDS, PRIVATE_GUILDS, PUBLIC_GUILDS, TAVERN
 		"""
 		result = self.hbt.groups(type=','.join(group_types))
 		# TODO recognize party and return Party object instead.
-		return [Group(_data=entry, _hbt=self.hbt) for entry in result]
+		return [Group(_data=entry, _api=self.api) for entry in result]
