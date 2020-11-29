@@ -108,10 +108,46 @@ class ChatMessage:
 	@property
 	def timestamp(self):
 		""" Returns timestamp with msec. """
-		return int(self._data['timestamp'])
+		return int(self._data['timestamp']) # TODO return datetime with user TZ
+	# TODO likes:Object, flags:Object, flagCount:depends on flags?
 	@property
 	def text(self):
 		return self._data['text']
+	def flag(self, comment=None):
+		params = dict()
+		if comment:
+			params['comment'] = comment
+		self._data = self.api.post('groups', self.group.id, 'chat', self.id, 'flag').data
+	def like(self):
+		self._data = self.api.post('groups', self.group.id, 'chat', self.id, 'like').data
+	def clearflags(self):
+		self.api.post('groups', self.group.id, 'chat', self.id, 'clearflags')
+
+class Chat:
+	def __init__(self, _api=None, _group=None):
+		self.api = _api
+		self._group = _group
+		self._entries = None
+	def __call__(self):
+		return self.messages()
+	def messages(self):
+		if self._entries is None:
+			self._entries = [ChatMessage(entry) for entry in self.api.get('groups', self._group.id, 'chat').data]
+		return self._entries
+	def mark_as_read(self):
+		self.api.post('groups', self._group.id, 'chat', 'seen')
+	def delete(self, message):
+		if self._entries:
+			new_entries = self.api.delete('groups', self._group.id, 'chat', message.id, previousMsg=self._entries[-1].id).data
+			self._entries = [ChatMessage(entry) for entry in new_entries]
+		else:
+			self.api.delete('groups', self._group.id, 'chat', message.id)
+	def post(self, message):
+		if self._entries:
+			new_entries = self.api.post('groups', self._group.id, 'chat', _body={'message':message}).data
+			self._entries = [ChatMessage(entry) for entry in new_entries]
+		else:
+			self.api.post('groups', self._group.id, 'chat', _body={'message':message})
 
 class Group:
 	""" Habitica's user group: a guild, a party, the Tavern. """
@@ -140,10 +176,11 @@ class Group:
 		return self._data['privacy']
 	def challenges(self):
 		return [Challenge(_data=entry, _api=self.api) for entry in self.api.get('challenges', 'groups', self.id).data]
+	@property
 	def chat(self):
-		return [ChatMessage(entry) for entry in self.api.get('groups', self.id, 'chat').data]
+		return Chat(_api=self.api, _group=self)
 	def mark_chat_as_read(self):
-		self.api.post('groups', self.id, 'chat', 'seen')
+		self.chat.mark_as_read()
 	def create_challenge(self, name, shortName, summary=None, description=None, prize=0):
 		""" Creates challenge with specified name and tag (shortName).
 		Summary and description are optional.
