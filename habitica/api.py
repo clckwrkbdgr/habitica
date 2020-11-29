@@ -26,6 +26,18 @@ if not re.match(r'^[0-9A-F]{8}-[0-9A-F]{4}-4[0-9A-F]{3}-[89AB][0-9A-F]{3}-[0-9A-
     print('Please ensure that proper User ID is used (see https://habitica.com/user/settings/api)')
     sys.exit(1)
 
+class dotdict(dict):
+    """ Dict that support dotted access:
+      d['value']['nested_value'] == d.value.nested_value
+
+    <https://stackoverflow.com/a/23689767/2128769>
+    """
+    def __getattr__(self, attr):
+        value = dict.get(self, attr)
+        return dotdict(value) if type(value) is dict else value
+    __setattr__ = dict.__setitem__
+    __delattr__ = dict.__delitem__
+
 class API(object):
     """ Basic API facade. """
     TIMEOUT = 10.0 # Call timeout.
@@ -142,9 +154,9 @@ class API(object):
         return self._retry_call(method, uri, query=query, body=body)
     def _retry_call(self, method, uri, query=None, body=None, tries=MAX_RETRY):
         try:
-            logging.debug('{0} {1}'.format(method.upper(), uri))
-            logging.debug('? {0}'.format(query))
-            logging.debug('=> {0}'.format(body))
+            logging.debug('Sending {0} {1}'.format(method.upper(), uri))
+            logging.debug('Query: {0}'.format(query))
+            logging.debug('Body: {0}'.format(body))
             return self._direct_call(method, uri, query=query, body=body)
         except requests.exceptions.ReadTimeout as e:
             if tries <= 0:
@@ -171,11 +183,13 @@ class API(object):
             response = getattr(session, method.lower())(uri, headers=self.headers,
                                             params=query, timeout=API.TIMEOUT)
         self._last_request_time = time.time()
-        logging.debug('{0} {1}'.format(response.status_code, response.reason))
+        logging.debug('Answered: {0} {1}'.format(response.status_code, response.reason))
         if response.status_code != requests.codes.ok:
-            logging.debug(response.content)
+            logging.debug('Responded with error: {0}'.format(response.content))
             response.raise_for_status()
-        return response
+        response = response.json()
+        logging.debug('Response: {0}'.format(json.dumps(response, indent=2, sort_keys=True)))
+        return dotdict(response)
 
 class Habitica(object):
     """
@@ -235,8 +249,8 @@ class Habitica(object):
             if '_params' in kwargs:
                 del kwargs['_params']
             res = self.api.call(method, uri, query=kwargs, body=params)
-            logging.debug(res.url)
-            return res.json()['data']
+            logging.debug('Response URL: {0}'.format(res.url))
+            return res.data
         except requests.exceptions.HTTPError:
             raise
         except:

@@ -72,7 +72,7 @@ class Quest:
 		self._data = _data
 	@lru_cache()
 	def _content(self):
-		return Content()['quests'][self.key] # TODO reuse Content object from Habitica.
+		return Content(_hbt=self.hbt)['quests'][self.key] # TODO reuse Content object from Habitica.
 	@property
 	def active(self):
 		return bool(self._data['active'])
@@ -90,14 +90,16 @@ class Quest:
 				quest_progress = list(qp_tmp.values())[0]['count']
 			except TypeError:
 				quest_progress = list(qp_tmp.values())[0]
+			return quest_progress
 		else:
 			return self._data['progress']['hp']
 	@property
 	def max_progress(self):
-		if self._content().get('collect'):
-			return sum([int(item['count']) for item in content['quests'][quest.key]['collect'].values()])
+		content = self._content()
+		if content.get('collect'):
+			return sum([int(item['count']) for item in content['collect'].values()])
 		else:
-			return self._content()['boss']['hp']
+			return content['boss']['hp']
 
 class Party(Group):
 	def __init__(self, _data=None, _hbt=None):
@@ -502,8 +504,8 @@ class Habitica:
 		return self.api.base_url + '/#/tasks'
 	def server_is_up(self):
 		""" Retruns True if main Habitica service is available. """
-		server = self.hbt.status()
-		return server['status'] == 'up'
+		server = self.api.get('status').data
+		return server.status == 'up'
 	def content(self):
 		return Content(_hbt=self.hbt)
 

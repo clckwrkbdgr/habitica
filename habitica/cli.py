@@ -189,9 +189,6 @@ def cli():
                   ', '.join("'%s': '%s'" % (k, v) for k, v in vars(args).items()))
 
     habitica = Habitica(auth=config.load_auth())
-    auth = habitica.auth # FIXME remove with api.Habitica after proper CLI.
-    cache = habitica.cache # FIXME remove with api.Habitica after proper CLI.
-    hbt = habitica.hbt # FIXME remove with api.Habitica after proper CLI.
 
     # GET server status
     if args.command == 'server':
