@@ -281,7 +281,7 @@ def cli():
     elif args.command == 'health':
         user = habitica.user()
         try:
-            user.buy(core.HealthPotion())
+            user.buy(habitica.content.potion)
             print('Bought Health Potion, HP: {0:.1f}/{1}'.format(user.stats.hp, user.stats.maxHealth))
         except core.HealthOverflowError as e:
             print(e)

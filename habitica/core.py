@@ -20,11 +20,79 @@ class Content:
 			self.cache_file.write_text(json.dumps(self._data))
 		else:
 			self._data = json.loads(self.cache_file.read_text())
+	@property
+	def potion(self):
+		return HealthPotion(_api=self.api, _data=self._data['potion'])
+	@property
+	def armoire(self):
+		return Armoire(_api=self.api, _data=self._data['armoire'])
+	@property
+	def classes(self):
+		return self._data['classes']
+	def get_background(self, name):
+		return Background(_data=self._data['backgroundFlats'][name]]
+	def get_background_set(self, year, month=None):
+		""" Returns background set for given year and month.
+		If month is None, returns all sets for this year.
+		If year is None (explicitly), returns time travel backgrounds.
+		"""
+		if year is None: # TODO time travel - needs some constant name
+			return [Background(_data=entry) for entry in self._data['backgrounds']['timeTravelBackgrounds']]
+		months = [month] if month else ['{0:02}'.format(number) for number in range(1, 13)]
+		patterns = ['backgrounds{month}{year}'.format(year, month) for month in months]
+		result = []
+		for key in self._data['backgrounds']:
+			if key in patterns:
+				result += [Background(_data=entry) for entry in self._data['backgrounds'][key]]
+		return result
 	def __getitem__(self, key):
 		try:
 			return object.__getitem__(self, key)
 		except AttributeError:
 			return self._data[key]
+
+class Armoire:
+	def __init__(self, _data=None, _api=None):
+		self.api = _api
+		self._data = _data
+	@property
+	def text(self):
+		return self._data['text']
+	@property
+	def key(self):
+		return self._data['type']
+	@property
+	def type(self):
+		return self._data['type']
+	@property
+	def cost(self):
+		return self._data['value']
+	@property
+	def currency(self):
+		return 'gold'
+
+class Background:
+	def __init__(self, _data=None, _api=None):
+		self.api = _api
+		self._data = _data
+	@property
+	def text(self):
+		return self._data['text']
+	@property
+	def notes(self):
+		return self._data['notes']
+	@property
+	def key(self):
+		return self._data['key']
+	@property
+	def price(self):
+		return self._data['price']
+	@property
+	def currency(self):
+		return self._data['currency'] if 'currency' in self._data else 'gems'
+	@property
+	def set_name(self):
+		return self._data['set']
 
 class Challenge:
 	# TODO get challenge by id: get:/challenges/:id
@@ -296,13 +364,32 @@ class Item:
 class HealthPotion:
 	""" Health potion (+15 hp). """
 	VALUE = 15.0
-	def __init__(self, overflow_check=True, _api=None):
+	def __init__(self, overflow_check=True, _api=None, _data=None):
 		""" If overflow_check is True and there is less than 15 hp damage,
 		so buying potion will result in hp bar overflow and wasting of potion,
 		raises HealthOverflowError.
 		"""
 		self.api = _api
+		self._data = _data
 		self.overflow_check = overflow_check
+	@property
+	def text(self):
+		return self._data['text']
+	@property
+	def notes(self):
+		return self._data['notes']
+	@property
+	def key(self):
+		return self._data['type']
+	@property
+	def type(self):
+		return self._data['type']
+	@property
+	def cost(self):
+		return self._data['value']
+	@property
+	def currency(self):
+		return 'gold'
 	def _buy(self, user):
 		if self.api is None:
 			self.api = user.api
@@ -643,6 +730,7 @@ class Habitica:
 
 		self.auth = auth
 		self.cache = config.Cache()
+		self._content = None
 	def home_url(self):
 		""" Returns main Habitica Web URL to open in browser. """
 		return self.api.base_url + '/#/tasks'
@@ -650,8 +738,11 @@ class Habitica:
 		""" Retruns True if main Habitica service is available. """
 		server = self.api.get('status').data
 		return server.status == 'up'
+	@property
 	def content(self):
-		return Content(_api=self.api)
+		if self._content is None:
+			self._content = Content(_api=self.api)
+		return self._content
 
 	@property
 	def user(self):
