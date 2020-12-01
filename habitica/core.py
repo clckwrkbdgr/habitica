@@ -1,11 +1,14 @@
 import os
 import json
-import time
+import datetime, time
 from bisect import bisect
 from pathlib import Path
 from functools import lru_cache
+from collections import namedtuple
 from . import api, config
 from . import timeutils
+
+HabiticaEvent = namedtuple('HabiticaEvent', 'start end')
 
 # Weekday abbreviations used in task frequencies.
 HABITICA_WEEK = ["m", "t", "w", "th", "f", "s", "su"]
@@ -29,21 +32,38 @@ class Content:
 	@property
 	def classes(self):
 		return self._data['classes']
+	@property
+	def gearTypes(self):
+		return self._data['gearTypes']
+	def questEggs(self):
+		return [Egg(_api=self.api, _data=entry) for entry in self._data['questEggs'].values()]
+	def eggs(self):
+		return [Egg(_api=self.api, _data=entry) for entry in self._data['eggs'].values()]
+	def dropEggs(self):
+		return [Egg(_api=self.api, _data=entry) for entry in self._data['dropEggs'].values()]
+	def wackyHatchingPotions(self):
+		return [HatchingPotion(_api=self.api, _data=entry) for entry in self._data['wackyHatchingPotions'].values()]
+	def hatchingPotions(self):
+		return [HatchingPotion(_api=self.api, _data=entry) for entry in self._data['hatchingPotions'].values()]
+	def dropHatchingPotions(self):
+		return [HatchingPotion(_api=self.api, _data=entry) for entry in self._data['dropHatchingPotions'].values()]
+	def premiumHatchingPotions(self):
+		return [HatchingPotion(_api=self.api, _data=entry) for entry in self._data['premiumHatchingPotions'].values()]
 	def get_background(self, name):
-		return Background(_data=self._data['backgroundFlats'][name]]
+		return Background(_data=self._data['backgroundFlats'][name], _api=self.api)
 	def get_background_set(self, year, month=None):
 		""" Returns background set for given year and month.
 		If month is None, returns all sets for this year.
 		If year is None (explicitly), returns time travel backgrounds.
 		"""
 		if year is None: # TODO time travel - needs some constant name
-			return [Background(_data=entry) for entry in self._data['backgrounds']['timeTravelBackgrounds']]
+			return [Background(_api=self.api, _data=entry) for entry in self._data['backgrounds']['timeTravelBackgrounds']]
 		months = [month] if month else ['{0:02}'.format(number) for number in range(1, 13)]
 		patterns = ['backgrounds{month}{year}'.format(year, month) for month in months]
 		result = []
 		for key in self._data['backgrounds']:
 			if key in patterns:
-				result += [Background(_data=entry) for entry in self._data['backgrounds'][key]]
+				result += [Background(_api=self.api, _data=entry) for entry in self._data['backgrounds'][key]]
 		return result
 	def __getitem__(self, key):
 		try:
@@ -60,7 +80,7 @@ class Armoire:
 		return self._data['text']
 	@property
 	def key(self):
-		return self._data['type']
+		return self._data['key']
 	@property
 	def type(self):
 		return self._data['type']
@@ -70,6 +90,103 @@ class Armoire:
 	@property
 	def currency(self):
 		return 'gold'
+
+class Egg:
+	def __init__(self, _data=None, _api=None):
+		self.api = _api
+		self._data = _data
+	@property
+	def key(self):
+		return self._data['key']
+	@property
+	def text(self):
+		return self._data['text']
+	@property
+	def mountText(self):
+		return self._data['mountText']
+	@property
+	def notes(self):
+		return self._data['notes']
+	@property
+	def adjective(self):
+		return self._data['adjective']
+	@property
+	def price(self):
+		return self._data['value']
+	@property
+	def currency(self):
+		return 'gems'
+
+class HatchingPotion:
+	def __init__(self, _data=None, _api=None):
+		self.api = _api
+		self._data = _data
+	@property
+	def key(self):
+		return self._data['key']
+	@property
+	def text(self):
+		return self._data['text']
+	@property
+	def notes(self):
+		return self._data['notes']
+	@property
+	def _addlNotes(self):
+		return self._data.get('_addlNotes', '')
+	@property
+	def price(self):
+		return self._data['value']
+	@property
+	def currency(self):
+		return 'gems'
+	@property
+	def premium(self):
+		return self._data.get('premium', False)
+	@property
+	def limited(self):
+		return self._data.get('limited', False)
+	@property
+	def wacky(self):
+		return self._data.get('wacky', False)
+	@property
+	def event(self):
+		if 'event' not in self._data:
+			return None
+		start = datetime.date.strptime('%Y-%m-%d', self._data['event']['start'])
+		end = datetime.date.strptime('%Y-%m-%d', self._data['event']['end'])
+		return HabiticaEvent(start, end)
+
+class Food:
+	def __init__(self, _data=None, _api=None):
+		self.api = _api
+		self._data = _data
+	@property
+	def key(self):
+		return self._data['key']
+	@property
+	def text(self):
+		return self._data['text']
+	@property
+	def textThe(self):
+		return self._data['textThe']
+	@property
+	def textA(self):
+		return self._data['textA']
+	@property
+	def target(self):
+		return self._data['target']
+	@property
+	def notes(self):
+		return self._data['notes']
+	@property
+	def canDrop(self):
+		return self._data['canDrop']
+	@property
+	def price(self):
+		return self._data['value']
+	@property
+	def currency(self):
+		return 'gems'
 
 class Background:
 	def __init__(self, _data=None, _api=None):
