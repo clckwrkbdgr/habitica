@@ -49,6 +49,28 @@ class Content:
 		return [HatchingPotion(_api=self.api, _data=entry) for entry in self._data['dropHatchingPotions'].values()]
 	def premiumHatchingPotions(self):
 		return [HatchingPotion(_api=self.api, _data=entry) for entry in self._data['premiumHatchingPotions'].values()]
+	def petInfo(self, key=None):
+		if key:
+			return Pet(_api=self.api, _data=self._data['petInfo'][key])
+		return [Pet(_api=self.api, _data=entry) for entry in self._data['petInfo'].values()]
+	def questPets(self):
+		return [Pet(_api=self.api, _data=self._data['petInfo'][key]) for key, value in self._data['questPets'].items() if value]
+	def premiumPets(self):
+		return [Pet(_api=self.api, _data=self._data['petInfo'][key]) for key, value in self._data['premiumPets'].items() if value]
+	def specialPets(self):
+		return [Pet(_api=self.api, _data=self._data['petInfo'][key], _special=value) for key, value in self._data['specialPets'].items() if value]
+	def mountInfo(self, key=None):
+		if key:
+			return Mount(_api=self.api, _data=self._data['mountInfo'][key])
+		return [Mount(_api=self.api, _data=entry) for entry in self._data['mountInfo'].values()]
+	def mounts(self):
+		return [Mount(_api=self.api, _data=self._data['mountInfo'][key]) for key, value in self._data['mounts'].items() if value]
+	def questMounts(self):
+		return [Mount(_api=self.api, _data=self._data['mountInfo'][key]) for key, value in self._data['questMounts'].items() if value]
+	def premiumMounts(self):
+		return [Mount(_api=self.api, _data=self._data['mountInfo'][key]) for key, value in self._data['premiumMounts'].items() if value]
+	def specialMounts(self):
+		return [Mount(_api=self.api, _data=self._data['mountInfo'][key], _special=value) for key, value in self._data['specialMounts'].items() if value]
 	def get_background(self, name):
 		return Background(_data=self._data['backgroundFlats'][name], _api=self.api)
 	def get_background_set(self, year, month=None):
@@ -515,30 +537,75 @@ class HealthPotion:
 		self._data = self.api.post('user', 'buy-health-potion').data
 
 class Pet:
-	def __init__(self, _data=None):
+	def __init__(self, _data=None, _api=None, _special=None):
+		self.api = _api
 		self._data = _data
 	def __str__(self):
-		return self._data
+		return self.text
+	@property
+	def text(self):
+		return self._data['text']
+	@property
+	def key(self):
+		return self._data['key']
+	@property
+	def type(self):
+		return self._data['type']
+	@property
+	def egg(self):
+		return self._data.get('egg', None)
+	@property
+	def potion(self):
+		return self._data.get('potion', None)
+	@property
+	def canFind(self):
+		return self._data.get('canFind', None)
+	@property
+	def special(self):
+		return self._special
 
 class Mount:
-	def __init__(self, _data=None):
+	def __init__(self, _data=None, _api=None, _special=None):
+		self.api = _api
 		self._data = _data
 	def __str__(self):
-		return self._data
+		return self.text
+	@property
+	def text(self):
+		return self._data['text']
+	@property
+	def key(self):
+		return self._data['key']
+	@property
+	def type(self):
+		return self._data['type']
+	@property
+	def egg(self):
+		return self._data.get('egg', None)
+	@property
+	def potion(self):
+		return self._data.get('potion', None)
+	@property
+	def canFind(self):
+		return self._data.get('canFind', None)
+	@property
+	def special(self):
+		return self._special
 
 class Inventory:
-	def __init__(self, _data=None, _api=None):
+	def __init__(self, _data=None, _api=None, _content=None):
 		self.api = _api
+		self.content = _content
 		self._data = _data
 	@property
 	def food(self):
 		return [Item(_data=entry) for entry in self._data['food']]
 	@property
 	def pet(self):
-		return Pet(_data=self._data['currentPet'])
+		return self.content.petInfo(self._data['currentPet']) if self._data['currentPet'] else None
 	@property
 	def mount(self):
-		return Mount(_data=self._data['currentMount'])
+		return self.content.mountInfo(self._data['currentMount']) if self._data['currentMount'] else None
 
 class Reward:
 	def __init__(self, _data=None, _api=None):
@@ -752,10 +819,11 @@ class Spell:
 		return self._description
 
 class User:
-	def __init__(self, _data=None, _api=None, _proxy=None):
+	def __init__(self, _data=None, _api=None, _proxy=None, _content=None):
 		self.api = _api
+		self.content = _content
 		self._data = _data
-		self._proxy = _proxy or _UserProxy(_api=self.api)
+		self._proxy = _proxy or _UserProxy(_api=self.api, _content=self.content)
 	@property
 	def stats(self):
 		return UserStats(_data=self._data['stats'])
@@ -764,7 +832,7 @@ class User:
 		return UserPreferences(_data=self._data['preferences'])
 	@property
 	def inventory(self):
-		return Inventory(_data=self._data['items'])
+		return Inventory(_data=self._data['items'], _content=self.content)
 	def party(self):
 		""" Returns user's party. """
 		return self._proxy.party()
@@ -823,10 +891,11 @@ class User:
 		return self.api.post('user', 'class', 'cast', spell.name, **params).data
 
 class _UserProxy:
-	def __init__(self, _api=None):
+	def __init__(self, _api=None, _content=None):
 		self.api = _api
+		self.content = _content
 	def __call__(self):
-		return User(_data=self.api.get('user').data, _api=self.api)
+		return User(_data=self.api.get('user').data, _api=self.api, _content=self.content)
 	def party(self):
 		return Party(_data=self.api.get('groups', 'party').data, _api=self.api)
 	def habits(self):
@@ -868,7 +937,7 @@ class Habitica:
 			habitica.user.habits()
 			habitica.user.rewards()
 		"""
-		return _UserProxy(_api=self.api)
+		return _UserProxy(_api=self.api, _content=self.content)
 	def groups(self, *group_types):
 		""" Returns list of groups of given types.
 		Supported types are: PARTY, GUILDS, PRIVATE_GUILDS, PUBLIC_GUILDS, TAVERN

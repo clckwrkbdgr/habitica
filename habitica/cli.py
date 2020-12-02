@@ -269,8 +269,8 @@ def cli():
                 ('XP', '%d/%d' % (int(stats.experience), stats.maxExperience)),
                 ('Mana', '%d/%d' % (int(stats.mana), stats.maxMana)),
                 ('Gold', '%d' % (int(stats.gold),)),
-                ('Pet', '%s (%d food items)' % (user.inventory.pet, len(user.inventory.food))),
-                ('Mount', user.inventory.mount),
+                ('Pet', '%s (%d food items)' % (user.inventory.pet or '-', len(user.inventory.food))),
+                ('Mount', user.inventory.mount or '-'),
                 ('Quest', quest_info),
                 ]
         len_ljust = max(map(len, map(operator.itemgetter(0), rows))) + 2
