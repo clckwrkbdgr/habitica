@@ -1,10 +1,10 @@
 import datetime
-import html
+import html, json
 import logging
 from collections import defaultdict
 try:
 	import markdown
-except ImportError:
+except ImportError: # pragma: no cover
 	markdown = None
 	pass
 
@@ -21,13 +21,14 @@ RSS_ITEM = """<item>
 <pubDate>{datetime}</pubDate>
 <guid isPermaLink="false">{guid}</guid>
 <description>{text}</description>
-</item>"""
+</item>
+"""
 RSS_FOOTER = """
 </channel>
 </rss>
 """
 
-class BaseMessageFeed(object):
+class BaseMessageFeed(object): # pragma: no cover
 	""" Basic class for exporting message feed. """
 	def add_message(self, group, message):
 		""" Adds message to group.
@@ -45,13 +46,20 @@ class BaseMessageFeed(object):
 		raise NotImplementedError
 	def done(self):
 		""" Finalize feed, dump collected messages etc. """
+	def getvalue(self):
+		""" Should return full collected feed. """
+		raise NotImplementedError
 
 class TextMessageFeed(BaseMessageFeed):
 	""" Prints plain text to stdout. """
+	def __init__(self):
+		self.output = []
 	def add_message(self, group, message):
 		message['group'] = group['name']
 		message['timestamp'] = datetime.datetime.fromtimestamp(message['timestamp'])
-		print('{group}: {timestamp}: {username}> {text}'.format(**message))
+		self.output.append('{group}: {timestamp}: {username}> {text}'.format(**message))
+	def getvalue(self):
+		return '\n'.join(self.output) + '\n'
 
 class JsonMessageFeed(BaseMessageFeed):
 	""" Dumps json object to stdout. """
@@ -59,21 +67,21 @@ class JsonMessageFeed(BaseMessageFeed):
 		self.json_export = defaultdict(list)
 	def add_message(self, group, message):
 		self.json_export[group['name']].append(message)
-	def done(self):
-		print(json.dumps(json_export, indent=2, ensure_ascii=False))
+	def getvalue(self):
+		return json.dumps(self.json_export, indent=2, sort_keys=True, ensure_ascii=False)
 
 class RSSMessageFeed(BaseMessageFeed):
 	""" Dumps RSS feed to stdout. """
 	def __init__(self):
-		if markdown is None:
+		if markdown is None: # pragma: no cover
 			logging.error("Markdown module was not found; will dump messages as text.")
-		print(RSS_HEADER)
+		self.output = RSS_HEADER
 	def add_message(self, group, message):
 		timestamp = str(datetime.datetime.fromtimestamp(message['timestamp']))
 		text = '**{username}>** {text}'.format(**message)
 		if markdown:
 			content = html.escape(markdown.markdown(text))
-		else:
+		else: # pragma: no cover
 			content = '<pre>' + html.escape(text) + '</pre>'
 		rss_item = {
 				'title' : html.escape(group['name'] + ' ' + timestamp),
@@ -82,6 +90,8 @@ class RSSMessageFeed(BaseMessageFeed):
 				'guid' : message['id'],
 				'text' : content,
 				}
-		print(RSS_ITEM.format(**rss_item))
+		self.output += RSS_ITEM.format(**rss_item)
 	def done(self):
-		print(RSS_FOOTER)
+		self.output += RSS_FOOTER
+	def getvalue(self):
+		return self.output

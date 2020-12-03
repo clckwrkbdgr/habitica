@@ -243,6 +243,7 @@ def cli():
             if mark_as_seen:
                 group.mark_chat_as_read()
         exporter.done()
+        print(exporter.getvalue())
 
     # GET user
     elif args.command == 'status':

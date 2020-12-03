@@ -1,12 +1,12 @@
 import os, sys, re
 from setuptools import setup, find_packages
 
-with open('README.md') as f:
+with open('README.md') as f: # pragma: no cover
     readme = f.read()
 
 USER_ID_FILE = 'habitica/data/USER_ID'
 
-if not os.path.exists(USER_ID_FILE):
+if not os.path.exists(USER_ID_FILE): # pragma: no cover
     print('File {0} is missing.'.format(USER_ID_FILE))
     print('File {0} should be present in the root directory and should contain Habitica User ID of the author of the package.'.format(USER_ID_FILE))
     print('For forked project it is advisable to use your own User ID (see https://habitica.com/user/settings/api)')
