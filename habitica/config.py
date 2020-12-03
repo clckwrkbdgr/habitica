@@ -5,7 +5,7 @@ except:
     import configparser
 import logging
 
-def get_data_dir(*args):
+def get_data_dir(*args): # pragma: no cover
 	xdg_data_dir = os.environ.get('XDG_DATA_HOME')
 	if not xdg_data_dir:
 		xdg_data_dir = os.path.join(os.path.expanduser("~"), ".local", "share")
@@ -13,7 +13,7 @@ def get_data_dir(*args):
 	os.makedirs(app_data_dir, exist_ok=True)
 	return app_data_dir
 
-def get_cache_dir(*args):
+def get_cache_dir(*args): # pragma: no cover
 	xdg_cache_dir = os.environ.get('XDG_CACHE_HOME')
 	if not xdg_cache_dir:
 		xdg_cache_dir = os.path.join(os.path.expanduser("~"), ".cache")
@@ -23,7 +23,7 @@ def get_cache_dir(*args):
 
 AUTH_CONF = os.path.join(get_data_dir(), "auth.cfg")
 
-def load_auth(configfile=AUTH_CONF):
+def load_auth(configfile=AUTH_CONF): # pragma: no cover
 	"""Get authentication data from the AUTH_CONF file."""
 
 	logging.debug('Loading habitica auth data from %s' % configfile)
@@ -55,7 +55,7 @@ def load_auth(configfile=AUTH_CONF):
 	# Return auth data as a dictionnary
 	return rv
 
-class Cache(object):
+class Cache(object): # pragma: no cover -- TODO is it used after migration at all?
 	SECTION_CACHE_QUEST = 'Quest'
 	configfile = os.path.join(get_cache_dir(), "cache.cfg")
 
