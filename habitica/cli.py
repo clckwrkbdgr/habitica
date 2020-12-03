@@ -104,9 +104,10 @@ def filter_tasks(tasks, patterns):
     if unprocessed:
         raise RuntimeError("couldn't find task that includes {0}".format(', '.join(map(repr, unprocessed))))
 
-def print_task_list(tasks, hide_completed=False, timezoneOffset=0, with_notes=False):
+def print_task_list(tasks, hide_completed=False, timezoneOffset=0, with_notes=False, time_now=None):
+    time_now = time_now or datetime.datetime.now()
     for i, task in enumerate(tasks):
-        if isinstance(task, core.Daily) and not task.is_due(datetime.datetime.now(), timezoneOffset=timezoneOffset):
+        if isinstance(task, core.Daily) and not task.is_due(time_now, timezoneOffset=timezoneOffset):
             continue
         if isinstance(task, core.Checkable):
             if task.is_completed and hide_completed:
@@ -131,7 +132,7 @@ TASK_SCORES = {
         core.Task.BRIGHT_BLUE : '   >>>',
         }
 
-def cli():
+def cli(): # pragma: no cover
     parser = argparse.ArgumentParser(description='Habitica command-line interface.')
     parser.add_argument('--version', action='version', version=VERSION)
     parser.add_argument('--difficulty', choices=['easy', 'medium', 'hard'],
@@ -404,5 +405,5 @@ def cli():
         print_task_list(todos, with_notes=args.full, hide_completed=True)
 
 
-if __name__ == '__main__':
+if __name__ == '__main__': # pragma: no cover
     cli()

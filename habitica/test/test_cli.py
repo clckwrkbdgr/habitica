@@ -1,6 +1,9 @@
 import unittest
 unittest.defaultTestLoader.testMethodPrefix = 'should'
+import textwrap
+import datetime
 import itertools
+import io, contextlib
 from .. import cli, core
 
 class TestTaskFilter(unittest.TestCase):
@@ -50,3 +53,92 @@ class TestTaskFilter(unittest.TestCase):
 			list(cli.filter_tasks(todos, ['Unknown']))
 		with self.assertRaises(RuntimeError) as e:
 			list(cli.filter_tasks(todos, ['all tasks']))
+
+class TestPrinter(unittest.TestCase):
+	def _get_tasks(self):
+		return [
+				core.Habit(_data={
+					'text':'Keep Calm',
+					'notes': 'and Carry On',
+					}),
+				core.Daily(_data={
+					'text':'Wake up and yawn',
+					'notes': 'This is the only daily for today',
+					'frequency' : 'daily',
+					'startDate' : '2020-02-20T10:10:10.000Z',
+					'everyX' : 2,
+					'completed' : False,
+					'checklist' : [
+						{'text':'wake up', 'completed':True},
+						{'text':'yawn', 'completed':False},
+						],
+					}),
+				core.Todo(_data={
+					'text':'Complete all tasks',
+					'notes': 'New Year Resolution',
+					'completed' : True,
+					'checklist' : [
+						{'text':'cross this item', 'completed':False},
+						{'text':'complete all tasks', 'completed':True},
+						{'text':'rest', 'completed':False},
+						],
+					}),
+				]
+	def should_print_task_list(self):
+		output = io.StringIO()
+		tasks = self._get_tasks()
+		with contextlib.redirect_stdout(output):
+			cli.print_task_list(tasks, hide_completed=False, timezoneOffset=0, with_notes=False, time_now=datetime.datetime(2020, 2, 22, 0, 0, 1))
+			self.assertEqual(output.getvalue(), textwrap.dedent("""\
+					1 Keep Calm
+					[_] 2 Wake up and yawn
+					    [X] 2.1 wake up
+					    [_] 2.2 yawn
+					[X] 3 Complete all tasks
+					    [_] 3.1 cross this item
+					    [X] 3.2 complete all tasks
+					    [_] 3.3 rest
+					"""))
+	def should_print_notes(self):
+		output = io.StringIO()
+		tasks = self._get_tasks()
+		with contextlib.redirect_stdout(output):
+			cli.print_task_list(tasks, hide_completed=False, timezoneOffset=0, with_notes=True, time_now=datetime.datetime(2020, 2, 22, 0, 0, 1))
+			self.assertEqual(output.getvalue(), textwrap.dedent("""\
+					1 Keep Calm
+					      and Carry On
+					[_] 2 Wake up and yawn
+					      This is the only daily for today
+					    [X] 2.1 wake up
+					    [_] 2.2 yawn
+					[X] 3 Complete all tasks
+					      New Year Resolution
+					    [_] 3.1 cross this item
+					    [X] 3.2 complete all tasks
+					    [_] 3.3 rest
+					"""))
+	def should_hide_completed_tasks(self):
+		output = io.StringIO()
+		tasks = self._get_tasks()
+		with contextlib.redirect_stdout(output):
+			cli.print_task_list(tasks, hide_completed=True, timezoneOffset=0, with_notes=False, time_now=datetime.datetime(2020, 2, 22, 0, 0, 1))
+			self.assertEqual(output.getvalue(), textwrap.dedent("""\
+					1 Keep Calm
+					[_] 2 Wake up and yawn
+					    [X] 2.1 wake up
+					    [_] 2.2 yawn
+					"""))
+	def should_hide_wront_time_dailies(self):
+		output = io.StringIO()
+		tasks = self._get_tasks()
+		with contextlib.redirect_stdout(output):
+			cli.print_task_list(tasks, hide_completed=False, timezoneOffset=0, with_notes=True, time_now=datetime.datetime(2020, 2, 21, 0, 0, 1))
+			self.assertEqual(output.getvalue(), textwrap.dedent("""\
+					1 Keep Calm
+					      and Carry On
+					[X] 3 Complete all tasks
+					      New Year Resolution
+					    [_] 3.1 cross this item
+					    [X] 3.2 complete all tasks
+					    [_] 3.3 rest
+					"""))
