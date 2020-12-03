@@ -1,6 +1,6 @@
 import datetime, time
 
-class LocalTZ(datetime.tzinfo):
+class LocalTZ(datetime.tzinfo): # pragma: no cover -- TODO no idea how to test properly. Is it used at all?
     """ Current local timezone. """
     STDOFFSET = datetime.timedelta(seconds = -time.timezone)
     DSTOFFSET = datetime.timedelta(seconds = -time.altzone) if time.daylight else STDOFFSET
@@ -25,7 +25,7 @@ class LocalTZ(datetime.tzinfo):
         tt = time.localtime(stamp)
         return tt.tm_isdst > 0
 
-def strptime_habitica_to_local(time_string):
+def strptime_habitica_to_local(time_string): # pragma: no cover -- TODO depends on LocalTZ. Is it used at all?
     ''' Habitica's task start time is in GMT (apparently?)
     so it needs to be converted to local TZ before calculating any task repetition.
     '''
