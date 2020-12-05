@@ -15,13 +15,13 @@ import urllib3.util.retry
 logging.getLogger('urllib3.connectionpool').setLevel(logging.CRITICAL)
 
 USER_ID_FILE = Path(pkg_resources.resource_filename('habitica', 'data/USER_ID'))
-if not USER_ID_FILE.exists(): # TODO duplicates code from setup.py. Needs to be moved to habitica.config and re-used.
+if not USER_ID_FILE.exists(): # pragma: no cover -- TODO duplicates code from setup.py. Needs to be moved to habitica.config and re-used.
     print('File {0} is missing.'.format(USER_ID_FILE))
     print('File {0} should be present in the root directory and should contain Habitica User ID of the author of the package.'.format(USER_ID_FILE))
     print('For forked project it is advisable to use your own User ID (see https://habitica.com/user/settings/api)')
     sys.exit(1)
 USER_ID = USER_ID_FILE.read_text().strip()
-if not re.match(r'^[0-9A-F]{8}-[0-9A-F]{4}-4[0-9A-F]{3}-[89AB][0-9A-F]{3}-[0-9A-F]{12}$', USER_ID, flags=re.I):
+if not re.match(r'^[0-9A-F]{8}-[0-9A-F]{4}-4[0-9A-F]{3}-[89AB][0-9A-F]{3}-[0-9A-F]{12}$', USER_ID, flags=re.I): # pragma: no cover -- TODO see above
     print('File {0} contains invalid user_id: {1}'.format(USER_ID_FILE, repr(USER_ID)))
     print('Please ensure that proper User ID is used (see https://habitica.com/user/settings/api)')
     sys.exit(1)
@@ -86,7 +86,7 @@ class API(object):
         Otherwise (for user input) uses default nominal delay <1 sec.
         """
         self.batch_mode = batch_mode
-        self.base_url = base_url
+        self.base_url = base_url.rstrip('/')
         self.login = login
         self.password = password
         self.headers = {

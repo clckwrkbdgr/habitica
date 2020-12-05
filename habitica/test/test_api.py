@@ -1,4 +1,4 @@
-import unittest
+import unittest, unittest.mock
 unittest.defaultTestLoader.testMethodPrefix = 'should'
 import requests
 from .. import api
@@ -45,3 +45,58 @@ class TestExceptionConversions(unittest.TestCase):
 				raise requests.exceptions.HTTPError(response=response)
 		self.assertEqual(e.exception.CODE, 404)
 		self.assertEqual(str(e.exception), 'My object was not found')
+
+class MockRequestSession:
+	class Response:
+		def __init__(self, status_code=None, reason=None, content=None):
+			self.status_code = status_code
+			self.reason = reason
+			self.content = content
+		def json(self):
+			return self.content
+		def raise_for_status(self):
+			pass
+
+	def __init__(self, response):
+		self._response = response
+
+	def mount(self, *args, **kwargs): pass
+	def post(self, *args, **kwargs):
+		self._request = ('post', args, kwargs)
+		return self._response
+	def put(self, *args, **kwargs):
+		self._request = ('put', args, kwargs)
+		return self._response
+	def delete(self, *args, **kwargs):
+		self._request = ('delete', args, kwargs)
+		return self._response
+	def get(self, *args, **kwargs):
+		self._request = ('get', args, kwargs)
+		return self._response
+	def __call__(self, *args, **kwargs):
+		return self
+
+class TestAPI(unittest.TestCase):
+	def should_fill_request_headers(self):
+		obj = api.API('http://localhost/', 'login', 'password')
+		self.assertEqual(obj.headers['x-api-user'], 'login')
+		self.assertEqual(obj.headers['x-api-key'], 'password')
+		self.assertEqual(obj.headers['x-client'], api.USER_ID + '-habitica')
+		self.assertEqual(obj.headers['content-type'], 'application/json')
+	def should_create_target_url(self):
+		obj = api.API('http://localhost/', 'login', 'password')
+		self.assertEqual(obj.get_url('sample', 'request'), 'http://localhost/api/v3/sample/request')
+	def should_perform_a_call(self):
+		obj = api.API('http://localhost/', 'login', 'password')
+		mock_time = unittest.mock.MagicMock(return_value=1)
+		mock_sleep = unittest.mock.MagicMock()
+		mock_session = MockRequestSession(MockRequestSession.Response(
+			status_code=200,
+			content={'data':'test'},
+			))
+		with unittest.mock.patch('time.time', mock_time):
+			with unittest.mock.patch('time.sleep', mock_sleep):
+				with unittest.mock.patch('requests.Session', mock_session):
+					response = obj.call('post', obj.get_url('sample'))
+					self.assertEqual(response, {'data':'test'})
+					self.assertEqual(mock_session._request[0], 'post')
