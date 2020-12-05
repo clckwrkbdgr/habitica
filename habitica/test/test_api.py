@@ -1,5 +1,6 @@
 import unittest, unittest.mock
 unittest.defaultTestLoader.testMethodPrefix = 'should'
+import json
 import requests
 from .. import api
 
@@ -59,20 +60,25 @@ class MockRequestSession:
 
 	def __init__(self, response):
 		self._response = response
-
+		self._raises = []
+	def raises(self, *exc_objects):
+		self._raises = exc_objects
 	def mount(self, *args, **kwargs): pass
+	def _actual_call(self, method, args, kwargs):
+		self._request = (method, args, kwargs)
+		if self._raises:
+			exc = self._raises[0]
+			self._raises = self._raises[1:]
+			raise exc
+		return self._response
 	def post(self, *args, **kwargs):
-		self._request = ('post', args, kwargs)
-		return self._response
+		return self._actual_call('post', args, kwargs)
 	def put(self, *args, **kwargs):
-		self._request = ('put', args, kwargs)
-		return self._response
+		return self._actual_call('put', args, kwargs)
 	def delete(self, *args, **kwargs):
-		self._request = ('delete', args, kwargs)
-		return self._response
+		return self._actual_call('delete', args, kwargs)
 	def get(self, *args, **kwargs):
-		self._request = ('get', args, kwargs)
-		return self._response
+		return self._actual_call('get', args, kwargs)
 	def __call__(self, *args, **kwargs):
 		return self
 
@@ -100,3 +106,178 @@ class TestAPI(unittest.TestCase):
 					response = obj.call('post', obj.get_url('sample'))
 					self.assertEqual(response, {'data':'test'})
 					self.assertEqual(mock_session._request[0], 'post')
+	def should_post_request(self):
+		obj = api.API('http://localhost/', 'login', 'password')
+		mock_time = unittest.mock.MagicMock(return_value=1)
+		mock_sleep = unittest.mock.MagicMock()
+		mock_session = MockRequestSession(MockRequestSession.Response(
+			status_code=200,
+			content={'data':'test'},
+			))
+		with unittest.mock.patch('time.time', mock_time):
+			with unittest.mock.patch('time.sleep', mock_sleep):
+				with unittest.mock.patch('requests.Session', mock_session):
+					response = obj.post('path', 'to', 'request', query1='param1', query2='param2', _body={'request':'value'})
+					self.assertEqual(response, {'data':'test'})
+					self.assertEqual(mock_session._request[0], 'post')
+					self.assertEqual(mock_session._request[1], ('http://localhost/api/v3/path/to/request',))
+					self.assertEqual(json.loads(mock_session._request[2]['data']), {'request':'value'})
+					self.assertEqual(mock_session._request[2]['params'], {'query1':'param1', 'query2':'param2'})
+	def should_put_request(self):
+		obj = api.API('http://localhost/', 'login', 'password')
+		mock_time = unittest.mock.MagicMock(return_value=1)
+		mock_sleep = unittest.mock.MagicMock()
+		mock_session = MockRequestSession(MockRequestSession.Response(
+			status_code=200,
+			content={'data':'test'},
+			))
+		with unittest.mock.patch('time.time', mock_time):
+			with unittest.mock.patch('time.sleep', mock_sleep):
+				with unittest.mock.patch('requests.Session', mock_session):
+					response = obj.put('path', 'to', 'request', query1='param1', query2='param2', _body={'request':'value'})
+					self.assertEqual(response, {'data':'test'})
+					self.assertEqual(mock_session._request[0], 'put')
+					self.assertEqual(mock_session._request[1], ('http://localhost/api/v3/path/to/request',))
+					self.assertEqual(json.loads(mock_session._request[2]['data']), {'request':'value'})
+					self.assertEqual(mock_session._request[2]['params'], {'query1':'param1', 'query2':'param2'})
+	def should_delete_request(self):
+		obj = api.API('http://localhost/', 'login', 'password')
+		mock_time = unittest.mock.MagicMock(return_value=1)
+		mock_sleep = unittest.mock.MagicMock()
+		mock_session = MockRequestSession(MockRequestSession.Response(
+			status_code=200,
+			content={'data':'test'},
+			))
+		with unittest.mock.patch('time.time', mock_time):
+			with unittest.mock.patch('time.sleep', mock_sleep):
+				with unittest.mock.patch('requests.Session', mock_session):
+					response = obj.delete('path', 'to', 'request', query1='param1', query2='param2')
+					self.assertEqual(response, {'data':'test'})
+					self.assertEqual(mock_session._request[0], 'delete')
+					self.assertEqual(mock_session._request[1], ('http://localhost/api/v3/path/to/request',))
+					self.assertEqual(json.loads(mock_session._request[2]['data']), {})
+					self.assertEqual(mock_session._request[2]['params'], {'query1':'param1', 'query2':'param2'})
+	def should_get_request(self):
+		obj = api.API('http://localhost/', 'login', 'password')
+		mock_time = unittest.mock.MagicMock(return_value=1)
+		mock_sleep = unittest.mock.MagicMock()
+		mock_session = MockRequestSession(MockRequestSession.Response(
+			status_code=200,
+			content={'data':'test'},
+			))
+		with unittest.mock.patch('time.time', mock_time):
+			with unittest.mock.patch('time.sleep', mock_sleep):
+				with unittest.mock.patch('requests.Session', mock_session):
+					response = obj.get('path', 'to', 'request', query1='param1', query2='param2')
+					self.assertEqual(response, {'data':'test'})
+					self.assertEqual(mock_session._request[0], 'get')
+					self.assertEqual(mock_session._request[1], ('http://localhost/api/v3/path/to/request',))
+					self.assertTrue('data' not in mock_session._request[2])
+					self.assertEqual(mock_session._request[2]['params'], {'query1':'param1', 'query2':'param2'})
+	def should_get_request(self):
+		obj = api.API('http://localhost/', 'login', 'password')
+		mock_time = unittest.mock.MagicMock(return_value=1)
+		mock_sleep = unittest.mock.MagicMock()
+		mock_session = MockRequestSession(MockRequestSession.Response(
+			status_code=200,
+			content={'data':'test'},
+			))
+		with unittest.mock.patch('time.time', mock_time):
+			with unittest.mock.patch('time.sleep', mock_sleep):
+				with unittest.mock.patch('requests.Session', mock_session):
+					response = obj.get('path', 'to', 'request', query1='param1', query2='param2')
+					self.assertEqual(response, {'data':'test'})
+					self.assertEqual(mock_session._request[0], 'get')
+					self.assertEqual(mock_session._request[1], ('http://localhost/api/v3/path/to/request',))
+					self.assertTrue('data' not in mock_session._request[2])
+					self.assertEqual(mock_session._request[2]['params'], {'query1':'param1', 'query2':'param2'})
+	def should_retry_on_occasional_exceptions(self):
+		obj = api.API('http://localhost/', 'login', 'password')
+		mock_time = unittest.mock.MagicMock(return_value=1)
+		mock_sleep = unittest.mock.MagicMock()
+		mock_session = MockRequestSession(MockRequestSession.Response(
+			status_code=200,
+			content={'data':'test'},
+			))
+		mock_session.raises(
+				requests.exceptions.ReadTimeout(),
+				requests.exceptions.ConnectionError(),
+				)
+		with unittest.mock.patch('time.time', mock_time):
+			with unittest.mock.patch('time.sleep', mock_sleep):
+				with unittest.mock.patch('requests.Session', mock_session):
+					response = obj.post('path', 'to', 'request', query1='param1', query2='param2', _body={'request':'value'})
+					self.assertEqual(response, {'data':'test'})
+					self.assertEqual(mock_session._request[0], 'post')
+					self.assertEqual(mock_session._request[1], ('http://localhost/api/v3/path/to/request',))
+					self.assertEqual(json.loads(mock_session._request[2]['data']), {'request':'value'})
+					self.assertEqual(mock_session._request[2]['params'], {'query1':'param1', 'query2':'param2'})
+	def should_raise_on_endless_exceptions(self):
+		obj = api.API('http://localhost/', 'login', 'password')
+		mock_time = unittest.mock.MagicMock(return_value=1)
+		mock_sleep = unittest.mock.MagicMock()
+		mock_session = MockRequestSession(MockRequestSession.Response(
+			status_code=200,
+			content={'data':'test'},
+			))
+		mock_session.raises(
+				requests.exceptions.ReadTimeout(),
+				requests.exceptions.ReadTimeout(),
+				requests.exceptions.ReadTimeout(),
+				requests.exceptions.ReadTimeout(),
+				requests.exceptions.ConnectionError(),
+				requests.exceptions.ConnectionError(),
+				requests.exceptions.ConnectionError(),
+				requests.exceptions.ConnectionError(),
+				)
+		with unittest.mock.patch('time.time', mock_time):
+			with unittest.mock.patch('time.sleep', mock_sleep):
+				with unittest.mock.patch('requests.Session', mock_session):
+					with self.assertRaises(requests.exceptions.ReadTimeout):
+						response = obj.post('path', 'to', 'request', query1='param1', query2='param2', _body={'request':'value'})
+					with self.assertRaises(requests.exceptions.ConnectionError):
+						response = obj.post('path', 'to', 'request', query1='param1', query2='param2', _body={'request':'value'})
+	def should_raise_on_http_errors(self):
+		obj = api.API('http://localhost/', 'login', 'password')
+		mock_time = unittest.mock.MagicMock(return_value=1)
+		mock_sleep = unittest.mock.MagicMock()
+		mock_session = MockRequestSession(MockRequestSession.Response(
+			status_code=404,
+			content={'data':'test'},
+			))
+		real_response = requests.Response
+		real_response.status_code = 404
+		mock_session.raises(
+				requests.exceptions.HTTPError(response=real_response),
+				)
+		with unittest.mock.patch('time.time', mock_time):
+			with unittest.mock.patch('time.sleep', mock_sleep):
+				with unittest.mock.patch('requests.Session', mock_session):
+					with self.assertRaises(requests.exceptions.HTTPError):
+						response = obj.post('path', 'to', 'request', query1='param1', query2='param2', _body={'request':'value'})
+	def should_retry_on_appserver_http_errors(self):
+		obj = api.API('http://localhost/', 'login', 'password')
+		mock_time = unittest.mock.MagicMock(return_value=1)
+		mock_sleep = unittest.mock.MagicMock()
+		mock_session = MockRequestSession(MockRequestSession.Response(
+			status_code=502,
+			content={'data':'test'},
+			))
+		real_response = requests.Response
+		real_response.status_code = 502
+		mock_session.raises(
+				requests.exceptions.HTTPError(response=real_response),
+				requests.exceptions.HTTPError(response=real_response),
+				requests.exceptions.HTTPError(response=real_response),
+				requests.exceptions.HTTPError(response=real_response),
+
+				requests.exceptions.HTTPError(response=real_response),
+				)
+		with unittest.mock.patch('time.time', mock_time):
+			with unittest.mock.patch('time.sleep', mock_sleep):
+				with unittest.mock.patch('requests.Session', mock_session):
+					with self.assertRaises(requests.exceptions.HTTPError):
+						response = obj.post('path', 'to', 'request', query1='param1', query2='param2', _body={'request':'value'})
+
+					response = obj.post('path', 'to', 'request', query1='param1', query2='param2', _body={'request':'value'})
+					self.assertEqual(response, {'data':'test'})

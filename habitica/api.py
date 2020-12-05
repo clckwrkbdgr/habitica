@@ -106,7 +106,7 @@ class API(object):
         See call() for details.
         """
         uri = self.get_url(*path)
-        return self.call('POST', uri, body=kwargs)
+        return self.call('POST', uri, body=_body, query=kwargs)
     def put(self, *path, _body=None, **kwargs):
         """ Convenience call for PUT /specified/sub/path/
         PUT fields should be passed as '_body={}'
@@ -114,7 +114,7 @@ class API(object):
         See call() for details.
         """
         uri = self.get_url(*path)
-        return self.call('PUT', uri, body=kwargs)
+        return self.call('PUT', uri, body=_body, query=kwargs)
     def delete(self, *path, **query):
         """ Convenience call for DELETE /specified/sub/path/
         Kwargs are passed as query params.
@@ -138,7 +138,7 @@ class API(object):
         May freeze for several seconds to ensure delay between requests
         (see POST_AUTO_REQUEST_DELAY, GET_AUTO_REQUEST_DELAY)
         """
-        if not self.batch_mode:
+        if not self.batch_mode: # pragma: no cover -- TODO properly testing delays between requests.
             delay = self.DEFAULT_REQUEST_DELAY
         elif method.upper() in ['PUT', 'POST', 'DELETE']:
             delay = self.POST_AUTO_REQUEST_DELAY
