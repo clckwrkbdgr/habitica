@@ -125,7 +125,7 @@ class API(object):
               'content-type': 'application/json',
               }
         self._last_request_time = 0
-    def cached(self, cache_entry_name):
+    def cached(self, cache_entry_name): # pragma: no cover -- TODO see Cached class above.
         return API.Cached(self, cache_entry_name)
 
     def get_url(self, *parts):
