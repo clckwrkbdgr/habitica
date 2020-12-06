@@ -1,12 +1,13 @@
 import unittest, unittest.mock
 unittest.defaultTestLoader.testMethodPrefix = 'should'
+from collections import namedtuple
 from .. import core, api
 
 class MockRequest:
 	def __init__(self, method, path, response, cached=False):
 		self.method = method
 		self.path = path
-		self.response = api.dotdict(response)
+		self.response = api.dotdict(response) if type(response) is dict else response
 		self.params = None
 		self.body = None
 		self.cached = cached
@@ -87,3 +88,181 @@ class TestBaseHabitica(unittest.TestCase):
 		self.assertEqual(len(groups), 2)
 		self.assertEqual(groups[0].name, 'Party')
 		self.assertEqual(groups[1].name, 'My Guild')
+
+class TestChallenges(unittest.TestCase):
+	def _challenge(self):
+		return MockRequest('get', ['challenges', 'groups', 'group1'], {'data': [{
+			'id' : 'chlng1',
+			'name' : 'Create Habitica API tool',
+			'shortName' : 'HabiticaAPI',
+			'summary' : 'You have to create Habitica API tool',
+			'createdAt' : 1600000000,
+			'updatedAt' : 1600000000,
+			'prize' : 4,
+			'memberCount' : 2,
+			'official' : False,
+			'leader' : 'person1',
+			'group' : {
+				'id': 'group1',
+				'name': 'Party',
+				},
+			'tasksOrder' : {
+				'rewards' : ['reward1'],
+				'todos' : ['todo1'],
+				'dailys' : ['daily1'],
+				'habits' : ['habit1'],
+				},
+			}]})
+	def should_fetch_challenge(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockRequest('get', ['groups'], {'data': [{
+					'name' : 'Party',
+					'id' : 'group1',
+					}]}),
+			self._challenge(),
+			MockRequest('get', ['tasks', 'reward1'], {'data': {
+				'text' : 'Use API tool',
+				}}),
+			MockRequest('get', ['tasks', 'todo1'], {'data': {
+				'text' : 'Complete API tool',
+				}}),
+			MockRequest('get', ['tasks', 'daily1'], {'data': {
+				'text' : 'Add feature',
+				}}),
+			MockRequest('get', ['tasks', 'habit1'], {'data': {
+				'text' : 'Write better code',
+				}}),
+			))
+		party = habitica.groups(core.Group.PARTY)[0]
+		challenge = party.challenges()[0]
+		self.assertEqual(challenge.id, 'chlng1')
+		self.assertEqual(challenge.name, 'Create Habitica API tool')
+		self.assertEqual(challenge.shortName, 'HabiticaAPI')
+		self.assertEqual(challenge.createdAt, 1600000000)
+		self.assertEqual(challenge.updatedAt, 1600000000)
+		self.assertEqual(challenge.prize, 4)
+		self.assertEqual(challenge.memberCount, 2)
+		self.assertFalse(challenge.official)
+		self.assertEqual(challenge.leader(), 'person1')
+
+		group = challenge.group()
+		self.assertEqual(group.id, party.id)
+		self.assertEqual(group.name, party.name)
+
+		rewards = challenge.rewards()
+		self.assertEqual(rewards[0].text, 'Use API tool')
+		todos = challenge.todos()
+		self.assertEqual(todos[0].text, 'Complete API tool')
+		dailies = challenge.dailies()
+		self.assertEqual(dailies[0].text, 'Add feature')
+		habits = challenge.habits()
+		self.assertEqual(habits[0].text, 'Write better code')
+	def should_get_challenge_data_as_csv(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockRequest('get', ['groups'], {'data': [{
+					'name' : 'Party',
+					'id' : 'group1',
+					}]}),
+			self._challenge(),
+			MockRequest('get', ['challenges', 'chlng1', 'export', 'csv'], 'AS CSV'),
+			))
+		party = habitica.groups(core.Group.PARTY)[0]
+		challenge = party.challenges()[0]
+		self.assertEqual(challenge.as_csv(), 'AS CSV')
+	def should_clone_challenge(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockRequest('get', ['groups'], {'data': [{
+					'name' : 'Party',
+					'id' : 'group1',
+					}]}),
+			self._challenge(),
+			MockRequest('post', ['challenges', 'chlng1', 'clone'], {'challenge': {
+				'id' : 'chlng2',
+				'name' : 'Create Habitica API tool',
+				'shortName' : 'HabiticaAPI',
+				}})
+			))
+		party = habitica.groups(core.Group.PARTY)[0]
+		challenge = party.challenges()[0]
+		challenge = challenge.clone()
+		self.assertEqual(challenge.id, 'chlng2')
+		self.assertEqual(challenge.name, 'Create Habitica API tool')
+		self.assertEqual(challenge.shortName, 'HabiticaAPI')
+	def should_update_challenge(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockRequest('get', ['groups'], {'data': [{
+					'name' : 'Party',
+					'id' : 'group1',
+					}]}),
+			self._challenge(),
+			MockRequest('put', ['challenges', 'chlng1'], {'data': {
+				'id' : 'chlng1',
+				'name' : 'Develop Habitica API tool',
+				'shortName' : 'API',
+				'summary' : 'Go and create Habitica API tool',
+				}})
+			))
+		party = habitica.groups(core.Group.PARTY)[0]
+		challenge = party.challenges()[0]
+		challenge.update()
+		self.assertEqual(challenge.name, 'Create Habitica API tool')
+		self.assertEqual(challenge.shortName, 'HabiticaAPI')
+		self.assertEqual(challenge.summary, 'You have to create Habitica API tool')
+		challenge.update(
+				name = 'Develop Habitica API tool',
+				summary = 'API',
+				description = 'Go and create Habitica API tool',
+				)
+		self.assertEqual(challenge.name, 'Develop Habitica API tool')
+		self.assertEqual(challenge.shortName, 'API')
+		self.assertEqual(challenge.summary, 'Go and create Habitica API tool')
+	def should_join_challenge(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockRequest('get', ['groups'], {'data': [{
+					'name' : 'Party',
+					'id' : 'group1',
+					}]}),
+			self._challenge(),
+			MockRequest('post', ['challenges', 'chlng1', 'join'], {'data': {
+					'id' : 'chlng1',
+					'memberCount' : 3,
+					}}),
+			MockRequest('post', ['challenges', 'chlng1', 'leave'], {'data': {
+					}}),
+			))
+		party = habitica.groups(core.Group.PARTY)[0]
+		challenge = party.challenges()[0]
+		challenge.join()
+		self.assertEqual(challenge.memberCount, 3)
+		challenge.leave()
+		self.assertEqual(challenge.api.responses[-1].path[-1], 'leave')
+	def should_select_winner(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockRequest('get', ['groups'], {'data': [{
+					'name' : 'Party',
+					'id' : 'group1',
+					}]}),
+			self._challenge(),
+			MockRequest('post', ['challenges', 'chlng1', 'selectWinner', 'person1'], {'data': {
+					}}),
+			))
+		party = habitica.groups(core.Group.PARTY)[0]
+		challenge = party.challenges()[0]
+		Person = namedtuple('Person', 'id name')
+		challenge.selectWinner(Person('person1', 'Name'))
+		self.assertEqual(challenge.api.responses[-1].path[-2:], ['selectWinner', 'person1'])
+	def should_delete_challenge(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockRequest('get', ['groups'], {'data': [{
+					'name' : 'Party',
+					'id' : 'group1',
+					}]}),
+			self._challenge(),
+			MockRequest('delete', ['challenges', 'chlng1'], {'data': {
+					}}),
+			))
+		party = habitica.groups(core.Group.PARTY)[0]
+		challenge = party.challenges()[0]
+		challenge.delete()
+		self.assertEqual(challenge.api.responses[-1].method, 'delete')
+		self.assertEqual(challenge.api.responses[-1].path[-1], 'chlng1')

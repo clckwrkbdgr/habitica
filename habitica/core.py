@@ -244,6 +244,9 @@ class Challenge:
 	def shortName(self):
 		return self._data['shortName']
 	@property
+	def summary(self):
+		return self._data['summary']
+	@property
 	def updatedAt(self):
 		return self._data['updatedAt'] # FIXME convert to date time using user TZ.
 	@property

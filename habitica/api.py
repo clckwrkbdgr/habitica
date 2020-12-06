@@ -154,14 +154,14 @@ class API(object):
         """
         uri = self.get_url(*path)
         return self.call('DELETE', uri, query=query)
-    def get(self, *path, **query):
+    def get(self, *path, _as_json=True, **query):
         """ Convenience call for GET /specified/sub/path/
         Kwargs are passed as query params.
         See call() for details.
         """
         uri = self.get_url(*path)
-        return self.call('GET', uri, query=query)
-    def call(self, method, uri, query=None, body=None):
+        return self.call('GET', uri, query=query, as_json=_as_json)
+    def call(self, method, uri, query=None, body=None, as_json=True):
         """ Performs actual call to URI using given method (GET/POST/PUT/DELETE etc).
         Data should correspond to specified method.
         Query is a dict and is passed as query params.
@@ -183,13 +183,13 @@ class API(object):
         logging.debug('Actual delay: {0}'.format(delay))
         if delay > 0:
             time.sleep(delay)
-        return self._retry_call(method, uri, query=query, body=body)
-    def _retry_call(self, method, uri, query=None, body=None, tries=MAX_RETRY):
+        return self._retry_call(method, uri, query=query, body=body, as_json=as_json)
+    def _retry_call(self, method, uri, query=None, body=None, as_json=True, tries=MAX_RETRY):
         try:
             logging.debug('Sending {0} {1}'.format(method.upper(), uri))
             logging.debug('Query: {0}'.format(query))
             logging.debug('Body: {0}'.format(body))
-            return self._direct_call(method, uri, query=query, body=body)
+            return self._direct_call(method, uri, query=query, body=body, as_json=as_json)
         except requests.exceptions.ReadTimeout as e:
             if tries <= 0:
                 raise
@@ -201,8 +201,8 @@ class API(object):
         except requests.exceptions.ConnectionError as e:
             if tries <= 0:
                 raise
-        return self._retry_call(method, uri, query=query, body=body, tries=tries-1)
-    def _direct_call(self, method, uri, query=None, body=None):
+        return self._retry_call(method, uri, query=query, body=body, as_json=as_json, tries=tries-1)
+    def _direct_call(self, method, uri, query=None, body=None, as_json=True):
         """ Direct call without any retry/timeout checks. """
         session = requests.Session()
         retries = urllib3.util.retry.Retry(total=5, backoff_factor=0.1)
@@ -219,6 +219,7 @@ class API(object):
         if response.status_code != requests.codes.ok:
             logging.debug('Responded with error: {0}'.format(response.content))
             response.raise_for_status()
-        response = response.json()
+        if as_json:
+            response = response.json()
         logging.debug('Response: {0}'.format(json.dumps(response, indent=2, sort_keys=True)))
         return dotdict(response)
