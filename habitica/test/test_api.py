@@ -174,23 +174,6 @@ class TestAPI(unittest.TestCase):
 					self.assertEqual(mock_session._request[1], ('http://localhost/api/v3/path/to/request',))
 					self.assertTrue('data' not in mock_session._request[2])
 					self.assertEqual(mock_session._request[2]['params'], {'query1':'param1', 'query2':'param2'})
-	def should_get_request(self):
-		obj = api.API('http://localhost/', 'login', 'password')
-		mock_time = unittest.mock.MagicMock(return_value=1)
-		mock_sleep = unittest.mock.MagicMock()
-		mock_session = MockRequestSession(MockRequestSession.Response(
-			status_code=200,
-			content={'data':'test'},
-			))
-		with unittest.mock.patch('time.time', mock_time):
-			with unittest.mock.patch('time.sleep', mock_sleep):
-				with unittest.mock.patch('requests.Session', mock_session):
-					response = obj.get('path', 'to', 'request', query1='param1', query2='param2')
-					self.assertEqual(response, {'data':'test'})
-					self.assertEqual(mock_session._request[0], 'get')
-					self.assertEqual(mock_session._request[1], ('http://localhost/api/v3/path/to/request',))
-					self.assertTrue('data' not in mock_session._request[2])
-					self.assertEqual(mock_session._request[2]['params'], {'query1':'param1', 'query2':'param2'})
 	def should_retry_on_occasional_exceptions(self):
 		obj = api.API('http://localhost/', 'login', 'password')
 		mock_time = unittest.mock.MagicMock(return_value=1)
