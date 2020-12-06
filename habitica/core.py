@@ -911,11 +911,8 @@ class _UserProxy:
 
 class Habitica:
 	""" Main Habitica entry point. """
-	def __init__(self, auth=None):
-		self.api = api.API(auth['url'], auth['x-api-user'], auth['x-api-key'])
-
-		self.auth = auth
-		self.cache = config.Cache()
+	def __init__(self, auth=None, _api=None):
+		self.api = _api or api.API(auth['url'], auth['x-api-user'], auth['x-api-key'])
 		self._content = None
 	def home_url(self):
 		""" Returns main Habitica Web URL to open in browser. """
