@@ -302,8 +302,10 @@ class Challenge:
 		self.api.delete('challenges', self.id)
 
 class ChatMessage:
-	def __init__(self, _data=None):
+	def __init__(self, _data=None, _api=None, _group=None):
 		self._data = _data
+		self.api = _api
+		self.group = _group
 	@property
 	def id(self):
 		return self._data['id']
@@ -323,7 +325,7 @@ class ChatMessage:
 		params = dict()
 		if comment:
 			params['comment'] = comment
-		self._data = self.api.post('groups', self.group.id, 'chat', self.id, 'flag').data
+		self._data = self.api.post('groups', self.group.id, 'chat', self.id, 'flag', **params).data
 	def like(self):
 		self._data = self.api.post('groups', self.group.id, 'chat', self.id, 'like').data
 	def clearflags(self):
@@ -338,22 +340,22 @@ class Chat:
 		return self.messages()
 	def messages(self):
 		if self._entries is None:
-			self._entries = [ChatMessage(entry) for entry in self.api.get('groups', self._group.id, 'chat').data]
+			self._entries = [ChatMessage(entry, _group=self._group, _api=self.api) for entry in self.api.get('groups', self._group.id, 'chat').data]
 		return self._entries
 	def mark_as_read(self):
 		self.api.post('groups', self._group.id, 'chat', 'seen')
 	def delete(self, message):
 		if self._entries:
 			new_entries = self.api.delete('groups', self._group.id, 'chat', message.id, previousMsg=self._entries[-1].id).data
-			self._entries = [ChatMessage(entry) for entry in new_entries]
+			self._entries = [ChatMessage(entry, _group=self._group, _api=self.api) for entry in new_entries]
 		else:
 			self.api.delete('groups', self._group.id, 'chat', message.id)
-	def post(self, message):
+	def post(self, message_text):
 		if self._entries:
-			new_entries = self.api.post('groups', self._group.id, 'chat', _body={'message':message}).data
-			self._entries = [ChatMessage(entry) for entry in new_entries]
+			new_entries = self.api.post('groups', self._group.id, 'chat', previousMsg=self._entries[-1].id,  _body={'message':message_text}).data
 		else:
-			self.api.post('groups', self._group.id, 'chat', _body={'message':message})
+			new_entries = self.api.post('groups', self._group.id, 'chat', _body={'message':message_text}).data
+		self._entries = [ChatMessage(entry, _group=self._group, _api=self.api) for entry in new_entries]
 
 class Group:
 	""" Habitica's user group: a guild, a party, the Tavern. """

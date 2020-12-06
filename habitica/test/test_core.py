@@ -266,3 +266,192 @@ class TestChallenges(unittest.TestCase):
 		challenge.delete()
 		self.assertEqual(challenge.api.responses[-1].method, 'delete')
 		self.assertEqual(challenge.api.responses[-1].path[-1], 'chlng1')
+
+class TestChat(unittest.TestCase):
+	def should_fetch_messages(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockRequest('get', ['groups'], {'data': [{
+					'name' : 'Party',
+					'id' : 'group1',
+					}]}),
+			MockRequest('get', ['groups', 'group1', 'chat'], {'data': [{
+					'id' : 'chat1',
+					'user' : 'person1',
+					'timestamp' : 1600000000,
+					'text' : 'Hello',
+					},{
+					'id' : 'chat2',
+					'user' : 'person2',
+					'timestamp' : 1600001000,
+					'text' : 'Hello back',
+					}]}),
+			))
+
+		party = habitica.groups(core.Group.PARTY)[0]
+		messages = party.chat()
+		self.assertEqual(messages[0].id, 'chat1')
+		self.assertEqual(messages[0].timestamp, 1600000000)
+		self.assertEqual(messages[0].user, 'person1')
+		self.assertEqual(messages[0].text, 'Hello')
+		self.assertEqual(messages[1].id, 'chat2')
+		self.assertEqual(messages[1].timestamp, 1600001000)
+		self.assertEqual(messages[1].user, 'person2')
+		self.assertEqual(messages[1].text, 'Hello back')
+	def should_flag_message(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockRequest('get', ['groups'], {'data': [{
+					'name' : 'Party',
+					'id' : 'group1',
+					}]}),
+			MockRequest('get', ['groups', 'group1', 'chat'], {'data': [{
+					'id' : 'chat1',
+					'user' : 'person1',
+					'timestamp' : 1600000000,
+					'text' : 'Hello',
+					}]}),
+			MockRequest('post', ['groups', 'group1', 'chat', 'chat1', 'flag'], {'data': {
+					'id' : 'chat1',
+					'user' : 'person1',
+					'timestamp' : 1600000000,
+					'text' : 'Hello',
+					'flagged' : True,
+					}}),
+			))
+
+		party = habitica.groups(core.Group.PARTY)[0]
+		message = party.chat()[0]
+		message.flag(comment='Yazaban!')
+		self.assertTrue(message._data['flagged'])
+	def should_clear_message_from_flags(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockRequest('get', ['groups'], {'data': [{
+					'name' : 'Party',
+					'id' : 'group1',
+					}]}),
+			MockRequest('get', ['groups', 'group1', 'chat'], {'data': [{
+					'id' : 'chat1',
+					'user' : 'person1',
+					'timestamp' : 1600000000,
+					'text' : 'Hello',
+					}]}),
+			MockRequest('post', ['groups', 'group1', 'chat', 'chat1', 'clearflags'], {'data': {
+					}}),
+			))
+
+		party = habitica.groups(core.Group.PARTY)[0]
+		message = party.chat()[0]
+		message.clearflags()
+	def should_like_message(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockRequest('get', ['groups'], {'data': [{
+					'name' : 'Party',
+					'id' : 'group1',
+					}]}),
+			MockRequest('get', ['groups', 'group1', 'chat'], {'data': [{
+					'id' : 'chat1',
+					'user' : 'person1',
+					'timestamp' : 1600000000,
+					'text' : 'Hello',
+					}]}),
+			MockRequest('post', ['groups', 'group1', 'chat', 'chat1', 'like'], {'data': {
+					'id' : 'chat1',
+					'user' : 'person1',
+					'timestamp' : 1600000000,
+					'text' : 'Hello',
+					'liked' : 1,
+					}}),
+			))
+
+		party = habitica.groups(core.Group.PARTY)[0]
+		message = party.chat()[0]
+		message.like()
+		self.assertEqual(message._data['liked'], 1)
+	def should_mark_messages_as_read(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockRequest('get', ['groups'], {'data': [{
+					'name' : 'Party',
+					'id' : 'group1',
+					}]}),
+			MockRequest('post', ['groups', 'group1', 'chat', 'seen'], {'data': [
+					]}),
+			))
+
+		party = habitica.groups(core.Group.PARTY)[0]
+		party.chat.mark_as_read()
+	def should_delete_messages(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockRequest('get', ['groups'], {'data': [{
+					'name' : 'Party',
+					'id' : 'group1',
+					}]}),
+			MockRequest('delete', ['groups', 'group1', 'chat', 'chat1'], {'data': [{
+					}]}),
+			MockRequest('get', ['groups', 'group1', 'chat'], {'data': [{
+					'id' : 'chat1',
+					'user' : 'person1',
+					'timestamp' : 1600000000,
+					'text' : 'Hello',
+					}]}),
+			MockRequest('delete', ['groups', 'group1', 'chat', 'chat1'], {'data': [{
+					'id' : 'chat2',
+					'user' : 'person2',
+					'timestamp' : 1600001000,
+					'text' : 'Hello back',
+					}]}),
+			))
+
+		party = habitica.groups(core.Group.PARTY)[0]
+		chat = party.chat
+		chat.delete(core.ChatMessage(_data={'id':'chat1'}))
+		self.assertFalse(chat._entries)
+		self.assertEqual(chat.messages()[0].id, 'chat1')
+		self.assertEqual(chat.messages()[0].timestamp, 1600000000)
+		self.assertEqual(chat.messages()[0].user, 'person1')
+		self.assertEqual(chat.messages()[0].text, 'Hello')
+		chat.delete(core.ChatMessage(_data={'id':'chat1'}))
+		self.assertEqual(chat.messages()[0].id, 'chat2')
+		self.assertEqual(chat.messages()[0].timestamp, 1600001000)
+		self.assertEqual(chat.messages()[0].user, 'person2')
+		self.assertEqual(chat.messages()[0].text, 'Hello back')
+	def should_post_messages(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockRequest('get', ['groups'], {'data': [{
+					'name' : 'Party',
+					'id' : 'group1',
+					}]}),
+			MockRequest('post', ['groups', 'group1', 'chat'], {'data': [{
+					'id' : 'chat1',
+					'user' : 'person1',
+					'timestamp' : 1600000000,
+					'text' : 'Hello',
+					}]}),
+			MockRequest('post', ['groups', 'group1', 'chat'], {'data': [{
+					'id' : 'chat1',
+					'user' : 'person1',
+					'timestamp' : 1600000000,
+					'text' : 'Hello',
+					},{
+					'id' : 'chat1.2',
+					'user' : 'person1',
+					'timestamp' : 1600000400,
+					'text' : 'Hey?',
+					},{
+					'id' : 'chat2',
+					'user' : 'person2',
+					'timestamp' : 1600001000,
+					'text' : 'Hello back',
+					}]}),
+			))
+
+		party = habitica.groups(core.Group.PARTY)[0]
+		chat = party.chat
+		chat.post('Hello')
+		self.assertEqual(chat.messages()[0].id, 'chat1')
+		self.assertEqual(chat.messages()[0].timestamp, 1600000000)
+		self.assertEqual(chat.messages()[0].user, 'person1')
+		self.assertEqual(chat.messages()[0].text, 'Hello')
+		chat.post('Hey?')
+		self.assertEqual(chat.messages()[2].id, 'chat2')
+		self.assertEqual(chat.messages()[2].timestamp, 1600001000)
+		self.assertEqual(chat.messages()[2].user, 'person2')
+		self.assertEqual(chat.messages()[2].text, 'Hello back')
