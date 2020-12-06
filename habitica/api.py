@@ -13,6 +13,7 @@ import requests.adapters
 import urllib3
 import urllib3.util.retry
 logging.getLogger('urllib3.connectionpool').setLevel(logging.CRITICAL)
+from . import config
 
 USER_ID_FILE = Path(pkg_resources.resource_filename('habitica', 'data/USER_ID'))
 if not USER_ID_FILE.exists(): # pragma: no cover -- TODO duplicates code from setup.py. Needs to be moved to habitica.config and re-used.
@@ -79,6 +80,34 @@ class API(object):
                     raise exc()
             raise
 
+    class Cached: # pragma: no cover -- TODO uses external FS cache and invalidation by time.
+        def __init__(self, api, cache_entry_name):
+            self.api = api
+            self.name = cache_entry_name
+        def _cached_request(self, method, *args, **kwargs):
+            cache_file = Path(config.get_cache_dir())/("{0}.cache.json".format(self.name))
+            logging.debug("Using cache entry '{0}'".format(self.name))
+            if not cache_file.exists() or time.time() > cache_file.stat().st_mtime + 60*60*24: # TODO how to invalidate Habitica content cache?
+                logging.debug("Cache was invalid, making actual request...")
+                data = getattr(self.api, method)(*args, **kwargs)
+                cache_file.write_text(json.dumps(data))
+            else:
+                logging.debug("Cache was still valid, loading cached data...")
+                data = dotdict(json.loads(cache_file.read_text()))
+            return data
+        def get(self, *args, **kwargs):
+            return self._cached_request('get', *args, **kwargs)
+        def post(self, *args, **kwargs):
+            return self._cached_request('post', *args, **kwargs)
+        def put(self, *args, **kwargs):
+            return self._cached_request('put', *args, **kwargs)
+        def delete(self, *args, **kwargs):
+            return self._cached_request('delete', *args, **kwargs)
+        def call(self, *args, **kwargs):
+            return self._cached_request('call', *args, **kwargs)
+        def __getattr__(self, attr):
+            return getattr(self.api, attr)
+
     def __init__(self, base_url, login, password, batch_mode=True):
         """ Creates authenticated API instance.
         If batch_mode is True (default), introduces significant delays
@@ -96,6 +125,9 @@ class API(object):
               'content-type': 'application/json',
               }
         self._last_request_time = 0
+    def cached(self, cache_entry_name):
+        return API.Cached(self, cache_entry_name)
+
     def get_url(self, *parts):
         """ Makes URL to call specified .../subpath/of/parts. """
         return '/'.join([self.base_url, 'api', 'v3'] + list(parts))

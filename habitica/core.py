@@ -1,6 +1,7 @@
 import os
 import json
 import datetime, time
+import logging
 from bisect import bisect
 from pathlib import Path
 from functools import lru_cache
@@ -17,12 +18,7 @@ class Content:
 	""" Cache for all Habitica content. """
 	def __init__(self, _api=None):
 		self.api = _api
-		self.cache_file = Path(config.get_cache_dir())/"content.cache.json"
-		if not self.cache_file.exists() or time.time() > self.cache_file.stat().st_mtime + 60*60*24: # TODO how to invalidate Habitica content cache?
-			self._data = self.api.get('content').data
-			self.cache_file.write_text(json.dumps(self._data))
-		else:
-			self._data = json.loads(self.cache_file.read_text())
+		self._data = self.api.cached('content').get('content').data
 	@property
 	def potion(self):
 		return HealthPotion(_api=self.api, _data=self._data['potion'])
