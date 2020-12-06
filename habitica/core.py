@@ -431,10 +431,7 @@ class Quest:
 	def progress(self):
 		if self._content().get('collect'):
 			qp_tmp = self._data['progress']['collect']
-			try:
-				quest_progress = list(qp_tmp.values())[0]['count']
-			except TypeError:
-				quest_progress = list(qp_tmp.values())[0]
+			quest_progress = sum(qp_tmp.values())
 			return quest_progress
 		else:
 			return self._data['progress']['hp']
@@ -480,7 +477,7 @@ class UserStats:
 		return self._data['exp']
 	@property
 	def maxExperience(self):
-		return self._data['toNextLevel']
+		return self._data['exp'] + self._data['toNextLevel']
 	@property
 	def mana(self):
 		return self._data['mp']
@@ -520,7 +517,7 @@ class HealthPotion:
 		return self._data['notes']
 	@property
 	def key(self):
-		return self._data['type']
+		return self._data['key']
 	@property
 	def type(self):
 		return self._data['type']
@@ -535,7 +532,7 @@ class HealthPotion:
 			self.api = user.api
 		if self.overflow_check and user.stats.hp + self.VALUE > user.stats.maxHealth:
 			raise HealthOverflowError(user.stats.hp, user.stats.maxHealth)
-		self._data = self.api.post('user', 'buy-health-potion').data
+		user._data = self.api.post('user', 'buy-health-potion').data
 
 class Pet:
 	def __init__(self, _data=None, _api=None, _special=None):

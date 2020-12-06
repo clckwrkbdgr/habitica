@@ -19,7 +19,44 @@ class MockAPI:
 		self.requests = list(requests)
 		self.responses = []
 		self.cache = [
-			MockRequest('get', ['content'], {'data': {'pets': '...'}}, cached=True),
+			MockRequest('get', ['content'], {'data': {
+				'potion' : {
+					'text' : 'Health Potion',
+					'notes' : 'Heals 15 hp',
+					'type' : 'potion',
+					'key' : 'HealthPotion',
+					'value' : 25,
+					},
+				'quests' : {
+					'mycollectquest' : {
+						'text' : 'Collect N items',
+						'collect' : {
+							'item1' : {
+								'count' : 40,
+								},
+							'item2' : {
+								'count' : 60,
+								},
+							},
+						},
+					'mybossquest' : {
+						'text' : 'Slay Boss',
+						'boss' : {
+							'hp' : 200,
+							},
+						},
+					},
+				'petInfo': {
+					'Fox' : {
+						'text' : 'Fox',
+						},
+					},
+				'mountInfo': {
+					'Wolf' : {
+						'text' : 'Wolf',
+						},
+					},
+				}}, cached=True),
 			]
 	def cached(self, *args, **kwargs):
 		return self
@@ -455,3 +492,135 @@ class TestChat(unittest.TestCase):
 		self.assertEqual(chat.messages()[2].timestamp, 1600001000)
 		self.assertEqual(chat.messages()[2].user, 'person2')
 		self.assertEqual(chat.messages()[2].text, 'Hello back')
+
+class TestUser(unittest.TestCase):
+	def _user_data(self, stats=None, **kwargs):
+		result = {
+				'stats' : {
+					'class': 'rogue',
+					'hp': 30.0,
+					'maxHealth': 50.0,
+					'lvl': 33,
+					'exp': 1049.4,
+					'toNextLevel': 51.6,
+					'mp': 11.0,
+					'maxMP': 55.0,
+					'gp': 15.0,
+					},
+				'preferences' : {
+					'timezoneOffset' : 180,
+					},
+				'items' : {
+					'food' : [
+						'Meat', 'Honey',
+						],
+					'currentPet' : 'Fox',
+					'currentMount' : 'Wolf',
+					},
+				}
+		if stats:
+			result['stats'].update(stats)
+		result.update(kwargs)
+		return result
+	def should_get_user_stats(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockRequest('get', ['user'], {'data': self._user_data()}),
+			))
+		user = habitica.user()
+		self.assertEqual(user.stats.class_name, 'rogue')
+		self.assertEqual(user.stats.hp, 30.0)
+		self.assertEqual(user.stats.maxHealth, 50.0)
+		self.assertEqual(user.stats.level, 33)
+		self.assertEqual(user.stats.experience, 1049.4)
+		self.assertEqual(user.stats.maxExperience, 1101.0)
+		self.assertEqual(user.stats.mana, 11.0)
+		self.assertEqual(user.stats.maxMana, 55.0)
+		self.assertEqual(user.stats.gold, 15.0)
+	def should_get_user_preferences(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockRequest('get', ['user'], {'data': self._user_data()}),
+			))
+		user = habitica.user()
+		self.assertEqual(user.preferences.timezoneOffset, 180)
+	def should_get_food_in_user_inventory(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockRequest('get', ['user'], {'data': self._user_data()}),
+			))
+		user = habitica.user()
+		self.assertEqual(len(user.inventory.food), 2)
+	def should_get_user_pet_and_mount(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockRequest('get', ['user'], {'data': self._user_data()}),
+			))
+		user = habitica.user()
+		self.assertEqual(user.inventory.pet.text, 'Fox')
+		self.assertEqual(user.inventory.mount.text, 'Wolf')
+	def should_buy_health_potion(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockRequest('get', ['user'], {'data': self._user_data()}),
+			MockRequest('post', ['user', 'buy-health-potion'], {
+				'data': self._user_data(stats={'hp':45.0}),
+				}),
+			))
+		user = habitica.user()
+		potion = habitica.content.potion
+		self.assertEqual(potion.text, 'Health Potion')
+		self.assertEqual(potion.key, 'HealthPotion')
+		self.assertEqual(potion.notes, 'Heals 15 hp')
+		self.assertEqual(potion.type, 'potion')
+		self.assertEqual(potion.cost, 25)
+		self.assertEqual(potion.currency, 'gold')
+		user.buy(potion)
+		self.assertEqual(user.stats.hp, 45.0)
+
+		with self.assertRaises(core.HealthOverflowError) as e:
+			potion = core.HealthPotion()
+			user.buy(potion)
+		self.assertEqual(str(e.exception), 'HP is too high, part of health potion would be wasted.')
+
+class TestQuest(unittest.TestCase):
+	def should_show_progress_of_collection_quest(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockRequest('get', ['user'], {'data': {
+				}}),
+			MockRequest('get', ['groups', 'party'], {'data': {
+				'quest' : {
+					'active' : True,
+					'key' : 'mycollectquest',
+					'progress' : {
+						'collect' : {
+							'item1' : 7,
+							'item2' : 3,
+							}
+						},
+					},
+				}}),
+			))
+		party = habitica.user().party()
+		quest = party.quest
+		self.assertTrue(quest.active)
+		self.assertEqual(quest.key, 'mycollectquest')
+		self.assertEqual(quest.title, 'Collect N items')
+		self.assertEqual(quest.progress, 10)
+		self.assertEqual(quest.max_progress, 100)
+	def should_show_progress_of_boss_quest(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockRequest('get', ['user'], {'data': {
+				}}),
+			MockRequest('get', ['groups', 'party'], {'data': {
+				'quest' : {
+					'active' : True,
+					'key' : 'mybossquest',
+					'progress': {
+						'hp' : 20,
+						},
+					},
+				}}),
+			))
+		party = habitica.user().party()
+		quest = party.quest
+		self.assertTrue(quest.active)
+		self.assertEqual(quest.key, 'mybossquest')
+		self.assertEqual(quest.title, 'Slay Boss')
+		self.assertEqual(quest.progress, 20)
+		self.assertEqual(quest.max_progress, 200)
