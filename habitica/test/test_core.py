@@ -624,3 +624,152 @@ class TestQuest(unittest.TestCase):
 		self.assertEqual(quest.title, 'Slay Boss')
 		self.assertEqual(quest.progress, 20)
 		self.assertEqual(quest.max_progress, 200)
+
+class TestRewards(unittest.TestCase):
+	def should_get_user_rewards(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockRequest('get', ['user'], {'data': {
+				}}),
+			MockRequest('get', ['tasks', 'user'], {'data': [
+				{'id':'reward1', 'text':'Eat'},
+				{'id':'reward2', 'text':'Sleep'},
+				],
+				}),
+			))
+		user = habitica.user()
+		rewards = user.rewards()
+		self.assertEqual(rewards[0].id, 'reward1')
+		self.assertEqual(rewards[0].text, 'Eat')
+		self.assertEqual(rewards[1].id, 'reward2')
+		self.assertEqual(rewards[1].text, 'Sleep')
+	def should_buy_reward(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockRequest('get', ['user'], {'data': {
+				}}),
+			MockRequest('get', ['tasks', 'user'], {'data': [
+				{'id':'reward1', 'text':'Eat'},
+				{'id':'reward2', 'text':'Sleep'},
+				],
+				}),
+			MockRequest('post', ['tasks', 'reward1', 'score', 'up'], {
+				'data': {},
+				}),
+			))
+		user = habitica.user()
+		rewards = user.rewards()
+		user.buy(rewards[0])
+
+class TestHabits(unittest.TestCase):
+	def should_get_list_of_user_habits(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockRequest('get', ['user'], {'data': {
+				}}),
+			MockRequest('get', ['tasks', 'user'], {'data': [
+				{
+					'id':'habit1',
+					'text':'Keep calm',
+					'notes':'And carry on',
+					'value':5.1,
+					'up':True,
+					'down':False,
+					},
+				],
+				}),
+			))
+		user = habitica.user()
+		habits = user.habits()
+		self.assertEqual(habits[0].id, 'habit1')
+		self.assertEqual(habits[0].text, 'Keep calm')
+		self.assertEqual(habits[0].notes, 'And carry on')
+		self.assertEqual(habits[0].value, 5.1)
+		self.assertEqual(habits[0].color, core.Task.LIGHT_BLUE)
+		self.assertTrue(habits[0].can_score_up)
+		self.assertFalse(habits[0].can_score_down)
+	def should_separate_habits_by_color(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockRequest('get', ['user'], {'data': {
+				}}),
+			MockRequest('get', ['tasks', 'user'], {'data': [
+				{ 'value':-50.1, },
+				{ 'value':-15.4, },
+				{ 'value':-5.6, },
+				{ 'value':0.0, },
+				{ 'value':1.1, },
+				{ 'value':5.1, },
+				{ 'value':15.1, },
+				],
+				}),
+			))
+		user = habitica.user()
+		habits = user.habits()
+		self.assertEqual(habits[0].color, core.Task.DARK_RED)
+		self.assertEqual(habits[1].color, core.Task.RED)
+		self.assertEqual(habits[2].color, core.Task.ORANGE)
+		self.assertEqual(habits[3].color, core.Task.YELLOW)
+		self.assertEqual(habits[4].color, core.Task.GREEN)
+		self.assertEqual(habits[5].color, core.Task.LIGHT_BLUE)
+		self.assertEqual(habits[6].color, core.Task.BRIGHT_BLUE)
+	def should_score_habits_up(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockRequest('get', ['user'], {'data': {
+				}}),
+			MockRequest('get', ['tasks', 'user'], {'data': [
+				{
+					'id':'habit1',
+					'text':'Keep calm',
+					'value':5.1,
+					'up':True,
+					'down':False,
+					},
+				{
+					'id':'habit2',
+					'text':'Carry on',
+					'value':5.1,
+					'up':False,
+					'down':False,
+					},
+				],
+				}),
+			MockRequest('post', ['tasks', 'habit1', 'score', 'up'], {'data': {
+				'delta' : 1.1,
+				}}),
+			))
+		user = habitica.user()
+		habits = user.habits()
+		habits[0].up()
+		self.assertAlmostEqual(habits[0].value, 6.2)
+		with self.assertRaises(core.CannotScoreUp) as e:
+			habits[1].up()
+		self.assertEqual(str(e.exception), "Habit 'Carry on' cannot be incremented")
+	def should_score_habits_down(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockRequest('get', ['user'], {'data': {
+				}}),
+			MockRequest('get', ['tasks', 'user'], {'data': [
+				{
+					'id':'habit1',
+					'text':'Keep calm',
+					'value':5.1,
+					'up':False,
+					'down':True,
+					},
+				{
+					'id':'habit2',
+					'text':'Carry on',
+					'value':5.1,
+					'up':True,
+					'down':False,
+					},
+				],
+				}),
+			MockRequest('post', ['tasks', 'habit1', 'score', 'down'], {'data': {
+				'delta' : -1.1,
+				}}),
+			))
+		user = habitica.user()
+		habits = user.habits()
+		habits[0].down()
+		self.assertAlmostEqual(habits[0].value, 4.0)
+		with self.assertRaises(core.CannotScoreDown) as e:
+			habits[1].down()
+		self.assertEqual(str(e.exception), "Habit 'Carry on' cannot be decremented")

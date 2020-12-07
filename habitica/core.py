@@ -616,8 +616,6 @@ class Reward:
 	def text(self):
 		return self._data['text']
 	def _buy(self, user):
-		if self.api is None:
-			self.api = user.api
 		self.api.post('tasks', self.id, 'score', 'up')
 
 class CannotScoreUp(Exception):
@@ -669,13 +667,11 @@ class Habit(Task):
 	def up(self):
 		if not self._data['up']:
 			raise CannotScoreUp(self)
-		tval = self._data['value']
 		result = self.api.post('tasks', self.id, 'score', 'up').data
 		self._data['value'] += result['delta']
 	def down(self):
 		if not self._data['down']:
 			raise CannotScoreDown(self)
-		tval = self._data['value']
 		result = self.api.post('tasks', self.id, 'score', 'down').data
 		self._data['value'] += result['delta']
 
