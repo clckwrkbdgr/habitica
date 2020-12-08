@@ -681,10 +681,10 @@ class Checkable:
 	@property
 	def is_completed(self):
 		return self._data['completed']
-	def complete(self):
+	def complete(self): # pragma: no cover
 		""" Marks entry as completed. """
 		raise NotImplementedError
-	def undo(self):
+	def undo(self): # pragma: no cover
 		""" Marks entry as not completed. """
 		raise NotImplementedError
 
@@ -766,7 +766,7 @@ class Daily(Task, Checkable, Checklist):
 		elif self._data['frequency'] == 'weekly':
 			if not self._data['repeat'][HABITICA_WEEK[today.weekday()]]:
 				return False
-		else:
+		else: # pragma: no cover
 			raise ValueError("Unknown daily frequency: {0}".format(self._data['frequency']))
 		return True
 
@@ -838,7 +838,7 @@ class User:
 	def dailies(self):
 		return self._proxy.dailies()
 	def todos(self):
-		return self._proxy.dailies()
+		return self._proxy.todos()
 	def rewards(self):
 		return self._proxy.rewards()
 	def challenges(self):

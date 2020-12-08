@@ -1,7 +1,7 @@
 import unittest, unittest.mock
 unittest.defaultTestLoader.testMethodPrefix = 'should'
 from collections import namedtuple
-from .. import core, api
+from .. import core, api, timeutils
 
 class MockRequest:
 	def __init__(self, method, path, response, cached=False):
@@ -75,7 +75,7 @@ class MockAPI:
 		request.params = params
 		request.body = body
 		self.responses.append(request)
-		if request.cached:
+		if request.cached: # pragma: no cover
 			self.cache.append(request)
 		return request.response
 	def get(self, *path, **params):
@@ -773,3 +773,334 @@ class TestHabits(unittest.TestCase):
 		with self.assertRaises(core.CannotScoreDown) as e:
 			habits[1].down()
 		self.assertEqual(str(e.exception), "Habit 'Carry on' cannot be decremented")
+
+class TestDailies(unittest.TestCase):
+	def should_get_list_of_user_dailies(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockRequest('get', ['user'], {'data': {
+				}}),
+			MockRequest('get', ['tasks', 'user'], {'data': [
+				{
+					'id':'daily1',
+					'text':'Rise',
+					'notes':'And shine',
+					'completed':False,
+					'checklist': [
+						{
+							'id':'subdaily1',
+							'text':'Rise',
+							'completed':True,
+							},
+						{
+							'id':'subdaily2',
+							'text':'Shine',
+							'completed':False,
+							},
+						],
+					},
+				],
+				}),
+			))
+		user = habitica.user()
+		dailies = user.dailies()
+		self.assertEqual(dailies[0].id, 'daily1')
+		self.assertEqual(dailies[0].text, 'Rise')
+		self.assertEqual(dailies[0].notes, 'And shine')
+		self.assertFalse(dailies[0].is_completed)
+
+		checklist = dailies[0].checklist
+		self.assertEqual(checklist[0].id, 'subdaily1')
+		self.assertEqual(checklist[0].text, 'Rise')
+		self.assertTrue(checklist[0].is_completed)
+		self.assertEqual(checklist[0].parent.id, 'daily1')
+
+		self.assertEqual(dailies[0][1].id, 'subdaily2')
+		self.assertEqual(dailies[0][1].text, 'Shine')
+		self.assertFalse(dailies[0][1].is_completed)
+	def should_detect_due_dailies(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockRequest('get', ['user'], {'data': {
+				}}),
+			MockRequest('get', ['tasks', 'user'], {'data': [
+				{
+					'id':'daily1',
+					'text':'Rise',
+					'frequency':'daily',
+					'startDate':'2016-06-20T21:00:00.000Z',
+					'everyX':12,
+					},
+				{
+					'id':'daily2',
+					'text':'Survive Monday',
+					'frequency':'weekly',
+					'repeat':{
+						"m":True,
+						"t":False,
+						"w":False,
+						"th":False,
+						"f":False,
+						"s":False,
+						"su":False,
+						},
+					},
+				],
+				}),
+			))
+		user = habitica.user()
+		dailies = user.dailies()
+
+		self.assertFalse(dailies[0].is_due(today=timeutils.parse_isodate('2016-11-09 16:51:15.930842'), timezoneOffset=-120))
+		self.assertFalse(dailies[0].is_due(today=timeutils.parse_isodate('2016-11-10 16:51:15.930842'), timezoneOffset=-120))
+		self.assertTrue(dailies[0].is_due(today=timeutils.parse_isodate('2016-11-11 16:51:15.930842'), timezoneOffset=-120))
+		self.assertFalse(dailies[0].is_due(today=timeutils.parse_isodate('2016-11-12 16:51:15.930842'), timezoneOffset=-120))
+		self.assertTrue(dailies[0].is_due(today=timeutils.parse_isodate('2016-11-23 16:51:15.930842'), timezoneOffset=-120))
+
+		self.assertFalse(dailies[1].is_due(today=timeutils.parse_isodate('2016-11-09 16:51:15.930842'), timezoneOffset=-120))
+		self.assertFalse(dailies[1].is_due(today=timeutils.parse_isodate('2016-11-10 16:51:15.930842'), timezoneOffset=-120))
+		self.assertFalse(dailies[1].is_due(today=timeutils.parse_isodate('2016-11-11 16:51:15.930842'), timezoneOffset=-120))
+		self.assertFalse(dailies[1].is_due(today=timeutils.parse_isodate('2016-11-12 16:51:15.930842'), timezoneOffset=-120))
+		self.assertFalse(dailies[1].is_due(today=timeutils.parse_isodate('2016-11-13 16:51:15.930842'), timezoneOffset=-120))
+		self.assertTrue(dailies[1].is_due(today=timeutils.parse_isodate('2016-11-14 16:51:15.930842'), timezoneOffset=-120))
+		self.assertFalse(dailies[1].is_due(today=timeutils.parse_isodate('2016-11-15 16:51:15.930842'), timezoneOffset=-120))
+		self.assertFalse(dailies[1].is_due(today=timeutils.parse_isodate('2016-11-16 16:51:15.930842'), timezoneOffset=-120))
+	def should_complete_daily(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockRequest('get', ['user'], {'data': {
+				}}),
+			MockRequest('get', ['tasks', 'user'], {'data': [
+				{
+					'id':'daily1',
+					'text':'Rise',
+					'notes':'And shine',
+					'completed':False,
+					},
+				],
+				}),
+			MockRequest('post', ['tasks', 'daily1', 'score', 'up'], {'data': {
+				}}),
+			MockRequest('post', ['tasks', 'daily1', 'score', 'down'], {'data': {
+				}}),
+			))
+		user = habitica.user()
+		dailies = user.dailies()
+		self.assertFalse(dailies[0].is_completed)
+
+		dailies[0].complete()
+		self.assertTrue(dailies[0].is_completed)
+
+		dailies[0].undo()
+		self.assertFalse(dailies[0].is_completed)
+	def should_complete_check_items(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockRequest('get', ['user'], {'data': {
+				}}),
+			MockRequest('get', ['tasks', 'user'], {'data': [
+				{
+					'id':'daily1',
+					'text':'Rise',
+					'notes':'And shine',
+					'completed':False,
+					'checklist': [
+						{
+							'id':'subdaily1',
+							'text':'Rise',
+							'completed':True,
+							},
+						{
+							'id':'subdaily2',
+							'text':'Shine',
+							'completed':False,
+							},
+						],
+					},
+				],
+				}),
+			MockRequest('post', ['tasks', 'daily1', 'checklist', 'subdaily1', 'score'], {'data': {
+				}}),
+			MockRequest('post', ['tasks', 'daily1', 'checklist', 'subdaily2', 'score'], {'data': {
+				}}),
+			))
+		user = habitica.user()
+		dailies = user.dailies()
+		self.assertFalse(dailies[0].is_completed)
+
+		dailies[0][0].complete()
+		self.assertTrue(dailies[0][0].is_completed)
+		dailies[0][0].undo()
+		self.assertFalse(dailies[0][0].is_completed)
+
+		dailies[0][1].undo()
+		self.assertFalse(dailies[0][1].is_completed)
+		dailies[0][1].complete()
+		self.assertTrue(dailies[0][1].is_completed)
+
+class TestTodos(unittest.TestCase):
+	def should_get_list_of_user_todos(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockRequest('get', ['user'], {'data': {
+				}}),
+			MockRequest('get', ['tasks', 'user'], {'data': [
+				{
+					'id':'todo1',
+					'text':'Rise',
+					'notes':'And shine',
+					'completed':False,
+					'checklist': [
+						{
+							'id':'subtodo1',
+							'text':'Rise',
+							'completed':True,
+							},
+						{
+							'id':'subtodo2',
+							'text':'Shine',
+							'completed':False,
+							},
+						],
+					},
+				],
+				}),
+			))
+		user = habitica.user()
+		todos = user.todos()
+		self.assertEqual(todos[0].id, 'todo1')
+		self.assertEqual(todos[0].text, 'Rise')
+		self.assertEqual(todos[0].notes, 'And shine')
+		self.assertFalse(todos[0].is_completed)
+
+		checklist = todos[0].checklist
+		self.assertEqual(checklist[0].id, 'subtodo1')
+		self.assertEqual(checklist[0].text, 'Rise')
+		self.assertTrue(checklist[0].is_completed)
+		self.assertEqual(checklist[0].parent.id, 'todo1')
+
+		self.assertEqual(todos[0][1].id, 'subtodo2')
+		self.assertEqual(todos[0][1].text, 'Shine')
+		self.assertFalse(todos[0][1].is_completed)
+	def should_complete_todo(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockRequest('get', ['user'], {'data': {
+				}}),
+			MockRequest('get', ['tasks', 'user'], {'data': [
+				{
+					'id':'todo1',
+					'text':'Rise',
+					'notes':'And shine',
+					'completed':False,
+					},
+				],
+				}),
+			MockRequest('post', ['tasks', 'todo1', 'score', 'up'], {'data': {
+				}}),
+			MockRequest('post', ['tasks', 'todo1', 'score', 'down'], {'data': {
+				}}),
+			))
+		user = habitica.user()
+		todos = user.todos()
+		self.assertFalse(todos[0].is_completed)
+
+		todos[0].complete()
+		self.assertTrue(todos[0].is_completed)
+
+		todos[0].undo()
+		self.assertFalse(todos[0].is_completed)
+	def should_complete_check_items(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockRequest('get', ['user'], {'data': {
+				}}),
+			MockRequest('get', ['tasks', 'user'], {'data': [
+				{
+					'id':'todo1',
+					'text':'Rise',
+					'notes':'And shine',
+					'completed':False,
+					'checklist': [
+						{
+							'id':'subtodo1',
+							'text':'Rise',
+							'completed':True,
+							},
+						{
+							'id':'subtodo2',
+							'text':'Shine',
+							'completed':False,
+							},
+						],
+					},
+				],
+				}),
+			MockRequest('post', ['tasks', 'todo1', 'checklist', 'subtodo1', 'score'], {'data': {
+				}}),
+			MockRequest('post', ['tasks', 'todo1', 'checklist', 'subtodo2', 'score'], {'data': {
+				}}),
+			))
+		user = habitica.user()
+		todos = user.todos()
+		self.assertFalse(todos[0].is_completed)
+
+		todos[0][0].complete()
+		self.assertTrue(todos[0][0].is_completed)
+		todos[0][0].undo()
+		self.assertFalse(todos[0][0].is_completed)
+
+		todos[0][1].undo()
+		self.assertFalse(todos[0][1].is_completed)
+		todos[0][1].complete()
+		self.assertTrue(todos[0][1].is_completed)
+
+class TestSpells(unittest.TestCase):
+	def should_get_full_list_of_spells_for_user(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockRequest('get', ['user'], {'data': {
+				'stats': {
+					'class':'rogue',
+					},
+				}}),
+			))
+		user = habitica.user()
+		spells = sorted(user.spells(), key=lambda s:s.name)
+		self.assertEqual(spells[0].name, 'backStab')
+		self.assertEqual(spells[1].name, 'pickPocket')
+		self.assertEqual(spells[2].name, 'stealth')
+		self.assertEqual(spells[3].name, 'toolsOfTrade')
+	def should_get_specific_spell(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockRequest('get', ['user'], {'data': {
+				'stats': {
+					'class':'rogue',
+					},
+				}}),
+			))
+		user = habitica.user()
+		spell = user.get_spell('smash')
+		self.assertIsNone(spell)
+		spell = user.get_spell('stealth')
+		self.assertEqual(spell.name, 'stealth')
+		self.assertEqual(spell.description, "Stealth")
+	def should_cast_spell(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockRequest('get', ['user'], {'data': {
+				'stats': {
+					'class':'rogue',
+					},
+				}}),
+			MockRequest('post', ['user', 'class', 'cast', 'stealth'], {'data': {
+				}}),
+			MockRequest('get', ['tasks', 'user'], {'data': [
+				{
+					'id':'todo1',
+					'text':'Rise',
+					'notes':'And shine',
+					'completed':False,
+					},
+				],
+				}),
+			MockRequest('post', ['user', 'class', 'cast', 'backStab'], {'data': {
+				}}),
+			))
+		user = habitica.user()
+		spell = user.get_spell('stealth')
+		user.cast(spell)
+		target = user.todos()[0]
+		spell = user.get_spell('backStab')
+		user.cast(spell, target)
