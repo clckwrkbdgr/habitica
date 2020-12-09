@@ -538,6 +538,7 @@ class Pet:
 	def __init__(self, _data=None, _api=None, _special=None):
 		self.api = _api
 		self._data = _data
+		self._special = _special
 	def __str__(self):
 		return self.text
 	@property
@@ -566,6 +567,7 @@ class Mount:
 	def __init__(self, _data=None, _api=None, _special=None):
 		self.api = _api
 		self._data = _data
+		self._special = _special
 	def __str__(self):
 		return self.text
 	@property

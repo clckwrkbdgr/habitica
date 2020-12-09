@@ -141,15 +141,65 @@ class MockAPI:
 						},
 					},
 				'petInfo': {
-					'Fox' : {
+					'fox' : {
+						'key' : 'fox',
 						'text' : 'Fox',
+						'type' : 'Base',
+						'egg' : 'fox',
+						'potion' : 'base',
+						'canFind' : True,
+						},
+					'badger' : {
+						'key' : 'badger',
+						'text' : 'Badger',
+						'type' : 'Clockwork',
+						'egg' : 'badger',
 						},
 					},
+				'questPets': {
+						'fox':True,
+						},
+				'specialPets': {
+						'fox':False,
+						'badger':True,
+						},
+				'premiumPets': {
+						'fox':True,
+						},
 				'mountInfo': {
-					'Wolf' : {
+					'wolf' : {
 						'text' : 'Wolf',
 						},
 					},
+				'mountInfo': {
+					'fox' : {
+						'key' : 'fox',
+						'text' : 'Fox',
+						'type' : 'Base',
+						'egg' : 'fox',
+						'potion' : 'base',
+						'canFind' : True,
+						},
+					'wolf' : {
+						'key' : 'wolf',
+						'text' : 'Wolf',
+						'type' : 'Clockwork',
+						'egg' : 'wolf',
+						},
+					},
+				'mounts': {
+						'fox':True,
+						},
+				'questMounts': {
+						'fox':True,
+						},
+				'specialMounts': {
+						'fox':False,
+						'wolf':True,
+						},
+				'premiumMounts': {
+						'fox':True,
+						},
 				}}, cached=True),
 			]
 	def cached(self, *args, **kwargs):
@@ -608,8 +658,8 @@ class TestUser(unittest.TestCase):
 					'food' : [
 						'Meat', 'Honey',
 						],
-					'currentPet' : 'Fox',
-					'currentMount' : 'Wolf',
+					'currentPet' : 'fox',
+					'currentMount' : 'wolf',
 					},
 				}
 		if stats:
@@ -1312,3 +1362,66 @@ class TestContent(unittest.TestCase):
 		self.assertFalse(potion.limited)
 		self.assertFalse(potion.wacky)
 		self.assertIsNone(potion.event)
+	def should_retrieve_various_pets(self):
+		habitica = core.Habitica(_api=MockAPI())
+		content = habitica.content
+
+		pet = content.petInfo('fox')
+		self.assertEqual(pet.key, 'fox')
+		self.assertEqual(pet.text, 'Fox')
+		self.assertEqual(pet.type, 'Base')
+		self.assertEqual(pet.egg, 'fox')
+		self.assertEqual(pet.potion, 'base')
+		self.assertTrue(pet.canFind)
+		self.assertFalse(pet.special)
+
+		pet_names = [pet.text for pet in content.petInfo()]
+		self.assertEqual(sorted(pet_names), ['Badger', 'Fox'])
+
+		pet = content.questPets()[0]
+		self.assertEqual(pet.key, 'fox')
+
+		pet = content.premiumPets()[0]
+		self.assertEqual(pet.key, 'fox')
+
+		pet = content.specialPets()[0]
+		self.assertEqual(pet.key, 'badger')
+		self.assertEqual(pet.text, 'Badger')
+		self.assertEqual(pet.type, 'Clockwork')
+		self.assertEqual(pet.egg, 'badger')
+		self.assertIsNone(pet.potion)
+		self.assertIsNone(pet.canFind)
+		self.assertTrue(pet.special)
+	def should_retrieve_various_mounts(self):
+		habitica = core.Habitica(_api=MockAPI())
+		content = habitica.content
+
+		mount = content.mountInfo('fox')
+		self.assertEqual(mount.key, 'fox')
+		self.assertEqual(mount.text, 'Fox')
+		self.assertEqual(mount.type, 'Base')
+		self.assertEqual(mount.egg, 'fox')
+		self.assertEqual(mount.potion, 'base')
+		self.assertTrue(mount.canFind)
+		self.assertFalse(mount.special)
+
+		mount_names = [mount.text for mount in content.mountInfo()]
+		self.assertEqual(sorted(mount_names), ['Fox', 'Wolf'])
+
+		mount = content.mounts()[0]
+		self.assertEqual(mount.key, 'fox')
+
+		mount = content.questMounts()[0]
+		self.assertEqual(mount.key, 'fox')
+
+		mount = content.premiumMounts()[0]
+		self.assertEqual(mount.key, 'fox')
+
+		mount = content.specialMounts()[0]
+		self.assertEqual(mount.key, 'wolf')
+		self.assertEqual(mount.text, 'Wolf')
+		self.assertEqual(mount.type, 'Clockwork')
+		self.assertEqual(mount.egg, 'wolf')
+		self.assertIsNone(mount.potion)
+		self.assertIsNone(mount.canFind)
+		self.assertTrue(mount.special)
