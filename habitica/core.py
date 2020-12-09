@@ -170,8 +170,8 @@ class HatchingPotion:
 	def event(self):
 		if 'event' not in self._data:
 			return None
-		start = datetime.date.strptime('%Y-%m-%d', self._data['event']['start'])
-		end = datetime.date.strptime('%Y-%m-%d', self._data['event']['end'])
+		start = datetime.datetime.strptime(self._data['event']['start'], '%Y-%m-%d').date()
+		end = datetime.datetime.strptime(self._data['event']['end'], '%Y-%m-%d').date()
 		return HabiticaEvent(start, end)
 
 class Food:

@@ -1,5 +1,6 @@
 import unittest, unittest.mock
 unittest.defaultTestLoader.testMethodPrefix = 'should'
+import datetime
 from collections import namedtuple
 from .. import core, api, timeutils
 
@@ -26,6 +27,99 @@ class MockAPI:
 					'type' : 'potion',
 					'key' : 'HealthPotion',
 					'value' : 25,
+					},
+				'armoire' : {
+					'text' : 'Enchanted Armoire',
+					'type' : 'armoire',
+					'key' : 'Armoire',
+					'value' : 100,
+					},
+				'classes' : [
+					'warrior',
+					'rogue',
+					'wizard',
+					'healer',
+					],
+				'gearTypes' : [
+					"headAccessory",
+					"armor",
+					"head",
+					],
+				'questEggs' : {
+					'badger' : {
+						'key':'badger',
+						'text':'Badger',
+						'mountText':'Badger',
+						'notes':'This is a Badger egg.',
+						'adjective':'serious',
+						'value':4,
+						},
+					},
+				'eggs' : {
+					'wolf' : {
+						'key':'wolf',
+						'text':'Wolf',
+						'mountText':'Wolf',
+						'notes':'This is a Wolf egg.',
+						'adjective':'fierce',
+						'value':3,
+						},
+					},
+				'dropEggs' : {
+					'fox' : {
+						'key':'fox',
+						'text':'Fox',
+						'mountText':'Fox',
+						'notes':'This is a Fox egg.',
+						'adjective':'sly',
+						'value':2,
+						},
+					},
+				'hatchingPotions' : {
+					'base' : {
+						'key':'base',
+						'text':'Base',
+						'notes':'Makes Base pet.',
+						'value':2,
+						},
+					},
+				'wackyHatchingPotions' : {
+					'wacky' : {
+						'key':'wacky',
+						'text':'Wacky',
+						'notes':'Makes Wacky pet.',
+						'value':3,
+						'_addlNotes':'Wacky!',
+						'premium':True,
+						'limited':True,
+						'wacky':True,
+						'event':{
+							'start':'2020-01-01',
+							'end':'2020-01-31',
+							},
+						},
+					},
+				'dropHatchingPotions' : {
+					'red' : {
+						'key':'red',
+						'text':'Red',
+						'notes':'Makes Red pet.',
+						'value':4,
+						'premium':False,
+						'limited':True,
+						'wacky':False,
+						},
+					},
+				'premiumHatchingPotions' : {
+					'shadow' : {
+						'key':'shadow',
+						'text':'Shadow',
+						'notes':'Makes Shadow pet.',
+						'value':5,
+						'_addlNotes':'Premium!',
+						'premium':True,
+						'limited':False,
+						},
 					},
 				'quests' : {
 					'mycollectquest' : {
@@ -564,12 +658,6 @@ class TestUser(unittest.TestCase):
 			))
 		user = habitica.user()
 		potion = habitica.content.potion
-		self.assertEqual(potion.text, 'Health Potion')
-		self.assertEqual(potion.key, 'HealthPotion')
-		self.assertEqual(potion.notes, 'Heals 15 hp')
-		self.assertEqual(potion.type, 'potion')
-		self.assertEqual(potion.cost, 25)
-		self.assertEqual(potion.currency, 'gold')
 		user.buy(potion)
 		self.assertEqual(user.stats.hp, 45.0)
 
@@ -1104,3 +1192,123 @@ class TestSpells(unittest.TestCase):
 		target = user.todos()[0]
 		spell = user.get_spell('backStab')
 		user.cast(spell, target)
+
+class TestContent(unittest.TestCase):
+	def should_retrieve_health_potion(self):
+		habitica = core.Habitica(_api=MockAPI())
+		content = habitica.content
+		potion = content.potion
+		self.assertEqual(potion.text, 'Health Potion')
+		self.assertEqual(potion.key, 'HealthPotion')
+		self.assertEqual(potion.notes, 'Heals 15 hp')
+		self.assertEqual(potion.type, 'potion')
+		self.assertEqual(potion.cost, 25)
+		self.assertEqual(potion.currency, 'gold')
+	def should_retrieve_armoire(self):
+		habitica = core.Habitica(_api=MockAPI())
+		content = habitica.content
+		armoire = content.armoire
+		self.assertEqual(armoire.text, 'Enchanted Armoire')
+		self.assertEqual(armoire.key, 'Armoire')
+		self.assertEqual(armoire.type, 'armoire')
+		self.assertEqual(armoire.cost, 100)
+		self.assertEqual(armoire.currency, 'gold')
+	def should_list_available_classes(self):
+		habitica = core.Habitica(_api=MockAPI())
+		content = habitica.content
+		self.assertEqual(sorted(content.classes), [
+			'healer',
+			'rogue',
+			'warrior',
+			'wizard',
+			])
+	def should_list_gear_types(self):
+		habitica = core.Habitica(_api=MockAPI())
+		content = habitica.content
+		self.assertEqual(sorted(content.gearTypes), [
+			"armor",
+			"head",
+			"headAccessory",
+			])
+	def should_retrieve_various_eggs(self):
+		habitica = core.Habitica(_api=MockAPI())
+		content = habitica.content
+
+		egg = content.questEggs()[0]
+		self.assertEqual(egg.key, 'badger')
+		self.assertEqual(egg.text, 'Badger')
+		self.assertEqual(egg.mountText, 'Badger')
+		self.assertEqual(egg.notes, 'This is a Badger egg.')
+		self.assertEqual(egg.adjective, 'serious')
+		self.assertEqual(egg.price, 4)
+		self.assertEqual(egg.currency, 'gems')
+
+		egg = content.eggs()[0]
+		self.assertEqual(egg.key, 'wolf')
+		self.assertEqual(egg.text, 'Wolf')
+		self.assertEqual(egg.mountText, 'Wolf')
+		self.assertEqual(egg.notes, 'This is a Wolf egg.')
+		self.assertEqual(egg.adjective, 'fierce')
+		self.assertEqual(egg.price, 3)
+		self.assertEqual(egg.currency, 'gems')
+
+		egg = content.dropEggs()[0]
+		self.assertEqual(egg.key, 'fox')
+		self.assertEqual(egg.text, 'Fox')
+		self.assertEqual(egg.mountText, 'Fox')
+		self.assertEqual(egg.notes, 'This is a Fox egg.')
+		self.assertEqual(egg.adjective, 'sly')
+		self.assertEqual(egg.price, 2)
+		self.assertEqual(egg.currency, 'gems')
+	def should_retrieve_various_hatching_potions(self):
+		habitica = core.Habitica(_api=MockAPI())
+		content = habitica.content
+
+		potion = content.hatchingPotions()[0]
+		self.assertEqual(potion.key, 'base')
+		self.assertEqual(potion.text, 'Base')
+		self.assertEqual(potion.notes, 'Makes Base pet.')
+		self.assertEqual(potion._addlNotes, '')
+		self.assertEqual(potion.price, 2)
+		self.assertEqual(potion.currency, 'gems')
+		self.assertFalse(potion.premium)
+		self.assertFalse(potion.limited)
+		self.assertFalse(potion.wacky)
+		self.assertIsNone(potion.event)
+
+		potion = content.wackyHatchingPotions()[0]
+		self.assertEqual(potion.key, 'wacky')
+		self.assertEqual(potion.text, 'Wacky')
+		self.assertEqual(potion.notes, 'Makes Wacky pet.')
+		self.assertEqual(potion._addlNotes, 'Wacky!')
+		self.assertEqual(potion.price, 3)
+		self.assertEqual(potion.currency, 'gems')
+		self.assertTrue(potion.premium)
+		self.assertTrue(potion.limited)
+		self.assertTrue(potion.wacky)
+		self.assertEqual(potion.event.start, datetime.date(2020, 1, 1))
+		self.assertEqual(potion.event.end, datetime.date(2020, 1, 31))
+
+		potion = content.dropHatchingPotions()[0]
+		self.assertEqual(potion.key, 'red')
+		self.assertEqual(potion.text, 'Red')
+		self.assertEqual(potion.notes, 'Makes Red pet.')
+		self.assertEqual(potion._addlNotes, '')
+		self.assertEqual(potion.price, 4)
+		self.assertEqual(potion.currency, 'gems')
+		self.assertFalse(potion.premium)
+		self.assertTrue(potion.limited)
+		self.assertFalse(potion.wacky)
+		self.assertIsNone(potion.event)
+
+		potion = content.premiumHatchingPotions()[0]
+		self.assertEqual(potion.key, 'shadow')
+		self.assertEqual(potion.text, 'Shadow')
+		self.assertEqual(potion.notes, 'Makes Shadow pet.')
+		self.assertEqual(potion._addlNotes, 'Premium!')
+		self.assertEqual(potion.price, 5)
+		self.assertEqual(potion.currency, 'gems')
+		self.assertTrue(potion.premium)
+		self.assertFalse(potion.limited)
+		self.assertFalse(potion.wacky)
+		self.assertIsNone(potion.event)
