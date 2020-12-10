@@ -76,8 +76,8 @@ class Content:
 		"""
 		if year is None: # TODO time travel - needs some constant name
 			return [Background(_api=self.api, _data=entry) for entry in self._data['backgrounds']['timeTravelBackgrounds']]
-		months = [month] if month else ['{0:02}'.format(number) for number in range(1, 13)]
-		patterns = ['backgrounds{month}{year}'.format(year, month) for month in months]
+		months = ['{0:02}'.format(month)] if month else ['{0:02}'.format(number) for number in range(1, 13)]
+		patterns = ['backgrounds{month}{year}'.format(year=year, month=month) for month in months]
 		result = []
 		for key in self._data['backgrounds']:
 			if key in patterns:

@@ -200,6 +200,45 @@ class MockAPI:
 				'premiumMounts': {
 						'fox':True,
 						},
+				'backgroundFlats': {
+						'blizzard' : {
+							'key' : 'blizzard',
+							'text' : 'Blizzard',
+							'notes' : 'Hurling Blizzard',
+							'price' : 7,
+							'set' : 'Winter',
+							},
+						},
+				'backgrounds': {
+						'backgrounds122020' : [
+							{
+								'key' : 'blizzard',
+								'text' : 'Blizzard',
+								'notes' : 'Hurling Blizzard',
+								'price' : 7,
+								'set' : 'Winter',
+								},
+							],
+						'backgrounds082020' : [
+							{
+								'key' : 'fall',
+								'text' : 'Fall',
+								'notes' : "Summer's End",
+								'price' : 7,
+								'set' : 'Fall',
+								},
+							],
+						'timeTravelBackgrounds' : [
+							{
+								'key' : 'core',
+								'text' : 'The Core',
+								'notes' : "The Core",
+								'price' : 1,
+								'currency' : 'hourglass',
+								'set' : 'timeTravel',
+								},
+							],
+						},
 				}}, cached=True),
 			]
 	def cached(self, *args, **kwargs):
@@ -1425,3 +1464,37 @@ class TestContent(unittest.TestCase):
 		self.assertIsNone(mount.potion)
 		self.assertIsNone(mount.canFind)
 		self.assertTrue(mount.special)
+	def should_get_single_backgroud(self):
+		habitica = core.Habitica(_api=MockAPI())
+		content = habitica.content
+
+		background = content.get_background('blizzard')
+		self.assertEqual(background.key, 'blizzard')
+		self.assertEqual(background.text, 'Blizzard')
+		self.assertEqual(background.notes, 'Hurling Blizzard')
+		self.assertEqual(background.price, 7)
+		self.assertEqual(background.currency, 'gems')
+		self.assertEqual(background.set_name, 'Winter')
+	def should_get_backgroud_set(self):
+		habitica = core.Habitica(_api=MockAPI())
+		content = habitica.content
+
+		backgrounds = content.get_background_set(2020, 8)
+		self.assertEqual(backgrounds[0].key, 'fall')
+		self.assertEqual(backgrounds[0].text, 'Fall')
+		self.assertEqual(backgrounds[0].notes, "Summer's End")
+		self.assertEqual(backgrounds[0].price, 7)
+		self.assertEqual(backgrounds[0].currency, 'gems')
+		self.assertEqual(backgrounds[0].set_name, 'Fall')
+
+		backgrounds = sorted(content.get_background_set(2020), key=lambda _:_.key)
+		self.assertEqual(backgrounds[0].key, 'blizzard')
+		self.assertEqual(backgrounds[1].key, 'fall')
+
+		backgrounds = content.get_background_set(None)
+		self.assertEqual(backgrounds[0].key, 'core')
+		self.assertEqual(backgrounds[0].text, 'The Core')
+		self.assertEqual(backgrounds[0].notes, "The Core")
+		self.assertEqual(backgrounds[0].price, 1)
+		self.assertEqual(backgrounds[0].currency, 'hourglass')
+		self.assertEqual(backgrounds[0].set_name, 'timeTravel')
