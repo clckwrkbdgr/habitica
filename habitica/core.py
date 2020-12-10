@@ -174,7 +174,7 @@ class HatchingPotion:
 		end = datetime.datetime.strptime(self._data['event']['end'], '%Y-%m-%d').date()
 		return HabiticaEvent(start, end)
 
-class Food:
+class Food: # pragma: no cover -- FIXME no methods to retrieve yet.
 	def __init__(self, _data=None, _api=None):
 		self.api = _api
 		self._data = _data
