@@ -39,17 +39,51 @@ class dotdict(dict):
     __setattr__ = dict.__setitem__
     __delattr__ = dict.__delitem__
 
+class Delay:
+    """
+    Third-party API tools should introduce delays between calls
+    to reduce load on Habitica server.
+    See https://habitica.fandom.com/wiki/Template:Third_Party_Tool_Rules?section=T-4
+    """
+    DEFAULT_REQUEST_DELAY = 0.5 # sec
+    GET_AUTO_REQUEST_DELAY = 3 # sec
+    POST_AUTO_REQUEST_DELAY = 10 # sec
+
+    def __init__(self, batch_mode=True):
+        """ If batch_mode = True (the default),
+        increases delays between requests.
+        Otherwise use default nominal delay (<1s)
+        """
+        self.batch_mode = batch_mode
+        self._last_request_time = 0
+    def wait_for(self, method):
+        """ Stops execution until proper delay between requests is reached.
+        May not freeze at all if last request was enough time ago.
+        """
+        if not self.batch_mode: # pragma: no cover -- TODO properly testing delays between requests.
+            delay = self.DEFAULT_REQUEST_DELAY
+        elif method.upper() in ['PUT', 'POST', 'DELETE']:
+            delay = self.POST_AUTO_REQUEST_DELAY
+        else:
+            delay = self.GET_AUTO_REQUEST_DELAY
+        passed = (time.time() - self._last_request_time)
+        logging.debug('Last request time: {0}, passed since then: {1}'.format(self._last_request_time, passed))
+        logging.debug('Max delay: {0}'.format(delay))
+        delay = delay - passed
+        logging.debug('Actual delay: {0}'.format(delay))
+        if delay > 0:
+            time.sleep(delay)
+    def update(self):
+        """ Updates last request time.
+        Should be called right after actual remote request.
+        """
+        self._last_request_time = time.time()
+
 class API(object):
     """ Basic API facade. """
     TIMEOUT = 10.0 # Call timeout.
     MAX_RETRY = 3 # Amount of retries for server errors (5xx, timeouts etc).
-
-    # Third-party API tools should introduce delays between calls
-    # to reduce load on Habitica server.
-    # See https://habitica.fandom.com/wiki/Template:Third_Party_Tool_Rules?section=T-4
-    DEFAULT_REQUEST_DELAY = 0.5 # sec
-    GET_AUTO_REQUEST_DELAY = 3 # sec
-    POST_AUTO_REQUEST_DELAY = 10 # sec
+    Delay = Delay
 
     class Exception(Exception):
         """ Basic API exception.
@@ -114,7 +148,6 @@ class API(object):
         between consequent requests to reduce load on Habitica server.
         Otherwise (for user input) uses default nominal delay <1 sec.
         """
-        self.batch_mode = batch_mode
         self.base_url = base_url.rstrip('/')
         self.login = login
         self.password = password
@@ -124,7 +157,7 @@ class API(object):
               'x-client': USER_ID + '-habitica', # TODO take appName from package?
               'content-type': 'application/json',
               }
-        self._last_request_time = 0
+        self._delay = self.Delay(batch_mode)
     def cached(self, cache_entry_name): # pragma: no cover -- TODO see Cached class above.
         return API.Cached(self, cache_entry_name)
 
@@ -170,19 +203,7 @@ class API(object):
         May freeze for several seconds to ensure delay between requests
         (see POST_AUTO_REQUEST_DELAY, GET_AUTO_REQUEST_DELAY)
         """
-        if not self.batch_mode: # pragma: no cover -- TODO properly testing delays between requests.
-            delay = self.DEFAULT_REQUEST_DELAY
-        elif method.upper() in ['PUT', 'POST', 'DELETE']:
-            delay = self.POST_AUTO_REQUEST_DELAY
-        else:
-            delay = self.GET_AUTO_REQUEST_DELAY
-        passed = (time.time() - self._last_request_time)
-        logging.debug('Last request time: {0}, passed since then: {1}'.format(self._last_request_time, passed))
-        logging.debug('Max delay: {0}'.format(delay))
-        delay = delay - passed
-        logging.debug('Actual delay: {0}'.format(delay))
-        if delay > 0:
-            time.sleep(delay)
+        self._delay.wait_for(method)
         return self._retry_call(method, uri, query=query, body=body, as_json=as_json)
     def _retry_call(self, method, uri, query=None, body=None, as_json=True, tries=MAX_RETRY):
         try:
@@ -214,7 +235,7 @@ class API(object):
         else:
             response = getattr(session, method.lower())(uri, headers=self.headers,
                                             params=query, timeout=API.TIMEOUT)
-        self._last_request_time = time.time()
+        self._delay.update()
         logging.debug('Answered: {0} {1}'.format(response.status_code, response.reason))
         if response.status_code != requests.codes.ok:
             logging.debug('Responded with error: {0}'.format(response.content))
