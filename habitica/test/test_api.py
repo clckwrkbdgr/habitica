@@ -51,7 +51,7 @@ class TestDelay(unittest.TestCase):
 	def should_perform_first_call_immediately(self):
 		mock_time = unittest.mock.MagicMock(return_value=1000)
 		mock_sleep = unittest.mock.MagicMock()
-		delay = api.Delay()
+		delay = api.Delay(3)
 		with unittest.mock.patch('time.time', mock_time):
 			with unittest.mock.patch('time.sleep', mock_sleep) as sleep:
 				delay.wait_for('get')
@@ -59,7 +59,7 @@ class TestDelay(unittest.TestCase):
 	def should_wait_for_the_second_call(self):
 		mock_time = unittest.mock.MagicMock(return_value=1000)
 		mock_sleep = unittest.mock.MagicMock()
-		delay = api.Delay()
+		delay = api.Delay(1, get=3, post=10)
 		with unittest.mock.patch('time.time', mock_time) as get_time:
 			with unittest.mock.patch('time.sleep', mock_sleep) as sleep:
 				delay.wait_for('get')
@@ -71,7 +71,7 @@ class TestDelay(unittest.TestCase):
 	def should_wait_longer_for_the_second_call_for_post_requests(self):
 		mock_time = unittest.mock.MagicMock(return_value=1000)
 		mock_sleep = unittest.mock.MagicMock()
-		delay = api.Delay()
+		delay = api.Delay(1, get=3, post=10)
 		with unittest.mock.patch('time.time', mock_time) as get_time:
 			with unittest.mock.patch('time.sleep', mock_sleep) as sleep:
 				delay.wait_for('post')
@@ -80,10 +80,10 @@ class TestDelay(unittest.TestCase):
 				get_time.return_value = 1003
 				delay.wait_for('post')
 				sleep.assert_called_with(8)
-	def should_wait_less_in_not_batch_mode(self):
+	def should_wait_the_default_amount_when_no_methods_are_specified(self):
 		mock_time = unittest.mock.MagicMock(return_value=1000)
 		mock_sleep = unittest.mock.MagicMock()
-		delay = api.Delay(batch_mode=False)
+		delay = api.Delay(0.5)
 		with unittest.mock.patch('time.time', mock_time) as get_time:
 			with unittest.mock.patch('time.sleep', mock_sleep) as sleep:
 				delay.wait_for('get')
@@ -134,8 +134,9 @@ class MockRequestSession:
 		return self
 
 class MockDelay:
-	def __init__(self, batch_mode):
-		self.batch_mode = batch_mode
+	def __init__(self, *args, **kwargs):
+		self.args = args
+		self.kwargs = kwargs
 		self.waited_for = []
 		self.updated = False
 	def wait_for(self, method):
@@ -170,7 +171,7 @@ class TestAPI(unittest.TestCase):
 			self.assertEqual(obj._delay.waited_for, ['post'])
 			self.assertTrue(obj._delay.updated)
 	def should_post_request(self):
-		obj = MockAPI('http://localhost/', 'login', 'password')
+		obj = MockAPI('http://localhost/', 'login', 'password', batch_mode=False)
 		mock_session = MockRequestSession(MockRequestSession.Response(
 			status_code=200,
 			content={'data':'test'},

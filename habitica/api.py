@@ -40,32 +40,22 @@ class dotdict(dict):
     __delattr__ = dict.__delitem__
 
 class Delay:
+    """ Ensures specific interval between remote requests
+    to reduce load on remote server.
     """
-    Third-party API tools should introduce delays between calls
-    to reduce load on Habitica server.
-    See https://habitica.fandom.com/wiki/Template:Third_Party_Tool_Rules?section=T-4
-    """
-    DEFAULT_REQUEST_DELAY = 0.5 # sec
-    GET_AUTO_REQUEST_DELAY = 3 # sec
-    POST_AUTO_REQUEST_DELAY = 10 # sec
-
-    def __init__(self, batch_mode=True):
-        """ If batch_mode = True (the default),
-        increases delays between requests.
-        Otherwise use default nominal delay (<1s)
+    def __init__(self, default_delay, **specific_method_delays):
+        """ Sets default delay for request (in seconds).
+        If any kwargs are given, they are treated as delays for specific methods,
+        e.g.: (0.5, get=3, post=10)
         """
-        self.batch_mode = batch_mode
+        self.default_delay = default_delay
+        self.method_delays = {key.lower():value for key,value in specific_method_delays.items()}
         self._last_request_time = 0
     def wait_for(self, method):
         """ Stops execution until proper delay between requests is reached.
         May not freeze at all if last request was enough time ago.
         """
-        if not self.batch_mode: # pragma: no cover -- TODO properly testing delays between requests.
-            delay = self.DEFAULT_REQUEST_DELAY
-        elif method.upper() in ['PUT', 'POST', 'DELETE']:
-            delay = self.POST_AUTO_REQUEST_DELAY
-        else:
-            delay = self.GET_AUTO_REQUEST_DELAY
+        delay = self.method_delays.get(method.lower(), self.default_delay)
         passed = (time.time() - self._last_request_time)
         logging.debug('Last request time: {0}, passed since then: {1}'.format(self._last_request_time, passed))
         logging.debug('Max delay: {0}'.format(delay))
@@ -157,7 +147,17 @@ class API(object):
               'x-client': USER_ID + '-habitica', # TODO take appName from package?
               'content-type': 'application/json',
               }
-        self._delay = self.Delay(batch_mode)
+        if batch_mode:
+            # Third-party API tools should introduce delays between calls
+            # to reduce load on Habitica server.
+            # See https://habitica.fandom.com/wiki/Template:Third_Party_Tool_Rules?section=T-4
+            self._delay = self.Delay(1,
+                    get=3,
+                    post=10, put=10, delete=10,
+                    )
+        else:
+            self._delay = self.Delay(0.5)
+
     def cached(self, cache_entry_name): # pragma: no cover -- TODO see Cached class above.
         return API.Cached(self, cache_entry_name)
 
