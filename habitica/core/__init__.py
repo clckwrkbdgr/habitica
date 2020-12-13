@@ -6,8 +6,8 @@ from bisect import bisect
 from pathlib import Path
 from functools import lru_cache
 from collections import namedtuple
-from . import api, config
-from . import timeutils
+from .. import api, config
+from .. import timeutils
 
 HabiticaEvent = namedtuple('HabiticaEvent', 'start end')
 
