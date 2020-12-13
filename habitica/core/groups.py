@@ -33,25 +33,23 @@ class Challenge(base.ApiObject):
 	def official(self):
 		return self._data['official']
 	def rewards(self):
-		return [tasks.Reward(_data=self.api.get('tasks', task_id).data, _api=self.api) for task_id in self._data['tasksOrder']['rewards']]
+		return [self.child(tasks.Reward, self.api.get('tasks', task_id).data) for task_id in self._data['tasksOrder']['rewards']]
 	def todos(self):
-		return [tasks.Todo(_data=self.api.get('tasks', task_id).data, _api=self.api) for task_id in self._data['tasksOrder']['todos']]
+		return [self.child(tasks.Todo, self.api.get('tasks', task_id).data) for task_id in self._data['tasksOrder']['todos']]
 	def dailies(self):
-		return [tasks.Daily(_data=self.api.get('tasks', task_id).data, _api=self.api) for task_id in self._data['tasksOrder']['dailys']]
+		return [self.child(tasks.Daily, self.api.get('tasks', task_id).data) for task_id in self._data['tasksOrder']['dailys']]
 	def habits(self):
-		return [tasks.Habit(_data=self.api.get('tasks', task_id).data, _api=self.api) for task_id in self._data['tasksOrder']['habits']]
+		return [self.child(tasks.Habit, self.api.get('tasks', task_id).data) for task_id in self._data['tasksOrder']['habits']]
 	def leader(self):
 		# FIXME get person profile by id.
 		return self._data['leader']
 	def group(self):
 		# FIXME get group by id.
-		return Group(_data=self._data['group'], _api=self.api)
+		return self.child(Group, self._data['group'])
 	def as_csv(self):
 		return self.api.get('challenges', self.id, 'export', 'csv')
 	def clone(self):
-		return Challenge(_api=self.api,
-				_data=self.api.post('challenges', self.id, 'clone').challenge,
-				)
+		return self.child(Challenge, self.api.post('challenges', self.id, 'clone').challenge, _parent=self)
 	def update(self, name=None, summary=None, description=None):
 		params = dict()
 		if name:
@@ -108,16 +106,22 @@ class Chat:
 		self._entries = None
 	def __call__(self):
 		return self.messages()
+	def children(self, obj_type, data_entries, _parent=None): # pragma: no cover -- TODO need similar method for non-data API objects.
+		return [
+				obj_type(_data=entry, _api=self.api, _parent=(_parent or self))
+				for entry
+				in data_entries
+				]
 	def messages(self):
 		if self._entries is None:
-			self._entries = [ChatMessage(_data=entry, _parent=self._group, _api=self.api) for entry in self.api.get('groups', self._group.id, 'chat').data]
+			self._entries = self.children(ChatMessage, self.api.get('groups', self._group.id, 'chat').data, _parent=self._group)
 		return self._entries
 	def mark_as_read(self):
 		self.api.post('groups', self._group.id, 'chat', 'seen')
 	def delete(self, message):
 		if self._entries:
 			new_entries = self.api.delete('groups', self._group.id, 'chat', message.id, previousMsg=self._entries[-1].id).data
-			self._entries = [ChatMessage(_data=entry, _parent=self._group, _api=self.api) for entry in new_entries]
+			self._entries = self.children(ChatMessage, new_entries, _parent=self._group)
 		else:
 			self.api.delete('groups', self._group.id, 'chat', message.id)
 	def post(self, message_text):
@@ -125,7 +129,7 @@ class Chat:
 			new_entries = self.api.post('groups', self._group.id, 'chat', previousMsg=self._entries[-1].id,  _body={'message':message_text}).data
 		else:
 			new_entries = self.api.post('groups', self._group.id, 'chat', _body={'message':message_text}).data
-		self._entries = [ChatMessage(_data=entry, _parent=self._group, _api=self.api) for entry in new_entries]
+		self._entries = self.children(ChatMessage, new_entries, _parent=self._group)
 
 class Group(base.ApiObject):
 	""" Habitica's user group: a guild, a party, the Tavern. """
@@ -150,7 +154,7 @@ class Group(base.ApiObject):
 	def privacy(self):
 		return self._data['privacy']
 	def challenges(self):
-		return [Challenge(_data=entry, _api=self.api) for entry in self.api.get('challenges', 'groups', self.id).data]
+		return self.children(Challenge, self.api.get('challenges', 'groups', self.id).data)
 	@property
 	def chat(self):
 		return Chat(_api=self.api, _group=self)
@@ -176,7 +180,7 @@ class Group(base.ApiObject):
 		data = self.api.post('challenges', _body={
 			'challenge' : params,
 			}).data
-		return Challenge(_api=self.api, _data=data)
+		return self.child(Challenge, data)
 
 class Quest(base.ApiObject):
 	@lru_cache()
@@ -210,4 +214,4 @@ class Quest(base.ApiObject):
 class Party(Group):
 	@property
 	def quest(self):
-		return Quest(_data=self._data['quest'], _api=self.api)
+		return self.child(Quest, self._data['quest'])

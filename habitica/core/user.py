@@ -39,7 +39,7 @@ class UserStats(base.ApiObject):
 class Inventory(base.ApiObject):
 	@property
 	def food(self):
-		return [content.Food(_api=self.api, _data=entry) for entry in self._data['food']]
+		return self.children(content.Food, self._data['food'])
 	@property
 	def pet(self):
 		return self.content.petInfo(self._data['currentPet']) if self._data['currentPet'] else None

@@ -117,24 +117,13 @@ class Checklist:
 		>>> task.checklist[item_id]
 		>>> task[item_id]
 		"""
-		return [SubItem(
-			_api=self.api,
-			_data=item,
-			_parent=self,
-			)
-			for item
-			in self._data['checklist']
-			]
+		return self.children(SubItem, self._data['checklist'])
 	def __getitem__(self, key):
 		""" Returns SubItem object for given item index. """
 		try:
 			return object.__getitem__(self, key)
 		except AttributeError:
-			return SubItem(
-					_api=self.api,
-					_data=self._data['checklist'][key],
-					_parent=self,
-					)
+			return self.child(SubItem, self._data['checklist'][key])
 
 class Daily(Task, Checkable, Checklist):
 	@property
