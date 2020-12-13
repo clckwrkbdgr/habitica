@@ -2,16 +2,12 @@
 """
 from . import base, content, tasks, groups
 
-class UserPreferences:
-	def __init__(self, _data=None):
-		self._data = _data
+class UserPreferences(base.ApiObject):
 	@property
 	def timezoneOffset(self):
 		return self._data['timezoneOffset']
 
-class UserStats:
-	def __init__(self, _data=None):
-		self._data = _data
+class UserStats(base.ApiObject):
 	@property
 	def class_name(self):
 		return self._data['class']

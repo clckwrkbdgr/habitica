@@ -187,9 +187,6 @@ class Food(base.ApiObject): # pragma: no cover -- FIXME no methods to retrieve y
 		return 'gems'
 
 class Background(base.ApiObject):
-	def __init__(self, _data=None, _api=None):
-		self.api = _api
-		self._data = _data
 	@property
 	def text(self):
 		return self._data['text']
@@ -244,8 +241,6 @@ class HealthPotion(base.ApiObject):
 	def currency(self):
 		return 'gold'
 	def _buy(self, user):
-		if self.api is None:
-			self.api = user.api
 		if self.overflow_check and user.stats.hp + self.VALUE > user.stats.maxHealth:
 			raise HealthOverflowError(user.stats.hp, user.stats.maxHealth)
 		user._data = self.api.post('user', 'buy-health-potion').data

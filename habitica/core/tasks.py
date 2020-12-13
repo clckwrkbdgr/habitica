@@ -72,7 +72,7 @@ class Habit(Task):
 		result = self.api.post('tasks', self.id, 'score', 'down').data
 		self._data['value'] += result['delta']
 
-class Checkable(base.ApiObject):
+class Checkable:
 	""" Base class for task or sub-item that can be checked (completed) or unchecked.
 	"""
 	@property
@@ -85,7 +85,7 @@ class Checkable(base.ApiObject):
 		""" Marks entry as not completed. """
 		raise NotImplementedError
 
-class SubItem(Checkable):
+class SubItem(base.ApiObject, Checkable):
 	@property
 	def id(self):
 		return self._data['id']
