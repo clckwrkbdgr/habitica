@@ -1,13 +1,10 @@
 """ Groups and related functionality: chats, challenges.
 """
 from functools import lru_cache
-from . import content, tasks
+from . import base, content, tasks
 
-class Challenge:
+class Challenge(base.ApiObject):
 	# TODO get challenge by id: get:/challenges/:id
-	def __init__(self, _data=None, _api=None):
-		self.api = _api
-		self._data = _data
 	@property
 	def id(self):
 		return self._data['id']
@@ -75,14 +72,13 @@ class Challenge:
 	def delete(self):
 		self.api.delete('challenges', self.id)
 
-class ChatMessage:
-	def __init__(self, _data=None, _api=None, _group=None):
-		self._data = _data
-		self.api = _api
-		self.group = _group
+class ChatMessage(base.ApiObject):
 	@property
 	def id(self):
 		return self._data['id']
+	@property
+	def group(self):
+		return self._parent
 	@property
 	def user(self):
 		""" Name of the author of the message or 'system' for system messages. """
@@ -114,14 +110,14 @@ class Chat:
 		return self.messages()
 	def messages(self):
 		if self._entries is None:
-			self._entries = [ChatMessage(entry, _group=self._group, _api=self.api) for entry in self.api.get('groups', self._group.id, 'chat').data]
+			self._entries = [ChatMessage(_data=entry, _parent=self._group, _api=self.api) for entry in self.api.get('groups', self._group.id, 'chat').data]
 		return self._entries
 	def mark_as_read(self):
 		self.api.post('groups', self._group.id, 'chat', 'seen')
 	def delete(self, message):
 		if self._entries:
 			new_entries = self.api.delete('groups', self._group.id, 'chat', message.id, previousMsg=self._entries[-1].id).data
-			self._entries = [ChatMessage(entry, _group=self._group, _api=self.api) for entry in new_entries]
+			self._entries = [ChatMessage(_data=entry, _parent=self._group, _api=self.api) for entry in new_entries]
 		else:
 			self.api.delete('groups', self._group.id, 'chat', message.id)
 	def post(self, message_text):
@@ -129,9 +125,9 @@ class Chat:
 			new_entries = self.api.post('groups', self._group.id, 'chat', previousMsg=self._entries[-1].id,  _body={'message':message_text}).data
 		else:
 			new_entries = self.api.post('groups', self._group.id, 'chat', _body={'message':message_text}).data
-		self._entries = [ChatMessage(entry, _group=self._group, _api=self.api) for entry in new_entries]
+		self._entries = [ChatMessage(_data=entry, _parent=self._group, _api=self.api) for entry in new_entries]
 
-class Group:
+class Group(base.ApiObject):
 	""" Habitica's user group: a guild, a party, the Tavern. """
 	PARTY = 'party'
 	GUILDS = 'guilds'
@@ -141,9 +137,6 @@ class Group:
 
 	PRIVATE, PUBLIC = 'private', 'public'
 
-	def __init__(self, _data=None, _api=None):
-		self.api = _api
-		self._data = _data
 	@property
 	def id(self):
 		return self._data['id']
@@ -185,10 +178,7 @@ class Group:
 			}).data
 		return Challenge(_api=self.api, _data=data)
 
-class Quest:
-	def __init__(self, _data=None, _api=None):
-		self.api = _api
-		self._data = _data
+class Quest(base.ApiObject):
 	@lru_cache()
 	def _content(self):
 		return content.Content(_api=self.api)['quests'][self.key] # TODO reuse Content object from Habitica.
@@ -218,8 +208,6 @@ class Quest:
 			return content['boss']['hp']
 
 class Party(Group):
-	def __init__(self, _data=None, _api=None):
-		super().__init__(_data=_data, _api=_api)
 	@property
 	def quest(self):
 		return Quest(_data=self._data['quest'], _api=self.api)

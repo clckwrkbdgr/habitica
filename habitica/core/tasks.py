@@ -1,14 +1,14 @@
-""" Tasks: habits, dailies, todos, rewards. """
+""" Tasks: habits, dailies, todos.
+Also rewards.
+"""
 from bisect import bisect
 from .. import timeutils
+from . import base
 
 # Weekday abbreviations used in task frequencies.
 HABITICA_WEEK = ["m", "t", "w", "th", "f", "s", "su"]
 
-class Reward:
-	def __init__(self, _data=None, _api=None):
-		self.api = _api
-		self._data = _data
+class Reward(base.ApiObject):
 	@property
 	def id(self):
 		return self._data['id']
@@ -30,16 +30,13 @@ class CannotScoreDown(Exception):
 	def __str__(self):
 		return "Habit '{0}' cannot be decremented".format(self.habit.text)
 
-class Task:
+class Task(base.ApiObject):
 	""" Parent class for any task (habit, daily, todo). """
 	DARK_RED, RED, ORANGE = -20, -10, -1
 	YELLOW = 0
 	GREEN, LIGHT_BLUE, BRIGHT_BLUE = 1, 5, 10
 
 class Habit(Task):
-	def __init__(self, _data=None, _api=None):
-		self.api = _api
-		self._data = _data
 	@property
 	def id(self):
 		return self._data['id']
@@ -75,7 +72,7 @@ class Habit(Task):
 		result = self.api.post('tasks', self.id, 'score', 'down').data
 		self._data['value'] += result['delta']
 
-class Checkable:
+class Checkable(base.ApiObject):
 	""" Base class for task or sub-item that can be checked (completed) or unchecked.
 	"""
 	@property
@@ -89,10 +86,6 @@ class Checkable:
 		raise NotImplementedError
 
 class SubItem(Checkable):
-	def __init__(self, _data=None, _api=None, _parent=None):
-		self.api = _api
-		self._data = _data
-		self._parent = _parent
 	@property
 	def id(self):
 		return self._data['id']
@@ -144,9 +137,6 @@ class Checklist:
 					)
 
 class Daily(Task, Checkable, Checklist):
-	def __init__(self, _data=None, _api=None):
-		self.api = _api
-		self._data = _data
 	@property
 	def id(self):
 		return self._data['id']
@@ -180,9 +170,6 @@ class Daily(Task, Checkable, Checklist):
 		self._data['completed'] = False
 
 class Todo(Task, Checkable, Checklist):
-	def __init__(self, _data=None, _api=None):
-		self.api = _api
-		self._data = _data
 	@property
 	def id(self):
 		return self._data['id']

@@ -2,6 +2,7 @@
 """
 import datetime
 from collections import namedtuple
+from . import base
 
 HabiticaEvent = namedtuple('HabiticaEvent', 'start end')
 
@@ -80,10 +81,7 @@ class Content:
 		except AttributeError:
 			return self._data[key]
 
-class Armoire:
-	def __init__(self, _data=None, _api=None):
-		self.api = _api
-		self._data = _data
+class Armoire(base.ApiObject):
 	@property
 	def text(self):
 		return self._data['text']
@@ -100,10 +98,7 @@ class Armoire:
 	def currency(self):
 		return 'gold'
 
-class Egg:
-	def __init__(self, _data=None, _api=None):
-		self.api = _api
-		self._data = _data
+class Egg(base.ApiObject):
 	@property
 	def key(self):
 		return self._data['key']
@@ -126,10 +121,7 @@ class Egg:
 	def currency(self):
 		return 'gems'
 
-class HatchingPotion:
-	def __init__(self, _data=None, _api=None):
-		self.api = _api
-		self._data = _data
+class HatchingPotion(base.ApiObject):
 	@property
 	def key(self):
 		return self._data['key']
@@ -165,10 +157,7 @@ class HatchingPotion:
 		end = datetime.datetime.strptime(self._data['event']['end'], '%Y-%m-%d').date()
 		return HabiticaEvent(start, end)
 
-class Food: # pragma: no cover -- FIXME no methods to retrieve yet.
-	def __init__(self, _data=None, _api=None):
-		self.api = _api
-		self._data = _data
+class Food(base.ApiObject): # pragma: no cover -- FIXME no methods to retrieve yet.
 	@property
 	def key(self):
 		return self._data['key']
@@ -197,7 +186,7 @@ class Food: # pragma: no cover -- FIXME no methods to retrieve yet.
 	def currency(self):
 		return 'gems'
 
-class Background:
+class Background(base.ApiObject):
 	def __init__(self, _data=None, _api=None):
 		self.api = _api
 		self._data = _data
@@ -226,16 +215,15 @@ class HealthOverflowError(Exception):
 	def __str__(self):
 		return 'HP is too high, part of health potion would be wasted.'
 
-class HealthPotion:
+class HealthPotion(base.ApiObject):
 	""" Health potion (+15 hp). """
 	VALUE = 15.0
-	def __init__(self, overflow_check=True, _api=None, _data=None):
+	def __init__(self, overflow_check=True, **kwargs):
 		""" If overflow_check is True and there is less than 15 hp damage,
 		so buying potion will result in hp bar overflow and wasting of potion,
 		raises HealthOverflowError.
 		"""
-		self.api = _api
-		self._data = _data
+		super().__init__(**kwargs)
 		self.overflow_check = overflow_check
 	@property
 	def text(self):
@@ -262,10 +250,9 @@ class HealthPotion:
 			raise HealthOverflowError(user.stats.hp, user.stats.maxHealth)
 		user._data = self.api.post('user', 'buy-health-potion').data
 
-class Pet:
-	def __init__(self, _data=None, _api=None, _special=None):
-		self.api = _api
-		self._data = _data
+class Pet(base.ApiObject):
+	def __init__(self, _special=None, **kwargs):
+		super().__init__(**kwargs)
 		self._special = _special
 	def __str__(self):
 		return self.text
@@ -291,10 +278,9 @@ class Pet:
 	def special(self):
 		return self._special
 
-class Mount:
-	def __init__(self, _data=None, _api=None, _special=None):
-		self.api = _api
-		self._data = _data
+class Mount(base.ApiObject):
+	def __init__(self, _special=None, **kwargs):
+		super().__init__(**kwargs)
 		self._special = _special
 	def __str__(self):
 		return self.text

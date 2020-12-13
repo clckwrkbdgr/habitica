@@ -1,6 +1,6 @@
 """ User and user-related functionality: inventory, spells etc.
 """
-from . import content, tasks, groups
+from . import base, content, tasks, groups
 
 class UserPreferences:
 	def __init__(self, _data=None):
@@ -40,11 +40,7 @@ class UserStats:
 	def gold(self):
 		return self._data['gp']
 
-class Inventory:
-	def __init__(self, _data=None, _api=None, _content=None):
-		self.api = _api
-		self.content = _content
-		self._data = _data
+class Inventory(base.ApiObject):
 	@property
 	def food(self):
 		return [content.Food(_api=self.api, _data=entry) for entry in self._data['food']]
@@ -66,11 +62,9 @@ class Spell:
 	def description(self):
 		return self._description
 
-class User:
-	def __init__(self, _data=None, _api=None, _proxy=None, _content=None):
-		self.api = _api
-		self.content = _content
-		self._data = _data
+class User(base.ApiObject):
+	def __init__(self, _proxy=None, **kwargs):
+		super().__init__(**kwargs)
 		self._proxy = _proxy or _UserProxy(_api=self.api, _content=self.content)
 	@property
 	def stats(self):
