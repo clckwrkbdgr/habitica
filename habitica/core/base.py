@@ -1,6 +1,7 @@
 """ Base definitions for other modules.
 Mostly non-functional.
 """
+import functools
 
 class ApiInterface:
 	""" Base class for all objects that:
@@ -44,3 +45,48 @@ class ApiObject(ApiInterface):
 	def __init__(self, _api=None, _data=None, _content=None, _parent=None):
 		super().__init__(_api=_api, _content=_content, _parent=_parent)
 		self._data = _data
+
+@functools.total_ordering
+class ValueBar:
+	""" Represents value (int or float) bounded by 0 and some maximum value.
+	Value can be retrieved via bar.value, int(bar), float(bar).
+	Max value can be retrieved via bar.max_value or max(bar).
+	Supports direct arithmetic operations with numbers: +, -.
+	Resulting value cannot go out of bounds (0, max_value)
+	and will be reset to the coressponding bound value.
+	"""
+	def __init__(self, value, max_value):
+		self.value = max(0, min(value, max_value))
+		self.max_value = max_value
+	def _validate(self):
+		if self.value < 0:
+			self.value = 0
+		elif self.value > self.max_value:
+			self.value = self.max_value
+	def __str__(self):
+		return '{0}/{1}'.format(self.value, self.max_value)
+	def __repr__(self):
+		return 'ValueBar({0}, {1})'.format(repr(self.value), repr(self.max_value))
+	def __int__(self):
+		self._validate()
+		return int(self.value)
+	def __float__(self):
+		self._validate()
+		return float(self.value)
+	def __iter__(self):
+		self._validate()
+		return iter( (self.max_value,) )
+	def __add__(self, other):
+		return ValueBar(self.value + other, self.max_value)
+	def __radd__(self, other):
+		return ValueBar(other + self.value, self.max_value)
+	def __sub__(self, other):
+		return ValueBar(self.value - other, self.max_value)
+	def __rsub__(self, other):
+		return ValueBar(other - self.value, self.max_value)
+	def __lt__(self, other):
+		self._validate()
+		return self.value < other
+	def __eq__(self, other):
+		self._validate()
+		return self.value == other

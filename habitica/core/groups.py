@@ -193,19 +193,22 @@ class Quest(base.ApiObject):
 		return self._quest_content()['text']
 	@property
 	def progress(self):
-		if self._quest_content().get('collect'):
-			qp_tmp = self._data['progress']['collect']
-			quest_progress = sum(qp_tmp.values())
-			return quest_progress
-		else:
-			return self._data['progress']['hp']
-	@property
-	def max_progress(self):
 		content = self._quest_content()
 		if content.get('collect'):
-			return sum([int(item['count']) for item in content['collect'].values()])
+			qp_tmp = self._data['progress']['collect']
+			quest_progress = sum(qp_tmp.values())
+			return base.ValueBar(
+					quest_progress,
+					sum([int(item['count']) for item in content['collect'].values()]),
+					)
 		else:
-			return content['boss']['hp']
+			return base.ValueBar(
+					self._data['progress']['hp'],
+					content['boss']['hp'],
+					)
+	@property
+	def max_progress(self): # pragma: no cover -- FIXME deprecated
+		return self.progress.max_value
 
 class Party(Group):
 	@property

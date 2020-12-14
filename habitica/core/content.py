@@ -241,7 +241,7 @@ class HealthPotion(base.ApiObject):
 	def currency(self):
 		return 'gold'
 	def _buy(self, user):
-		if self.overflow_check and user.stats.hp + self.VALUE > user.stats.maxHealth:
+		if self.overflow_check and float(user.stats.hp) + self.VALUE > user.stats.maxHealth:
 			raise HealthOverflowError(user.stats.hp, user.stats.maxHealth)
 		user._data = self.api.post('user', 'buy-health-potion').data
 

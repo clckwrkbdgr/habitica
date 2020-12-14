@@ -13,25 +13,27 @@ class UserStats(base.ApiObject):
 		return self._data['class']
 	@property
 	def hp(self):
-		return self._data['hp']
+		return base.ValueBar(self._data['hp'], self._data['maxHealth'])
 	@property
-	def maxHealth(self):
-		return self._data['maxHealth']
+	def maxHealth(self): # pragma: no cover -- FIXME deprecated
+		return self.hp.max_value
 	@property
 	def level(self):
 		return self._data['lvl']
 	@property
 	def experience(self):
-		return self._data['exp']
+		return base.ValueBar(self._data['exp'],
+				self._data['exp'] + self._data['toNextLevel'],
+				)
 	@property
-	def maxExperience(self):
-		return self._data['exp'] + self._data['toNextLevel']
+	def maxExperience(self): # pragma: no cover -- FIXME deprecated
+		return self.experience.max_value
 	@property
 	def mana(self):
-		return self._data['mp']
+		return base.ValueBar(self._data['mp'], self._data['maxMP'])
 	@property
-	def maxMana(self):
-		return self._data['maxMP']
+	def maxMana(self): # pragma: no cover -- FIXME deprecated
+		return self.mana.max_value
 	@property
 	def gold(self):
 		return self._data['gp']
