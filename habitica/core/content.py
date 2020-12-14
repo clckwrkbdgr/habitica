@@ -93,10 +93,10 @@ class Armoire(base.ApiObject):
 		return self._data['type']
 	@property
 	def cost(self):
-		return self._data['value']
+		return base.Price(self._data['value'], 'gold')
 	@property
-	def currency(self):
-		return 'gold'
+	def currency(self): # pragma: no cover -- FIXME deprecated
+		return self.cost.currency
 
 class Egg(base.ApiObject):
 	@property
@@ -116,10 +116,10 @@ class Egg(base.ApiObject):
 		return self._data['adjective']
 	@property
 	def price(self):
-		return self._data['value']
+		return base.Price(self._data['value'], 'gems')
 	@property
-	def currency(self):
-		return 'gems'
+	def currency(self): # pragma: no cover -- FIXME deprecated
+		return self.price.currency
 
 class HatchingPotion(base.ApiObject):
 	@property
@@ -136,10 +136,10 @@ class HatchingPotion(base.ApiObject):
 		return self._data.get('_addlNotes', '')
 	@property
 	def price(self):
-		return self._data['value']
+		return base.Price(self._data['value'], 'gems')
 	@property
-	def currency(self):
-		return 'gems'
+	def currency(self): # pragma: no cover -- FIXME deprecated
+		return self.price.currency
 	@property
 	def premium(self):
 		return self._data.get('premium', False)
@@ -181,10 +181,10 @@ class Food(base.ApiObject): # pragma: no cover -- FIXME no methods to retrieve y
 		return self._data['canDrop']
 	@property
 	def price(self):
-		return self._data['value']
+		return base.Price(self._data['value'], 'gems')
 	@property
-	def currency(self):
-		return 'gems'
+	def currency(self): # pragma: no cover -- FIXME deprecated
+		return self.price.currency
 
 class Background(base.ApiObject):
 	@property
@@ -198,10 +198,13 @@ class Background(base.ApiObject):
 		return self._data['key']
 	@property
 	def price(self):
-		return self._data['price']
+		return base.Price(
+				self._data['price'],
+				self._data['currency'] if 'currency' in self._data else 'gems',
+				)
 	@property
-	def currency(self):
-		return self._data['currency'] if 'currency' in self._data else 'gems'
+	def currency(self): # pragma: no cover -- FIXME deprecated
+		return self.price.currency
 	@property
 	def set_name(self):
 		return self._data['set']
@@ -236,10 +239,10 @@ class HealthPotion(base.ApiObject):
 		return self._data['type']
 	@property
 	def cost(self):
-		return self._data['value']
+		return base.Price(self._data['value'], 'gold')
 	@property
-	def currency(self):
-		return 'gold'
+	def currency(self): # pragma: no cover -- FIXME deprecated
+		return self.cost.currency
 	def _buy(self, user):
 		if self.overflow_check and float(user.stats.hp) + self.VALUE > user.stats.maxHealth:
 			raise HealthOverflowError(user.stats.hp, user.stats.maxHealth)
