@@ -67,6 +67,8 @@ class ValueBar:
 		return '{0}/{1}'.format(self.value, self.max_value)
 	def __repr__(self):
 		return 'ValueBar({0}, {1})'.format(repr(self.value), repr(self.max_value))
+	def __bool__(self):
+		return bool(self.value)
 	def __int__(self):
 		self._validate()
 		return int(self.value)
@@ -89,4 +91,58 @@ class ValueBar:
 		return self.value < other
 	def __eq__(self, other):
 		self._validate()
+		return self.value == other
+
+@functools.total_ordering
+class Price:
+	""" Represents price (value with currency).
+	Value can be retrieved via bar.value, int(bar), float(bar).
+	Currency can be retrieved via bar.currency.
+	Supports all arithmetic operations and casting to numbers (int, float).
+	"""
+	def __init__(self, value, currency):
+		self.value = value
+		self.currency = currency
+	def __str__(self):
+		return '{0} {1}'.format(self.value, self.currency)
+	def __repr__(self):
+		return 'Price({0}, {1})'.format(repr(self.value), repr(self.currency))
+	def __bool__(self):
+		return bool(self.value)
+	def __int__(self):
+		return int(self.value)
+	def __float__(self):
+		return float(self.value)
+	def _ensure_same_currency(self, other):
+		if isinstance(other, Price) and other.currency != self.currency:
+			raise ValueError('Cannot perform operations on different currency: expected {0}, got instead: {1}'.format(repr(self.currency), repr(other.currency)))
+	def __add__(self, other):
+		self._ensure_same_currency(other)
+		return Price(self.value + other, self.currency)
+	def __radd__(self, other):
+		self._ensure_same_currency(other)
+		return Price(other + self.value, self.currency)
+	def __sub__(self, other):
+		self._ensure_same_currency(other)
+		return Price(self.value - other, self.currency)
+	def __rsub__(self, other):
+		self._ensure_same_currency(other)
+		return Price(other - self.value, self.currency)
+	def __mul__(self, other):
+		self._ensure_same_currency(other)
+		return Price(self.value * other, self.currency)
+	def __rmul__(self, other):
+		self._ensure_same_currency(other)
+		return Price(other * self.value, self.currency)
+	def __truediv__(self, other):
+		self._ensure_same_currency(other)
+		return Price(self.value / other, self.currency)
+	def __floordiv__(self, other):
+		self._ensure_same_currency(other)
+		return Price(self.value // other, self.currency)
+	def __lt__(self, other):
+		self._ensure_same_currency(other)
+		return self.value < other
+	def __eq__(self, other):
+		self._ensure_same_currency(other)
 		return self.value == other

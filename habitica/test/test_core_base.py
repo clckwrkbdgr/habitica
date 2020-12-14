@@ -71,6 +71,11 @@ class TestValueBar(unittest.TestCase):
 	def should_return_max_value_via_max_builtine(self):
 		value = base.ValueBar(10.5, 50)
 		self.assertEqual(max(value), 50)
+	def should_recognize_empty_bar(self):
+		value = base.ValueBar(10.5, 50)
+		self.assertTrue(value)
+		value = base.ValueBar(0, 50)
+		self.assertFalse(value)
 	def should_add_or_substract_value(self):
 		value = base.ValueBar(10.5, 50)
 
@@ -103,6 +108,62 @@ class TestValueBar(unittest.TestCase):
 		self.assertEqual(value, 0)
 	def should_compare_bar_with_numbers(self):
 		value = base.ValueBar(10.5, 50)
+		self.assertTrue(value < 25)
+		self.assertTrue(value > 5)
+		self.assertEqual(value, 10.5)
+		self.assertNotEqual(value, 10.1)
+
+class TestPrice(unittest.TestCase):
+	def should_return_string_representation(self):
+		value = base.Price(10.5, 'gems')
+		self.assertEqual(str(value), '10.5 gems')
+		self.assertEqual(repr(value), "Price(10.5, 'gems')")
+	def should_return_value_when_casted_to_int(self):
+		value = base.Price(10.5, 'gems')
+		self.assertEqual(int(value), 10)
+	def should_return_value_when_casted_to_float(self):
+		value = base.Price(10.5, 'gems')
+		self.assertEqual(float(value), 10.5)
+	def should_recognize_empty_price(self):
+		value = base.Price(10.5, 'gems')
+		self.assertTrue(value)
+		value = base.Price(0, 'gems')
+		self.assertFalse(value)
+	def should_perform_arithmetic_operations(self):
+		price = base.Price(10.5, 'gems')
+		gem = base.Price(1, 'gems')
+		self.assertEqual((price + 1).value, 11.5)
+		self.assertEqual((price + gem).value, 11.5)
+		self.assertEqual((1 + price).value, 11.5)
+		self.assertEqual((gem + price).value, 11.5)
+		self.assertEqual((price - 1).value, 9.5)
+		self.assertEqual((price - gem).value, 9.5)
+		self.assertEqual((21 - price).value, 10.5)
+		self.assertEqual((price * 2).value, 21)
+		self.assertEqual((2 * price).value, 21)
+		self.assertAlmostEqual((price / 2).value, 5.25)
+		self.assertAlmostEqual((price // 2).value, 5)
+	def should_raise_on_operations_with_different_currencies(self):
+		price = base.Price(10.5, 'gems')
+		bad = base.Price(1, 'gold')
+		with self.assertRaises(ValueError):
+			price + bad
+		with self.assertRaises(ValueError):
+			bad + price
+		with self.assertRaises(ValueError):
+			price - bad
+		with self.assertRaises(ValueError):
+			bad - price
+		with self.assertRaises(ValueError):
+			price * bad
+		with self.assertRaises(ValueError):
+			bad * price
+		with self.assertRaises(ValueError):
+			price / bad
+		with self.assertRaises(ValueError):
+			price // bad
+	def should_compare_price_with_numbers(self):
+		value = base.Price(10.5, 50)
 		self.assertTrue(value < 25)
 		self.assertTrue(value > 5)
 		self.assertEqual(value, 10.5)
