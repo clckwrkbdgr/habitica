@@ -6,7 +6,7 @@ from .tasks import *
 from .user import *
 from .user import _UserProxy
 
-class Habitica:
+class Habitica(base.ApiInterface):
 	""" Main Habitica entry point. """
 	def __init__(self, auth=None, _api=None):
 		self.api = _api or api.API(auth['url'], auth['x-api-user'], auth['x-api-key'])
@@ -31,11 +31,11 @@ class Habitica:
 			habitica.user.habits()
 			habitica.user.rewards()
 		"""
-		return _UserProxy(_api=self.api, _content=self.content)
+		return self.child_interface(_UserProxy)
 	def groups(self, *group_types):
 		""" Returns list of groups of given types.
 		Supported types are: PARTY, GUILDS, PRIVATE_GUILDS, PUBLIC_GUILDS, TAVERN
 		"""
 		result = self.api.get('groups', type=','.join(group_types)).data
 		# TODO recognize party and return Party object instead.
-		return [Group(_data=entry, _api=self.api) for entry in result]
+		return self.children(Group, result)

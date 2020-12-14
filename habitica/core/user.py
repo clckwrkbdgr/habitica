@@ -61,7 +61,7 @@ class Spell:
 class User(base.ApiObject):
 	def __init__(self, _proxy=None, **kwargs):
 		super().__init__(**kwargs)
-		self._proxy = _proxy or _UserProxy(_api=self.api, _content=self.content)
+		self._proxy = _proxy or self.child_interface(_UserProxy, _parent=self._parent)
 	@property
 	def stats(self):
 		return UserStats(_data=self._data['stats'])
@@ -128,21 +128,18 @@ class User(base.ApiObject):
 			params = {'targetId' : target.id}
 		return self.api.post('user', 'class', 'cast', spell.name, **params).data
 
-class _UserProxy:
-	def __init__(self, _api=None, _content=None):
-		self.api = _api
-		self.content = _content
+class _UserProxy(base.ApiInterface):
 	def __call__(self):
-		return User(_data=self.api.get('user').data, _api=self.api, _content=self.content)
+		return self.child(User, self.api.get('user').data, _parent=self._parent)
 	def party(self):
-		return groups.Party(_data=self.api.get('groups', 'party').data, _api=self.api)
+		return self.child(groups.Party, self.api.get('groups', 'party').data)
 	def habits(self):
-		return [tasks.Habit(_data=entry, _api=self.api) for entry in self.api.get('tasks', 'user', type='habits').data]
+		return self.children(tasks.Habit, self.api.get('tasks', 'user', type='habits').data)
 	def dailies(self):
-		return [tasks.Daily(_data=entry, _api=self.api) for entry in self.api.get('tasks', 'user', type='dailys').data]
+		return self.children(tasks.Daily, self.api.get('tasks', 'user', type='dailys').data)
 	def todos(self):
-		return [tasks.Todo(_data=entry, _api=self.api) for entry in self.api.get('tasks', 'user', type='todos').data]
+		return self.children(tasks.Todo, self.api.get('tasks', 'user', type='todos').data)
 	def rewards(self):
-		return [tasks.Reward(_data=entry, _api=self.api) for entry in self.api.get('tasks', 'user', type='rewards').data]
+		return self.children(tasks.Reward, self.api.get('tasks', 'user', type='rewards').data)
 	def challenges(self):
-		return [groups.Challenge(_data=entry, _api=self.api) for entry in self.api.get('challenges', 'user').data]
+		return self.children(groups.Challenge, self.api.get('challenges', 'user').data)

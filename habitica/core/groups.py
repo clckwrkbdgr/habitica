@@ -99,37 +99,33 @@ class ChatMessage(base.ApiObject):
 	def clearflags(self):
 		self.api.post('groups', self.group.id, 'chat', self.id, 'clearflags')
 
-class Chat:
-	def __init__(self, _api=None, _group=None):
-		self.api = _api
-		self._group = _group
+class Chat(base.ApiInterface):
+	def __init__(self, **kwargs):
+		super().__init__(**kwargs)
 		self._entries = None
 	def __call__(self):
 		return self.messages()
-	def children(self, obj_type, data_entries, _parent=None): # pragma: no cover -- TODO need similar method for non-data API objects.
-		return [
-				obj_type(_data=entry, _api=self.api, _parent=(_parent or self))
-				for entry
-				in data_entries
-				]
+	@property
+	def group(self):
+		return self._parent
 	def messages(self):
 		if self._entries is None:
-			self._entries = self.children(ChatMessage, self.api.get('groups', self._group.id, 'chat').data, _parent=self._group)
+			self._entries = self.children(ChatMessage, self.api.get('groups', self.group.id, 'chat').data, _parent=self.group)
 		return self._entries
 	def mark_as_read(self):
-		self.api.post('groups', self._group.id, 'chat', 'seen')
+		self.api.post('groups', self.group.id, 'chat', 'seen')
 	def delete(self, message):
 		if self._entries:
-			new_entries = self.api.delete('groups', self._group.id, 'chat', message.id, previousMsg=self._entries[-1].id).data
-			self._entries = self.children(ChatMessage, new_entries, _parent=self._group)
+			new_entries = self.api.delete('groups', self.group.id, 'chat', message.id, previousMsg=self._entries[-1].id).data
+			self._entries = self.children(ChatMessage, new_entries, _parent=self.group)
 		else:
-			self.api.delete('groups', self._group.id, 'chat', message.id)
+			self.api.delete('groups', self.group.id, 'chat', message.id)
 	def post(self, message_text):
 		if self._entries:
-			new_entries = self.api.post('groups', self._group.id, 'chat', previousMsg=self._entries[-1].id,  _body={'message':message_text}).data
+			new_entries = self.api.post('groups', self.group.id, 'chat', previousMsg=self._entries[-1].id,  _body={'message':message_text}).data
 		else:
-			new_entries = self.api.post('groups', self._group.id, 'chat', _body={'message':message_text}).data
-		self._entries = self.children(ChatMessage, new_entries, _parent=self._group)
+			new_entries = self.api.post('groups', self.group.id, 'chat', _body={'message':message_text}).data
+		self._entries = self.children(ChatMessage, new_entries, _parent=self.group)
 
 class Group(base.ApiObject):
 	""" Habitica's user group: a guild, a party, the Tavern. """
@@ -157,7 +153,7 @@ class Group(base.ApiObject):
 		return self.children(Challenge, self.api.get('challenges', 'groups', self.id).data)
 	@property
 	def chat(self):
-		return Chat(_api=self.api, _group=self)
+		return self.child_interface(Chat)
 	def mark_chat_as_read(self):
 		self.chat.mark_as_read()
 	def create_challenge(self, name, shortName, summary=None, description=None, prize=0):
@@ -184,8 +180,8 @@ class Group(base.ApiObject):
 
 class Quest(base.ApiObject):
 	@lru_cache()
-	def _content(self):
-		return content.Content(_api=self.api)['quests'][self.key] # TODO reuse Content object from Habitica.
+	def _quest_content(self):
+		return self.content['quests'][self.key]
 	@property
 	def active(self):
 		return bool(self._data['active'])
@@ -194,10 +190,10 @@ class Quest(base.ApiObject):
 		return self._data['key']
 	@property
 	def title(self):
-		return self._content()['text']
+		return self._quest_content()['text']
 	@property
 	def progress(self):
-		if self._content().get('collect'):
+		if self._quest_content().get('collect'):
 			qp_tmp = self._data['progress']['collect']
 			quest_progress = sum(qp_tmp.values())
 			return quest_progress
@@ -205,7 +201,7 @@ class Quest(base.ApiObject):
 			return self._data['progress']['hp']
 	@property
 	def max_progress(self):
-		content = self._content()
+		content = self._quest_content()
 		if content.get('collect'):
 			return sum([int(item['count']) for item in content['collect'].values()])
 		else:

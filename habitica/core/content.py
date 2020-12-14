@@ -6,17 +6,17 @@ from . import base
 
 HabiticaEvent = namedtuple('HabiticaEvent', 'start end')
 
-class Content:
+class Content(base.ApiInterface):
 	""" Cache for all Habitica content. """
 	def __init__(self, _api=None):
-		self.api = _api
+		super().__init__(_api=_api, _content=self)
 		self._data = self.api.cached('content').get('content').data
 	@property
 	def potion(self):
-		return HealthPotion(_api=self.api, _data=self._data['potion'])
+		return self.child(HealthPotion, self._data['potion'])
 	@property
 	def armoire(self):
-		return Armoire(_api=self.api, _data=self._data['armoire'])
+		return self.child(Armoire, self._data['armoire'])
 	@property
 	def classes(self):
 		return self._data['classes']
@@ -24,56 +24,56 @@ class Content:
 	def gearTypes(self):
 		return self._data['gearTypes']
 	def questEggs(self):
-		return [Egg(_api=self.api, _data=entry) for entry in self._data['questEggs'].values()]
+		return self.children(Egg, self._data['questEggs'].values())
 	def eggs(self):
-		return [Egg(_api=self.api, _data=entry) for entry in self._data['eggs'].values()]
+		return self.children(Egg, self._data['eggs'].values())
 	def dropEggs(self):
-		return [Egg(_api=self.api, _data=entry) for entry in self._data['dropEggs'].values()]
+		return self.children(Egg, self._data['dropEggs'].values())
 	def wackyHatchingPotions(self):
-		return [HatchingPotion(_api=self.api, _data=entry) for entry in self._data['wackyHatchingPotions'].values()]
+		return self.children(HatchingPotion, self._data['wackyHatchingPotions'].values())
 	def hatchingPotions(self):
-		return [HatchingPotion(_api=self.api, _data=entry) for entry in self._data['hatchingPotions'].values()]
+		return self.children(HatchingPotion, self._data['hatchingPotions'].values())
 	def dropHatchingPotions(self):
-		return [HatchingPotion(_api=self.api, _data=entry) for entry in self._data['dropHatchingPotions'].values()]
+		return self.children(HatchingPotion, self._data['dropHatchingPotions'].values())
 	def premiumHatchingPotions(self):
-		return [HatchingPotion(_api=self.api, _data=entry) for entry in self._data['premiumHatchingPotions'].values()]
+		return self.children(HatchingPotion, self._data['premiumHatchingPotions'].values())
 	def petInfo(self, key=None):
 		if key:
-			return Pet(_api=self.api, _data=self._data['petInfo'][key])
-		return [Pet(_api=self.api, _data=entry) for entry in self._data['petInfo'].values()]
+			return self.child(Pet, self._data['petInfo'][key])
+		return self.children(Pet, self._data['petInfo'].values())
 	def questPets(self):
-		return [Pet(_api=self.api, _data=self._data['petInfo'][key]) for key, value in self._data['questPets'].items() if value]
+		return [self.child(Pet, self._data['petInfo'][key]) for key, value in self._data['questPets'].items() if value]
 	def premiumPets(self):
-		return [Pet(_api=self.api, _data=self._data['petInfo'][key]) for key, value in self._data['premiumPets'].items() if value]
+		return [self.child(Pet, self._data['petInfo'][key]) for key, value in self._data['premiumPets'].items() if value]
 	def specialPets(self):
-		return [Pet(_api=self.api, _data=self._data['petInfo'][key], _special=value) for key, value in self._data['specialPets'].items() if value]
+		return [self.child(Pet, self._data['petInfo'][key], _special=value) for key, value in self._data['specialPets'].items() if value]
 	def mountInfo(self, key=None):
 		if key:
-			return Mount(_api=self.api, _data=self._data['mountInfo'][key])
-		return [Mount(_api=self.api, _data=entry) for entry in self._data['mountInfo'].values()]
+			return self.child(Mount, self._data['mountInfo'][key])
+		return self.children(Mount, self._data['mountInfo'].values())
 	def mounts(self):
-		return [Mount(_api=self.api, _data=self._data['mountInfo'][key]) for key, value in self._data['mounts'].items() if value]
+		return [self.child(Mount, self._data['mountInfo'][key]) for key, value in self._data['mounts'].items() if value]
 	def questMounts(self):
-		return [Mount(_api=self.api, _data=self._data['mountInfo'][key]) for key, value in self._data['questMounts'].items() if value]
+		return [self.child(Mount, self._data['mountInfo'][key]) for key, value in self._data['questMounts'].items() if value]
 	def premiumMounts(self):
-		return [Mount(_api=self.api, _data=self._data['mountInfo'][key]) for key, value in self._data['premiumMounts'].items() if value]
+		return [self.child(Mount, self._data['mountInfo'][key]) for key, value in self._data['premiumMounts'].items() if value]
 	def specialMounts(self):
-		return [Mount(_api=self.api, _data=self._data['mountInfo'][key], _special=value) for key, value in self._data['specialMounts'].items() if value]
+		return [self.child(Mount, self._data['mountInfo'][key], _special=value) for key, value in self._data['specialMounts'].items() if value]
 	def get_background(self, name):
-		return Background(_data=self._data['backgroundFlats'][name], _api=self.api)
+		return self.child(Background, self._data['backgroundFlats'][name])
 	def get_background_set(self, year, month=None):
 		""" Returns background set for given year and month.
 		If month is None, returns all sets for this year.
 		If year is None (explicitly), returns time travel backgrounds.
 		"""
 		if year is None: # TODO time travel - needs some constant name
-			return [Background(_api=self.api, _data=entry) for entry in self._data['backgrounds']['timeTravelBackgrounds']]
+			return self.children(Background, self._data['backgrounds']['timeTravelBackgrounds'])
 		months = ['{0:02}'.format(month)] if month else ['{0:02}'.format(number) for number in range(1, 13)]
 		patterns = ['backgrounds{month}{year}'.format(year=year, month=month) for month in months]
 		result = []
 		for key in self._data['backgrounds']:
 			if key in patterns:
-				result += [Background(_api=self.api, _data=entry) for entry in self._data['backgrounds'][key]]
+				result += self.children(Background, self._data['backgrounds'][key])
 		return result
 	def __getitem__(self, key):
 		try:
