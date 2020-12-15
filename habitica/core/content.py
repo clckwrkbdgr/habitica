@@ -2,6 +2,7 @@
 """
 import datetime
 from collections import namedtuple
+import vintage
 from . import base
 
 HabiticaEvent = namedtuple('HabiticaEvent', 'start end')
@@ -97,41 +98,53 @@ class ContentEntry(base.ApiObject):
 	def notes(self):
 		return self._data.get('notes', '')
 
-class Armoire(ContentEntry):
-	@property
-	def type(self):
-		return self._data['type']
+class Marketable:
+	""" Mixin for objects that can be bought (at market, from time travellers etc).
+	Supports both properties .cost and .price (return the same Price object).
+	Searches for 'value', 'cost', 'price' in object's data.
+	If there is no specific currency in data, searches for a class field .CURRENCY.
+	See alse MarketableFor<CurrencyType> descendants.
+	"""
+	CURRENCY = NotImplemented
 	@property
 	def cost(self):
-		return base.Price(self._data['value'], 'gold')
+		return base.Price(
+				self._data.get('value',
+					self._data.get('price')
+					),
+				self._data.get('currency', self.CURRENCY)
+				)
 	@property
+	def price(self):
+		return self.cost
+	@property
+	@vintage.deprecated('Use .cost.currency')
 	def currency(self): # pragma: no cover -- FIXME deprecated
 		return self.cost.currency
 
-class Egg(ContentEntry):
+class MarketableForGold(Marketable):
+	CURRENCY = 'gold'
+
+class MarketableForGems(Marketable):
+	CURRENCY = 'gems'
+
+class Armoire(ContentEntry, MarketableForGold):
+	@property
+	def type(self):
+		return self._data['type']
+
+class Egg(ContentEntry, MarketableForGems):
 	@property
 	def mountText(self):
 		return self._data['mountText']
 	@property
 	def adjective(self):
 		return self._data['adjective']
-	@property
-	def price(self):
-		return base.Price(self._data['value'], 'gems')
-	@property
-	def currency(self): # pragma: no cover -- FIXME deprecated
-		return self.price.currency
 
-class HatchingPotion(ContentEntry):
+class HatchingPotion(ContentEntry, MarketableForGems):
 	@property
 	def _addlNotes(self):
 		return self._data.get('_addlNotes', '')
-	@property
-	def price(self):
-		return base.Price(self._data['value'], 'gems')
-	@property
-	def currency(self): # pragma: no cover -- FIXME deprecated
-		return self.price.currency
 	@property
 	def premium(self):
 		return self._data.get('premium', False)
@@ -149,7 +162,7 @@ class HatchingPotion(ContentEntry):
 		end = datetime.datetime.strptime(self._data['event']['end'], '%Y-%m-%d').date()
 		return HabiticaEvent(start, end)
 
-class Food(ContentEntry): # pragma: no cover -- FIXME no methods to retrieve yet.
+class Food(ContentEntry, MarketableForGems): # pragma: no cover -- FIXME no methods to retrieve yet.
 	@property
 	def textThe(self):
 		return self._data['textThe']
@@ -162,23 +175,8 @@ class Food(ContentEntry): # pragma: no cover -- FIXME no methods to retrieve yet
 	@property
 	def canDrop(self):
 		return self._data['canDrop']
-	@property
-	def price(self):
-		return base.Price(self._data['value'], 'gems')
-	@property
-	def currency(self): # pragma: no cover -- FIXME deprecated
-		return self.price.currency
 
-class Background(ContentEntry):
-	@property
-	def price(self):
-		return base.Price(
-				self._data['price'],
-				self._data['currency'] if 'currency' in self._data else 'gems',
-				)
-	@property
-	def currency(self): # pragma: no cover -- FIXME deprecated
-		return self.price.currency
+class Background(ContentEntry, MarketableForGems):
 	@property
 	def set_name(self):
 		return self._data['set']
@@ -189,7 +187,7 @@ class HealthOverflowError(Exception):
 	def __str__(self):
 		return 'HP is too high, part of health potion would be wasted.'
 
-class HealthPotion(ContentEntry):
+class HealthPotion(ContentEntry, MarketableForGold):
 	""" Health potion (+15 hp). """
 	VALUE = 15.0
 	def __init__(self, overflow_check=True, **kwargs):
@@ -202,12 +200,6 @@ class HealthPotion(ContentEntry):
 	@property
 	def type(self):
 		return self._data['type']
-	@property
-	def cost(self):
-		return base.Price(self._data['value'], 'gold')
-	@property
-	def currency(self): # pragma: no cover -- FIXME deprecated
-		return self.cost.currency
 	def _buy(self, user):
 		if self.overflow_check and float(user.stats.hp) + self.VALUE > user.stats.maxHealth:
 			raise HealthOverflowError(user.stats.hp, user.stats.maxHealth)

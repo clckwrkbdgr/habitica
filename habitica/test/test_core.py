@@ -3,6 +3,7 @@ unittest.defaultTestLoader.testMethodPrefix = 'should'
 import datetime
 from collections import namedtuple
 from .. import core, api, timeutils
+from ..core.base import Price
 
 class MockRequest:
 	def __init__(self, method, path, response, cached=False):
@@ -1335,8 +1336,7 @@ class TestContent(unittest.TestCase):
 		self.assertEqual(potion.key, 'HealthPotion')
 		self.assertEqual(potion.notes, 'Heals 15 hp')
 		self.assertEqual(potion.type, 'potion')
-		self.assertEqual(potion.cost, 25)
-		self.assertEqual(potion.currency, 'gold')
+		self.assertEqual(potion.cost, Price(25, 'gold'))
 	def should_retrieve_armoire(self):
 		habitica = core.Habitica(_api=MockAPI())
 		content = habitica.content
@@ -1344,8 +1344,7 @@ class TestContent(unittest.TestCase):
 		self.assertEqual(armoire.text, 'Enchanted Armoire')
 		self.assertEqual(armoire.key, 'Armoire')
 		self.assertEqual(armoire.type, 'armoire')
-		self.assertEqual(armoire.cost, 100)
-		self.assertEqual(armoire.currency, 'gold')
+		self.assertEqual(armoire.cost, Price(100, 'gold'))
 	def should_list_available_classes(self):
 		habitica = core.Habitica(_api=MockAPI())
 		content = habitica.content
@@ -1373,8 +1372,7 @@ class TestContent(unittest.TestCase):
 		self.assertEqual(egg.mountText, 'Badger')
 		self.assertEqual(egg.notes, 'This is a Badger egg.')
 		self.assertEqual(egg.adjective, 'serious')
-		self.assertEqual(egg.price, 4)
-		self.assertEqual(egg.currency, 'gems')
+		self.assertEqual(egg.price, Price(4, 'gems'))
 
 		egg = content.eggs()[0]
 		self.assertEqual(egg.key, 'wolf')
@@ -1382,8 +1380,7 @@ class TestContent(unittest.TestCase):
 		self.assertEqual(egg.mountText, 'Wolf')
 		self.assertEqual(egg.notes, 'This is a Wolf egg.')
 		self.assertEqual(egg.adjective, 'fierce')
-		self.assertEqual(egg.price, 3)
-		self.assertEqual(egg.currency, 'gems')
+		self.assertEqual(egg.price, Price(3, 'gems'))
 
 		egg = content.dropEggs()[0]
 		self.assertEqual(egg.key, 'fox')
@@ -1391,8 +1388,7 @@ class TestContent(unittest.TestCase):
 		self.assertEqual(egg.mountText, 'Fox')
 		self.assertEqual(egg.notes, 'This is a Fox egg.')
 		self.assertEqual(egg.adjective, 'sly')
-		self.assertEqual(egg.price, 2)
-		self.assertEqual(egg.currency, 'gems')
+		self.assertEqual(egg.price, Price(2, 'gems'))
 	def should_retrieve_various_hatching_potions(self):
 		habitica = core.Habitica(_api=MockAPI())
 		content = habitica.content
@@ -1402,8 +1398,7 @@ class TestContent(unittest.TestCase):
 		self.assertEqual(potion.text, 'Base')
 		self.assertEqual(potion.notes, 'Makes Base pet.')
 		self.assertEqual(potion._addlNotes, '')
-		self.assertEqual(potion.price, 2)
-		self.assertEqual(potion.currency, 'gems')
+		self.assertEqual(potion.price, Price(2, 'gems'))
 		self.assertFalse(potion.premium)
 		self.assertFalse(potion.limited)
 		self.assertFalse(potion.wacky)
@@ -1414,8 +1409,7 @@ class TestContent(unittest.TestCase):
 		self.assertEqual(potion.text, 'Wacky')
 		self.assertEqual(potion.notes, 'Makes Wacky pet.')
 		self.assertEqual(potion._addlNotes, 'Wacky!')
-		self.assertEqual(potion.price, 3)
-		self.assertEqual(potion.currency, 'gems')
+		self.assertEqual(potion.price, Price(3, 'gems'))
 		self.assertTrue(potion.premium)
 		self.assertTrue(potion.limited)
 		self.assertTrue(potion.wacky)
@@ -1427,8 +1421,7 @@ class TestContent(unittest.TestCase):
 		self.assertEqual(potion.text, 'Red')
 		self.assertEqual(potion.notes, 'Makes Red pet.')
 		self.assertEqual(potion._addlNotes, '')
-		self.assertEqual(potion.price, 4)
-		self.assertEqual(potion.currency, 'gems')
+		self.assertEqual(potion.price, Price(4, 'gems'))
 		self.assertFalse(potion.premium)
 		self.assertTrue(potion.limited)
 		self.assertFalse(potion.wacky)
@@ -1439,8 +1432,7 @@ class TestContent(unittest.TestCase):
 		self.assertEqual(potion.text, 'Shadow')
 		self.assertEqual(potion.notes, 'Makes Shadow pet.')
 		self.assertEqual(potion._addlNotes, 'Premium!')
-		self.assertEqual(potion.price, 5)
-		self.assertEqual(potion.currency, 'gems')
+		self.assertEqual(potion.price, Price(5, 'gems'))
 		self.assertTrue(potion.premium)
 		self.assertFalse(potion.limited)
 		self.assertFalse(potion.wacky)
@@ -1518,8 +1510,7 @@ class TestContent(unittest.TestCase):
 		self.assertEqual(background.key, 'blizzard')
 		self.assertEqual(background.text, 'Blizzard')
 		self.assertEqual(background.notes, 'Hurling Blizzard')
-		self.assertEqual(background.price, 7)
-		self.assertEqual(background.currency, 'gems')
+		self.assertEqual(background.price, Price(7, 'gems'))
 		self.assertEqual(background.set_name, 'Winter')
 	def should_get_backgroud_set(self):
 		habitica = core.Habitica(_api=MockAPI())
@@ -1529,8 +1520,7 @@ class TestContent(unittest.TestCase):
 		self.assertEqual(backgrounds[0].key, 'fall')
 		self.assertEqual(backgrounds[0].text, 'Fall')
 		self.assertEqual(backgrounds[0].notes, "Summer's End")
-		self.assertEqual(backgrounds[0].price, 7)
-		self.assertEqual(backgrounds[0].currency, 'gems')
+		self.assertEqual(backgrounds[0].price, Price(7, 'gems'))
 		self.assertEqual(backgrounds[0].set_name, 'Fall')
 
 		backgrounds = sorted(content.get_background_set(2020), key=lambda _:_.key)
@@ -1541,6 +1531,5 @@ class TestContent(unittest.TestCase):
 		self.assertEqual(backgrounds[0].key, 'core')
 		self.assertEqual(backgrounds[0].text, 'The Core')
 		self.assertEqual(backgrounds[0].notes, "The Core")
-		self.assertEqual(backgrounds[0].price, 1)
-		self.assertEqual(backgrounds[0].currency, 'hourglass')
+		self.assertEqual(backgrounds[0].price, Price(1, 'hourglass'))
 		self.assertEqual(backgrounds[0].set_name, 'timeTravel')
