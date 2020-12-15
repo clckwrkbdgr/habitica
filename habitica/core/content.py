@@ -81,13 +81,23 @@ class Content(base.ApiInterface):
 		except AttributeError:
 			return self._data[key]
 
-class Armoire(base.ApiObject):
+class ContentEntry(base.ApiObject):
+	""" Base class for all content entries. """
+	def __repr__(self): # pragma: no cover
+		return '{0}({1})'.format(type(self).__name__, repr(self.key))
+	def __str__(self):
+		return self.text
+	@property
+	def key(self):
+		return self._data['key']
 	@property
 	def text(self):
 		return self._data['text']
 	@property
-	def key(self):
-		return self._data['key']
+	def notes(self):
+		return self._data.get('notes', '')
+
+class Armoire(ContentEntry):
 	@property
 	def type(self):
 		return self._data['type']
@@ -98,19 +108,10 @@ class Armoire(base.ApiObject):
 	def currency(self): # pragma: no cover -- FIXME deprecated
 		return self.cost.currency
 
-class Egg(base.ApiObject):
-	@property
-	def key(self):
-		return self._data['key']
-	@property
-	def text(self):
-		return self._data['text']
+class Egg(ContentEntry):
 	@property
 	def mountText(self):
 		return self._data['mountText']
-	@property
-	def notes(self):
-		return self._data['notes']
 	@property
 	def adjective(self):
 		return self._data['adjective']
@@ -121,16 +122,7 @@ class Egg(base.ApiObject):
 	def currency(self): # pragma: no cover -- FIXME deprecated
 		return self.price.currency
 
-class HatchingPotion(base.ApiObject):
-	@property
-	def key(self):
-		return self._data['key']
-	@property
-	def text(self):
-		return self._data['text']
-	@property
-	def notes(self):
-		return self._data['notes']
+class HatchingPotion(ContentEntry):
 	@property
 	def _addlNotes(self):
 		return self._data.get('_addlNotes', '')
@@ -157,13 +149,7 @@ class HatchingPotion(base.ApiObject):
 		end = datetime.datetime.strptime(self._data['event']['end'], '%Y-%m-%d').date()
 		return HabiticaEvent(start, end)
 
-class Food(base.ApiObject): # pragma: no cover -- FIXME no methods to retrieve yet.
-	@property
-	def key(self):
-		return self._data['key']
-	@property
-	def text(self):
-		return self._data['text']
+class Food(ContentEntry): # pragma: no cover -- FIXME no methods to retrieve yet.
 	@property
 	def textThe(self):
 		return self._data['textThe']
@@ -174,9 +160,6 @@ class Food(base.ApiObject): # pragma: no cover -- FIXME no methods to retrieve y
 	def target(self):
 		return self._data['target']
 	@property
-	def notes(self):
-		return self._data['notes']
-	@property
 	def canDrop(self):
 		return self._data['canDrop']
 	@property
@@ -186,16 +169,7 @@ class Food(base.ApiObject): # pragma: no cover -- FIXME no methods to retrieve y
 	def currency(self): # pragma: no cover -- FIXME deprecated
 		return self.price.currency
 
-class Background(base.ApiObject):
-	@property
-	def text(self):
-		return self._data['text']
-	@property
-	def notes(self):
-		return self._data['notes']
-	@property
-	def key(self):
-		return self._data['key']
+class Background(ContentEntry):
 	@property
 	def price(self):
 		return base.Price(
@@ -215,7 +189,7 @@ class HealthOverflowError(Exception):
 	def __str__(self):
 		return 'HP is too high, part of health potion would be wasted.'
 
-class HealthPotion(base.ApiObject):
+class HealthPotion(ContentEntry):
 	""" Health potion (+15 hp). """
 	VALUE = 15.0
 	def __init__(self, overflow_check=True, **kwargs):
@@ -225,15 +199,6 @@ class HealthPotion(base.ApiObject):
 		"""
 		super().__init__(**kwargs)
 		self.overflow_check = overflow_check
-	@property
-	def text(self):
-		return self._data['text']
-	@property
-	def notes(self):
-		return self._data['notes']
-	@property
-	def key(self):
-		return self._data['key']
 	@property
 	def type(self):
 		return self._data['type']
@@ -248,18 +213,11 @@ class HealthPotion(base.ApiObject):
 			raise HealthOverflowError(user.stats.hp, user.stats.maxHealth)
 		user._data = self.api.post('user', 'buy-health-potion').data
 
-class Pet(base.ApiObject):
+class StableCreature(ContentEntry):
+	""" Base class for Pets and Mounts. """
 	def __init__(self, _special=None, **kwargs):
 		super().__init__(**kwargs)
 		self._special = _special
-	def __str__(self):
-		return self.text
-	@property
-	def text(self):
-		return self._data['text']
-	@property
-	def key(self):
-		return self._data['key']
 	@property
 	def type(self):
 		return self._data['type']
@@ -276,30 +234,8 @@ class Pet(base.ApiObject):
 	def special(self):
 		return self._special
 
-class Mount(base.ApiObject):
-	def __init__(self, _special=None, **kwargs):
-		super().__init__(**kwargs)
-		self._special = _special
-	def __str__(self):
-		return self.text
-	@property
-	def text(self):
-		return self._data['text']
-	@property
-	def key(self):
-		return self._data['key']
-	@property
-	def type(self):
-		return self._data['type']
-	@property
-	def egg(self):
-		return self._data.get('egg', None)
-	@property
-	def potion(self):
-		return self._data.get('potion', None)
-	@property
-	def canFind(self):
-		return self._data.get('canFind', None)
-	@property
-	def special(self):
-		return self._special
+class Pet(StableCreature):
+	pass
+
+class Mount(StableCreature):
+	pass
