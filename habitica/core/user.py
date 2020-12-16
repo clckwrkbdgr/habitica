@@ -60,10 +60,40 @@ class Spell:
 	def description(self):
 		return self._description
 
-class User(base.ApiObject):
-	def __init__(self, _proxy=None, **kwargs):
-		super().__init__(**kwargs)
-		self._proxy = _proxy or self.child_interface(_UserProxy, _parent=self._parent)
+class _UserMethods:
+	""" Trait to be used by ApiObject or ApiInterface
+	to access user methods that do not require user data.
+	"""
+	def party(self):
+		""" Returns user's party. """
+		return self.child(groups.Party, self.api.get('groups', 'party').data)
+	def habits(self):
+		return self.children(tasks.Habit, self.api.get('tasks', 'user', type='habits').data)
+	def dailies(self):
+		return self.children(tasks.Daily, self.api.get('tasks', 'user', type='dailys').data)
+	def todos(self):
+		return self.children(tasks.Todo, self.api.get('tasks', 'user', type='todos').data)
+	def rewards(self):
+		return self.children(tasks.Reward, self.api.get('tasks', 'user', type='rewards').data)
+	def challenges(self):
+		return self.children(groups.Challenge, self.api.get('challenges', 'user').data)
+
+class UserProxy(base.ApiInterface, _UserMethods):
+	""" Lazy class to proxy call methods that do not require immediate user data,
+	like lists of tasks, challenges, user's party etc:
+	   habitica.user.todos()
+	   habitica.user.party()
+	   ...
+	To get real User out of this proxy, call this object like a method:
+	   real_user = habitica.user()
+	   real_user.todos()
+	   real_user.party()
+	   ...
+	"""
+	def __call__(self):
+		return self.child(User, self.api.get('user').data, _parent=self._parent)
+
+class User(base.ApiObject, _UserMethods):
 	@property
 	def stats(self):
 		return UserStats(_data=self._data['stats'])
@@ -73,22 +103,9 @@ class User(base.ApiObject):
 	@property
 	def inventory(self):
 		return Inventory(_data=self._data['items'], _content=self.content)
-	def party(self):
-		""" Returns user's party. """
-		return self._proxy.party()
 	def buy(self, item):
 		# TODO gold check?
 		item._buy(user=self)
-	def habits(self):
-		return self._proxy.habits()
-	def dailies(self):
-		return self._proxy.dailies()
-	def todos(self):
-		return self._proxy.todos()
-	def rewards(self):
-		return self._proxy.rewards()
-	def challenges(self):
-		return self._proxy.challenges()
 	def spells(self):
 		""" Returns list of available spells. """
 		SPELLS = { # TODO apparently /content lists these.
@@ -129,19 +146,3 @@ class User(base.ApiObject):
 		if target:
 			params = {'targetId' : target.id}
 		return self.api.post('user', 'class', 'cast', spell.name, **params).data
-
-class _UserProxy(base.ApiInterface):
-	def __call__(self):
-		return self.child(User, self.api.get('user').data, _parent=self._parent)
-	def party(self):
-		return self.child(groups.Party, self.api.get('groups', 'party').data)
-	def habits(self):
-		return self.children(tasks.Habit, self.api.get('tasks', 'user', type='habits').data)
-	def dailies(self):
-		return self.children(tasks.Daily, self.api.get('tasks', 'user', type='dailys').data)
-	def todos(self):
-		return self.children(tasks.Todo, self.api.get('tasks', 'user', type='todos').data)
-	def rewards(self):
-		return self.children(tasks.Reward, self.api.get('tasks', 'user', type='rewards').data)
-	def challenges(self):
-		return self.children(groups.Challenge, self.api.get('challenges', 'user').data)

@@ -4,7 +4,7 @@ from .content import *
 from .groups import *
 from .tasks import *
 from .user import *
-from .user import _UserProxy
+from .user import UserProxy
 
 class Habitica(base.ApiInterface):
 	""" Main Habitica entry point. """
@@ -31,7 +31,7 @@ class Habitica(base.ApiInterface):
 			habitica.user.habits()
 			habitica.user.rewards()
 		"""
-		return self.child_interface(_UserProxy)
+		return self.child_interface(UserProxy)
 	def groups(self, *group_types):
 		""" Returns list of groups of given types.
 		Supported types are: PARTY, GUILDS, PRIVATE_GUILDS, PUBLIC_GUILDS, TAVERN
