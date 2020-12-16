@@ -8,15 +8,39 @@ from . import base
 # Weekday abbreviations used in task frequencies.
 HABITICA_WEEK = ["m", "t", "w", "th", "f", "s", "su"]
 
-class Reward(base.ApiObject):
+class Task(base.ApiObject):
+	""" Parent class for any task (habit, daily, todo, reward). """
+	DARK_RED, RED, ORANGE = -20, -10, -1
+	YELLOW = 0
+	GREEN, LIGHT_BLUE, BRIGHT_BLUE = 1, 5, 10
+
 	@property
 	def id(self):
 		return self._data['id']
 	@property
 	def text(self):
 		return self._data['text']
+	@property
+	def notes(self):
+		return self._data.get('notes', '')
+
+class Reward(Task):
 	def _buy(self, user):
 		self.api.post('tasks', self.id, 'score', 'up')
+
+class TaskValue:
+	""" Base trait for tasks that have value and colors (habit, daily, todo).
+	Expects property .value
+	"""
+	@property
+	def value(self):
+		return self._data['value']
+	@property
+	def color(self):
+		""" Returns virtual Task Color (see Task). """
+		scores = [self.DARK_RED, self.RED, self.ORANGE, self.YELLOW, self.GREEN, self.LIGHT_BLUE, self.BRIGHT_BLUE]
+		breakpoints = [-20, -10, -1, 1, 5, 10]
+		return scores[bisect(breakpoints, self.value)]
 
 class CannotScoreUp(Exception):
 	def __init__(self, habit):
@@ -30,31 +54,7 @@ class CannotScoreDown(Exception):
 	def __str__(self):
 		return "Habit '{0}' cannot be decremented".format(self.habit.text)
 
-class Task(base.ApiObject):
-	""" Parent class for any task (habit, daily, todo). """
-	DARK_RED, RED, ORANGE = -20, -10, -1
-	YELLOW = 0
-	GREEN, LIGHT_BLUE, BRIGHT_BLUE = 1, 5, 10
-
-class Habit(Task):
-	@property
-	def id(self):
-		return self._data['id']
-	@property
-	def text(self):
-		return self._data['text']
-	@property
-	def notes(self):
-		return self._data['notes']
-	@property
-	def value(self):
-		return self._data['value']
-	@property
-	def color(self):
-		""" Returns virtual Task Color (see Task). """
-		scores = [self.DARK_RED, self.RED, self.ORANGE, self.YELLOW, self.GREEN, self.LIGHT_BLUE, self.BRIGHT_BLUE]
-		breakpoints = [-20, -10, -1, 1, 5, 10]
-		return scores[bisect(breakpoints, self.value)]
+class Habit(Task, TaskValue):
 	@property
 	def can_score_up(self):
 		return self._data['up']
@@ -80,33 +80,27 @@ class Checkable:
 		return self._data['completed']
 	def complete(self): # pragma: no cover
 		""" Marks entry as completed. """
-		raise NotImplementedError
+		self._data['completed'] = True
 	def undo(self): # pragma: no cover
 		""" Marks entry as not completed. """
-		raise NotImplementedError
+		self._data['completed'] = False
 
-class SubItem(base.ApiObject, Checkable):
-	@property
-	def id(self):
-		return self._data['id']
+class SubItem(Task, Checkable):
 	@property
 	def parent(self):
 		return self._parent
-	@property
-	def text(self):
-		return self._data['text']
 	def complete(self):
 		""" Marks subitem as completed. """
 		if self.is_completed:
 			return
 		self.api.post('tasks', self._parent.id, 'checklist', self.id, 'score')
-		self._data['completed'] = True
+		super().complete()
 	def undo(self):
 		""" Marks subitem as not completed. """
 		if not self.is_completed:
 			return
 		self.api.post('tasks', self._parent.id, 'checklist', self.id, 'score')
-		self._data['completed'] = False
+		super().undo()
 
 class Checklist:
 	""" Base class for task that provides list of checkable sub-items. """
@@ -125,16 +119,7 @@ class Checklist:
 		except AttributeError:
 			return self.child(SubItem, self._data['checklist'][key])
 
-class Daily(Task, Checkable, Checklist):
-	@property
-	def id(self):
-		return self._data['id']
-	@property
-	def text(self):
-		return self._data['text']
-	@property
-	def notes(self):
-		return self._data['notes']
+class Daily(Task, TaskValue, Checkable, Checklist):
 	def is_due(self, today, timezoneOffset=None):
 		""" Should return True is task is available for given day
 		considering its repeat pattern and start date.
@@ -152,27 +137,18 @@ class Daily(Task, Checkable, Checklist):
 	def complete(self):
 		""" Marks daily as completed. """
 		self.api.post('tasks', self.id, 'score', 'up')
-		self._data['completed'] = True
+		super().complete()
 	def undo(self):
 		""" Marks daily as not completed. """
 		self.api.post('tasks', self.id, 'score', 'down')
-		self._data['completed'] = False
+		super().undo()
 
-class Todo(Task, Checkable, Checklist):
-	@property
-	def id(self):
-		return self._data['id']
-	@property
-	def text(self):
-		return self._data['text']
-	@property
-	def notes(self):
-		return self._data['notes']
+class Todo(Task, TaskValue, Checkable, Checklist):
 	def complete(self):
 		""" Marks todo as completed. """
 		self.api.post('tasks', self.id, 'score', 'up')
-		self._data['completed'] = True
+		super().complete()
 	def undo(self):
 		""" Marks todo as not completed. """
 		self.api.post('tasks', self.id, 'score', 'down')
-		self._data['completed'] = False
+		super().undo()
