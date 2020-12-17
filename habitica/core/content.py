@@ -78,6 +78,8 @@ class Content(base.ApiInterface):
 		return result
 	def special_items(self):
 		return self.children(SpecialItem, self._data['special'].values())
+	def cards(self):
+		return [self.child(SpecialItem, self._data['special'][key]) for key in self._data['cardTypes'].keys()]
 	def __getitem__(self, key):
 		try:
 			return object.__getitem__(self, key)
@@ -255,3 +257,15 @@ class SpecialItem(ContentEntry, MarketableForGold):
 	@property
 	def immediateUse(self):
 		return self._data.get('immediateUse', False)
+	@property
+	def yearRound(self):
+		card =  self.content['cardTypes'].get(self.key)
+		if not card:
+			return False
+		return card['yearRound']
+	@property
+	def messageOptions(self):
+		card =  self.content['cardTypes'].get(self.key)
+		if not card:
+			return None
+		return card['messageOptions']

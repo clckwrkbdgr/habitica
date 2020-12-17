@@ -271,6 +271,13 @@ class MockAPI:
 							"notes": "Turn a friend into a joyous flower!"
 							}
 						},
+				"cardTypes": {
+						"congrats": {
+							"key": "congrats",
+							"yearRound": True,
+							"messageOptions": 5
+							},
+						},
 				}}, cached=True),
 			]
 	def cached(self, *args, **kwargs):
@@ -1581,6 +1588,8 @@ class TestContent(unittest.TestCase):
 		self.assertFalse(item.previousPurchase)
 		self.assertTrue(item.silent)
 		self.assertTrue(item.immediateUse)
+		self.assertTrue(item.yearRound)
+		self.assertEqual(item.messageOptions, 5)
 
 		item = items[1]
 		self.assertEqual(item.key, 'petalFreePotion')
@@ -1593,6 +1602,8 @@ class TestContent(unittest.TestCase):
 		self.assertFalse(item.previousPurchase)
 		self.assertFalse(item.silent)
 		self.assertTrue(item.immediateUse)
+		self.assertFalse(item.yearRound)
+		self.assertIsNone(item.messageOptions)
 
 		item = items[2]
 		self.assertEqual(item.key, 'shinySeed')
@@ -1605,3 +1616,14 @@ class TestContent(unittest.TestCase):
 		self.assertTrue(item.previousPurchase)
 		self.assertFalse(item.silent)
 		self.assertFalse(item.immediateUse)
+		self.assertFalse(item.yearRound)
+		self.assertIsNone(item.messageOptions)
+	def should_get_cards(self):
+		habitica = core.Habitica(_api=MockAPI())
+		content = habitica.content
+
+		items = content.cards()
+		self.assertEqual(len(items), 1)
+
+		item = items[0]
+		self.assertEqual(item.key, 'congrats')
