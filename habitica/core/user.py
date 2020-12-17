@@ -49,17 +49,6 @@ class Inventory(base.ApiObject):
 	def mount(self):
 		return self.content.mountInfo(self._data['currentMount']) if self._data['currentMount'] else None
 
-class Spell:
-	def __init__(self, _name, _description):
-		self._name = _name
-		self._description = _description
-	@property
-	def name(self):
-		return self._name
-	@property
-	def description(self):
-		return self._description
-
 class _UserMethods:
 	""" Trait to be used by ApiObject or ApiInterface
 	to access user methods that do not require user data.
@@ -108,41 +97,12 @@ class User(base.ApiObject, _UserMethods):
 		item._buy(user=self)
 	def spells(self):
 		""" Returns list of available spells. """
-		SPELLS = { # TODO apparently /content lists these.
-			'mage' : {
-				Spell('fireball', "Burst of Flames"),
-				Spell('mpHeal', "Ethereal Surge"),
-				Spell('earth', "Earthquake"),
-				Spell('frost', "Chilling Frost"),
-				},
-			'warrior' : {
-				Spell('smash', "Brutal Smash"),
-				Spell('defensiveStance', "Defensive Stance"),
-				Spell('valorousPresence', "Valorous Presence"),
-				Spell('intimidate', "Intimidating Gaze"),
-				},
-			'rogue' : {
-				Spell('pickPocket', "Pickpocket"),
-				Spell('backStab', "Backstab"),
-				Spell('toolsOfTrade', "Tools of the Trade"),
-				Spell('stealth', "Stealth"),
-				},
-			'healer' : {
-				Spell('heal', "Healing Light"),
-				Spell('protectAura', "Protective Aura"),
-				Spell('brightness', "Searing Brightness"),
-				Spell('healAll', "Blessing"),
-				},
-			}
-		return SPELLS[self.stats.class_name]
-	def get_spell(self, spell_name):
-		""" Returns spell by its short name if available to the user, otherwise None. """
-		for spell in self.spells():
-			if spell.name == spell_name:
-				return spell
-		return None
+		return self.content.spells(self.stats.class_name)
+	def get_spell(self, spell_key):
+		""" Returns spell by its spell key if available to the user, otherwise None. """
+		return self.content.get_spell(self.stats.class_name, spell_key)
 	def cast(self, spell, target=None):
 		params = {}
 		if target:
 			params = {'targetId' : target.id}
-		return self.api.post('user', 'class', 'cast', spell.name, **params).data
+		return self.api.post('user', 'class', 'cast', spell.key, **params).data

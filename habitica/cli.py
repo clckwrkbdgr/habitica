@@ -305,32 +305,33 @@ def cli(): # pragma: no cover
         user = habitica.user()
         user_class = user.stats.class_name
         if args.cast:
-            spell_name, targets = args.cast, args.targets
-            spell = user.get_spell(spell_name)
-            if not spell:
-                print('{1} cannot cast spell {0}'.format(user_class.title(), spell_name))
-            else:
-                if args.targets and not args.target_type:
-                    print('Target type is not specified!')
-                    sys.exit(1)
-                if args.targets:
-                    if args.target_type == 'habit':
-                        tasks = user.habits()
-                    elif args.target_type == 'todo':
-                        tasks = user.todos()
-                    else:
-                        raise ValueError('Unknown spell target type: {0}'.format(args.target_type))
-                    for target in filter_tasks(tasks, args.targets):
-                        if user.cast(spell, target):
-                            print('Casted spell "{0}"'.format(spell.name))
-                        else:
-                            sys.exit(1)
+            spell_key, targets = args.cast, args.targets
+            try:
+                spell = user.get_spell(spell_key)
+            except KeyError:
+                print('{1} cannot cast spell {0}'.format(user_class.title(), spell_key))
+                return False
+            if args.targets and not args.target_type:
+                print('Target type is not specified!')
+                sys.exit(1)
+            if args.targets:
+                if args.target_type == 'habit':
+                    tasks = user.habits()
+                elif args.target_type == 'todo':
+                    tasks = user.todos()
                 else:
-                    user.cast(spell)
-                    print('Casted spell "{0}"'.format(spell.name))
+                    raise ValueError('Unknown spell target type: {0}'.format(args.target_type))
+                for target in filter_tasks(tasks, args.targets):
+                    if user.cast(spell, target):
+                        print('Casted spell "{0}"'.format(spell.text))
+                    else:
+                        sys.exit(1)
+            else:
+                user.cast(spell)
+                print('Casted spell "{0}"'.format(spell.text))
         else:
             for spell in user.spells():
-                print('{0} - {1}'.format(spell.name, spell.description))
+                print('{0} - {1}: {2}'.format(spell.key, spell.text, spell.description))
 
     # GET/POST habits
     elif args.command == 'habits':

@@ -278,6 +278,26 @@ class MockAPI:
 							"messageOptions": 5
 							},
 						},
+				"spells": {
+						"rogue": {
+							"backStab": {
+								"key": "backStab",
+								"lvl": 12,
+								"mana": 15,
+								"target": "task",
+								"notes": "Betray a task",
+								"text": "Backstab"
+								},
+							"stealth": {
+								"key": "stealth",
+								"lvl": 14,
+								"mana": 45,
+								"target": "self",
+								"notes": "Be a Ninja",
+								"text": "Stealth"
+								},
+							},
+						},
 				}}, cached=True),
 			]
 	def cached(self, *args, **kwargs):
@@ -1318,11 +1338,9 @@ class TestSpells(unittest.TestCase):
 				}}),
 			))
 		user = habitica.user()
-		spells = sorted(user.spells(), key=lambda s:s.name)
-		self.assertEqual(spells[0].name, 'backStab')
-		self.assertEqual(spells[1].name, 'pickPocket')
-		self.assertEqual(spells[2].name, 'stealth')
-		self.assertEqual(spells[3].name, 'toolsOfTrade')
+		spells = sorted(user.spells(), key=lambda s:s.key)
+		self.assertEqual(spells[0].key, 'backStab')
+		self.assertEqual(spells[1].key, 'stealth')
 	def should_get_specific_spell(self):
 		habitica = core.Habitica(_api=MockAPI(
 			MockRequest('get', ['user'], {'data': {
@@ -1332,11 +1350,9 @@ class TestSpells(unittest.TestCase):
 				}}),
 			))
 		user = habitica.user()
-		spell = user.get_spell('smash')
-		self.assertIsNone(spell)
 		spell = user.get_spell('stealth')
-		self.assertEqual(spell.name, 'stealth')
-		self.assertEqual(spell.description, "Stealth")
+		self.assertEqual(spell.key, 'stealth')
+		self.assertEqual(spell.text, "Stealth")
 	def should_cast_spell(self):
 		habitica = core.Habitica(_api=MockAPI(
 			MockRequest('get', ['user'], {'data': {
@@ -1627,3 +1643,18 @@ class TestContent(unittest.TestCase):
 
 		item = items[0]
 		self.assertEqual(item.key, 'congrats')
+	def should_get_spells_for_class(self):
+		habitica = core.Habitica(_api=MockAPI())
+		content = habitica.content
+
+		spells = sorted(content.spells('rogue'), key=lambda _:_.key)
+		spell = spells[1]
+		self.assertEqual(spell.key, 'stealth')
+		self.assertEqual(spell.text, 'Stealth')
+		self.assertEqual(spell.notes, 'Be a Ninja')
+		self.assertEqual(spell.lvl, 14)
+		self.assertEqual(spell.mana, 45)
+		self.assertEqual(spell.target, 'self')
+
+		spell = content.get_spell('rogue', 'stealth')
+		self.assertEqual(spell.key, 'stealth')

@@ -9,6 +9,10 @@ HabiticaEvent = namedtuple('HabiticaEvent', 'start end')
 
 class Content(base.ApiInterface):
 	""" Cache for all Habitica content. """
+	# TODO achievements (pet colors, quest series etc).
+	# TODO itemList
+	# TODO events
+	# TODO bundles (purchaseable quests)
 	def __init__(self, _api=None):
 		super().__init__(_api=_api, _content=self)
 		self._data = self.api.cached('content').get('content').data
@@ -80,6 +84,10 @@ class Content(base.ApiInterface):
 		return self.children(SpecialItem, self._data['special'].values())
 	def cards(self):
 		return [self.child(SpecialItem, self._data['special'][key]) for key in self._data['cardTypes'].keys()]
+	def spells(self, class_name):
+		return self.children(Spell, self._data['spells'][class_name].values())
+	def get_spell(self, class_name, spell_key):
+		return self.child(Spell, self._data['spells'][class_name][spell_key])
 	def __getitem__(self, key):
 		try:
 			return object.__getitem__(self, key)
@@ -236,18 +244,20 @@ class Pet(StableCreature):
 class Mount(StableCreature):
 	pass
 
-class SpecialItem(ContentEntry, MarketableForGold):
-	""" Cards, seeds, sparkles, debuff potions etc. """
+class Castable:
 	@property
 	def mana(self):
 		return self._data['mana']
 	@property
+	def target(self):
+		""" 'self', 'user', 'party', 'task' """
+		return self._data['target']
+
+class SpecialItem(ContentEntry, MarketableForGold, Castable):
+	""" Cards, seeds, sparkles, debuff potions etc. """
+	@property
 	def purchaseType(self):
 		return self._data.get('purchaseType')
-	@property
-	def target(self):
-		""" 'self' or 'user' """
-		return self._data['target']
 	@property
 	def previousPurchase(self):
 		return self._data.get('previousPurchase', False)
@@ -269,3 +279,16 @@ class SpecialItem(ContentEntry, MarketableForGold):
 		if not card:
 			return None
 		return card['messageOptions']
+
+class Spell(ContentEntry, Castable):
+	@property
+	@vintage.deprecated('Use spell.key instead')
+	def name(self): # pragma: no cover -- kept for backward compatibility.
+		return self.key
+	@property
+	@vintage.deprecated('Use spell.text instead')
+	def description(self): # pragma: no cover -- kept for backward compatibility.
+		return self.text
+	@property
+	def lvl(self):
+		return self._data['lvl']
