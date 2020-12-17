@@ -240,6 +240,37 @@ class MockAPI:
 								},
 							],
 						},
+				"special": {
+						"congrats": {
+							"key": "congrats",
+							"text": "Congratulations Card",
+							"mana": 0,
+							"target": "user",
+							"notes": "Send a Congratulations card to a party member.",
+							"value": 10,
+							"silent": True,
+							"immediateUse": True
+							},
+						"petalFreePotion": {
+							"purchaseType": "debuffPotion",
+							"key": "petalFreePotion",
+							"text": "Petal-Free Potion",
+							"mana": 0,
+							"target": "self",
+							"notes": "Reverse the spell that made you a flower.",
+							"value": 5,
+							"immediateUse": True
+							},
+						"shinySeed": {
+							"key": "shinySeed",
+							"text": "Shiny Seed",
+							"mana": 0,
+							"target": "user",
+							"previousPurchase": True,
+							"value": 15,
+							"notes": "Turn a friend into a joyous flower!"
+							}
+						},
 				}}, cached=True),
 			]
 	def cached(self, *args, **kwargs):
@@ -1533,3 +1564,44 @@ class TestContent(unittest.TestCase):
 		self.assertEqual(backgrounds[0].notes, "The Core")
 		self.assertEqual(backgrounds[0].price, Price(1, 'hourglass'))
 		self.assertEqual(backgrounds[0].set_name, 'timeTravel')
+	def should_get_special_items(self):
+		habitica = core.Habitica(_api=MockAPI())
+		content = habitica.content
+
+		items = sorted(content.special_items(), key=lambda _:_.key)
+
+		item = items[0]
+		self.assertEqual(item.key, 'congrats')
+		self.assertEqual(item.text, 'Congratulations Card')
+		self.assertEqual(item.notes, 'Send a Congratulations card to a party member.')
+		self.assertIsNone(item.purchaseType)
+		self.assertEqual(item.mana, 0)
+		self.assertEqual(item.target, 'user')
+		self.assertEqual(item.price, Price(10, 'gold'))
+		self.assertFalse(item.previousPurchase)
+		self.assertTrue(item.silent)
+		self.assertTrue(item.immediateUse)
+
+		item = items[1]
+		self.assertEqual(item.key, 'petalFreePotion')
+		self.assertEqual(item.text, 'Petal-Free Potion')
+		self.assertEqual(item.notes, 'Reverse the spell that made you a flower.')
+		self.assertEqual(item.purchaseType, 'debuffPotion')
+		self.assertEqual(item.mana, 0)
+		self.assertEqual(item.target, 'self')
+		self.assertEqual(item.price, Price(5, 'gold'))
+		self.assertFalse(item.previousPurchase)
+		self.assertFalse(item.silent)
+		self.assertTrue(item.immediateUse)
+
+		item = items[2]
+		self.assertEqual(item.key, 'shinySeed')
+		self.assertEqual(item.text, 'Shiny Seed')
+		self.assertEqual(item.notes, 'Turn a friend into a joyous flower!')
+		self.assertIsNone(item.purchaseType)
+		self.assertEqual(item.mana, 0)
+		self.assertEqual(item.target, 'user')
+		self.assertEqual(item.price, Price(15, 'gold'))
+		self.assertTrue(item.previousPurchase)
+		self.assertFalse(item.silent)
+		self.assertFalse(item.immediateUse)

@@ -76,6 +76,8 @@ class Content(base.ApiInterface):
 			if key in patterns:
 				result += self.children(Background, self._data['backgrounds'][key])
 		return result
+	def special_items(self):
+		return self.children(SpecialItem, self._data['special'].values())
 	def __getitem__(self, key):
 		try:
 			return object.__getitem__(self, key)
@@ -231,3 +233,25 @@ class Pet(StableCreature):
 
 class Mount(StableCreature):
 	pass
+
+class SpecialItem(ContentEntry, MarketableForGold):
+	""" Cards, seeds, sparkles, debuff potions etc. """
+	@property
+	def mana(self):
+		return self._data['mana']
+	@property
+	def purchaseType(self):
+		return self._data.get('purchaseType')
+	@property
+	def target(self):
+		""" 'self' or 'user' """
+		return self._data['target']
+	@property
+	def previousPurchase(self):
+		return self._data.get('previousPurchase', False)
+	@property
+	def silent(self):
+		return self._data.get('silent', False)
+	@property
+	def immediateUse(self):
+		return self._data.get('immediateUse', False)
