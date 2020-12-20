@@ -404,7 +404,54 @@ class MockAPI:
 				'userCanOwnQuestCategories' : [
 						'unlockable',
 						'pet',
-						]
+						],
+				'gear' : {
+						'flat' : {
+							'ninja_katana' : {
+								"text": "Katana",
+								"notes": "Ninja Katana.",
+								"key": "ninja_katana",
+								"klass": "rogue",
+								"set": "ninja-1",
+								"int": 1,
+								"index": "1",
+								"type": "weapon",
+								"per": 3,
+								"value": 100,
+								"con": 0,
+								"str": 5,
+								},
+							'daikatana' : {
+								"text": "Daiatana",
+								"notes": "Daikatana!",
+								"key": "daikatana",
+								"klass": "special",
+								"specialClass": "rogue",
+								"set": "ninja-special",
+								"int": 1,
+								"index": "special",
+								"type": "weapon",
+								"per": 3,
+								"value": 100,
+								"con": 0,
+								"str": 5,
+								'event':{
+									'start':'2020-01-01',
+									'end':'2020-01-31',
+									},
+								"last": True,
+								'gearSet' : 'DOOM',
+								},
+							'mysterykatana' : {
+								"text": "Mystery Katana",
+								"notes": "Mystery Katana!",
+								"key": "mysterykatana",
+								"klass": "mystery",
+								"mystery": "202012",
+								"twoHanded": True,
+								},
+							},
+						},
 				}}, cached=True),
 			]
 	def cached(self, *args, **kwargs):
@@ -1910,3 +1957,53 @@ class TestContent(unittest.TestCase):
 		self.assertEqual(rage.quests, 'Boss rages!')
 		self.assertIsNone(rage.seasonalShop)
 		self.assertIsNone(rage.market)
+	def should_get_gear_directly(self):
+		habitica = core.Habitica(_api=MockAPI())
+		content = habitica.content
+
+		gear = content.gear('ninja_katana')
+		self.assertEqual(gear.key, 'ninja_katana')
+		self.assertEqual(gear.text, 'Katana')
+		self.assertEqual(gear.notes, 'Ninja Katana.')
+		self.assertEqual(gear.klass, 'rogue')
+		self.assertEqual(gear.class_name, 'rogue')
+		self.assertIsNone(gear.specialClass)
+		self.assertFalse(gear.is_special)
+		self.assertIsNone(gear.event)
+		self.assertEqual(gear.set_name, 'ninja-1')
+		self.assertEqual(gear.index, '1')
+		self.assertEqual(gear.type, 'weapon')
+		self.assertEqual(gear.value, Price(100, 'gold'))
+		self.assertEqual(gear.str, 5)
+		self.assertEqual(gear.strength, 5)
+		self.assertEqual(gear.int, 1)
+		self.assertEqual(gear.intelligence, 1)
+		self.assertEqual(gear.per, 3)
+		self.assertEqual(gear.perception, 3)
+		self.assertEqual(gear.con, 0)
+		self.assertEqual(gear.constitution, 0)
+		self.assertFalse(gear.twoHanded)
+		self.assertFalse(gear.last)
+		self.assertIsNone(gear.gearSet)
+
+		gear = content.gear('daikatana')
+		self.assertEqual(gear.key, 'daikatana')
+		self.assertTrue(gear.is_special)
+		self.assertEqual(gear.klass, 'special')
+		self.assertEqual(gear.class_name, 'rogue')
+		self.assertEqual(gear.specialClass, 'rogue')
+		self.assertEqual(gear.event.start, datetime.date(2020, 1, 1))
+		self.assertEqual(gear.event.end, datetime.date(2020, 1, 31))
+		self.assertFalse(gear.twoHanded)
+		self.assertTrue(gear.last)
+		self.assertEqual(gear.gearSet, 'DOOM')
+
+		gear = content.gear('mysterykatana')
+		self.assertEqual(gear.key, 'mysterykatana')
+		self.assertFalse(gear.is_special)
+		self.assertEqual(gear.klass, 'mystery')
+		self.assertEqual(gear.class_name, 'mystery')
+		self.assertEqual(gear.mystery, '202012')
+		self.assertTrue(gear.twoHanded)
+		self.assertFalse(gear.last)
+		self.assertIsNone(gear.gearSet)

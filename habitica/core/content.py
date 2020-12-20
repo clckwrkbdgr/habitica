@@ -19,6 +19,7 @@ class Content(base.ApiInterface):
 	# TODO events
 	# TODO bundles (purchaseable quests)
 	# TODO questsByLevel
+	# TODO appearances
 	def __init__(self, _api=None):
 		super().__init__(_api=_api, _content=self)
 		self._data = self.api.cached('content').get('content').data
@@ -135,6 +136,8 @@ class Content(base.ApiInterface):
 	def get_quest(self, quest_key):
 		from .quests import Quest
 		return self.child(Quest, self._data['quests'][quest_key])
+	def gear(self, key):
+		return self.child(Gear, self._data['gear']['flat'][key])
 	def __getitem__(self, key):
 		try:
 			return object.__getitem__(self, key)
@@ -175,6 +178,9 @@ class Marketable:
 				)
 	@property
 	def price(self):
+		return self.cost
+	@property
+	def value(self):
 		return self.cost
 	@property
 	@vintage.deprecated('Use .cost.currency')
@@ -337,3 +343,69 @@ class Spell(ContentEntry, Castable):
 	@property
 	def lvl(self):
 		return self._data['lvl']
+
+class Gear(ContentEntry, MarketableForGold):
+	@property
+	def klass(self):
+		return self._data['klass']
+	@property
+	def class_name(self):
+		if self.is_special and 'specialClass' in self._data:
+			return self._data['specialClass']
+		return self.klass
+	@property
+	def specialClass(self):
+		return self._data.get('specialClass')
+	@property
+	def is_special(self):
+		return 'specialClass' in self._data
+	@property
+	def type(self):
+		return self._data['type']
+	@property
+	def index(self):
+		return self._data['index']
+	@property
+	def set_name(self):
+		return self._data['set']
+	@property
+	def gearSet(self):
+		return self._data.get('gearSet')
+	@property
+	def event(self):
+		if 'event' not in self._data:
+			return None
+		return parse_habitica_event(self._data['event'])
+	@property
+	def int(self):
+		return self._data['int']
+	@property
+	def intelligence(self):
+		return self.int
+	@property
+	def str(self):
+		return self._data['str']
+	@property
+	def strength(self):
+		return self.str
+	@property
+	def per(self):
+		return self._data['per']
+	@property
+	def perception(self):
+		return self.per
+	@property
+	def con(self):
+		return self._data['con']
+	@property
+	def constitution(self):
+		return self.con
+	@property
+	def mystery(self):
+		return self._data.get('mystery')
+	@property
+	def twoHanded(self):
+		return self._data.get('twoHanded', False)
+	@property
+	def last(self):
+		return self._data.get('last', False)
