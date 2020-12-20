@@ -1,7 +1,7 @@
 """ Groups and related functionality: chats, challenges.
 """
 from functools import lru_cache
-from . import base, content, tasks
+from . import base, content, tasks, quests
 
 class Challenge(base.ApiObject):
 	# TODO get challenge by id: get:/challenges/:id
@@ -178,39 +178,7 @@ class Group(base.ApiObject):
 			}).data
 		return self.child(Challenge, data)
 
-class Quest(base.ApiObject):
-	@lru_cache()
-	def _quest_content(self):
-		return self.content['quests'][self.key]
-	@property
-	def active(self):
-		return bool(self._data['active'])
-	@property
-	def key(self):
-		return self._data['key']
-	@property
-	def title(self):
-		return self._quest_content()['text']
-	@property
-	def progress(self):
-		content = self._quest_content()
-		if content.get('collect'):
-			qp_tmp = self._data['progress']['collect']
-			quest_progress = sum(qp_tmp.values())
-			return base.ValueBar(
-					quest_progress,
-					sum([int(item['count']) for item in content['collect'].values()]),
-					)
-		else:
-			return base.ValueBar(
-					self._data['progress']['hp'],
-					content['boss']['hp'],
-					)
-	@property
-	def max_progress(self): # pragma: no cover -- FIXME deprecated
-		return self.progress.max_value
-
 class Party(Group):
 	@property
 	def quest(self):
-		return self.child(Quest, self._data['quest'])
+		return self.child(quests.QuestProgress, self._data['quest'])

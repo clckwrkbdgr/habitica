@@ -255,8 +255,9 @@ def cli(): # pragma: no cover
 
         quest = user.party().quest
         if quest and quest.active:
-            quest_info = '{0}/{1} "{2}"'.format(int(quest.progress),
-                    quest.max_progress,
+            progress = quest.progress
+            quest_info = '{0}/{1} "{2}"'.format(int(progress),
+                    int(progress.max_value),
                     quest.title)
         else:
             quest_info = 'Not currently on a quest'

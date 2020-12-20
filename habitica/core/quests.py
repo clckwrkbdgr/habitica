@@ -1,4 +1,7 @@
+""" Quests: definitions and progress.
+"""
 from collections import namedtuple
+from functools import lru_cache
 from . import base
 from .content import ContentEntry, MarketableForGems, parse_habitica_event
 
@@ -56,7 +59,7 @@ class QuestBoss(base.ApiObject):
 		return self._data['def']
 	@property
 	def hp(self):
-		return base.ValueBar(self._data['hp'], self._data['hp'])
+		return self._data['hp']
 	@property
 	def rage(self):
 		data = self._data.get('rage')
@@ -170,3 +173,31 @@ class Quest(ContentEntry, MarketableForGems):
 		if 'event' not in self._data:
 			return None
 		return parse_habitica_event(self._data['event'])
+
+class QuestProgress(base.ApiObject):
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+		self._quest_definition = self.content.quests(self._data['key'])
+	@property
+	@lru_cache()
+	def quest(self):
+		return self._quest_definition
+	@property
+	def active(self):
+		return bool(self._data['active'])
+	@property
+	def title(self):
+		return self.text
+	@property
+	def progress(self):
+		if self.quest.collect:
+			qp_tmp = self._data['progress']['collect']
+			quest_progress = sum(qp_tmp.values())
+			return base.ValueBar(quest_progress, self.quest.collect.total)
+		else:
+			return base.ValueBar(self._data['progress']['hp'], self.quest.boss.hp)
+	@property
+	def max_progress(self): # pragma: no cover -- FIXME deprecated
+		return self.progress.max_value
+	def __getattr__(self, attr):
+		return getattr(self.quest, attr)
