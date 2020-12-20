@@ -451,6 +451,16 @@ class MockAPI:
 								"twoHanded": True,
 								},
 							},
+						'tree' : {
+							'weapon' : {
+								'rogue' : {
+									'katana' : {
+										"text": "Katana",
+										"key": "ninja_katana",
+										},
+									},
+								},
+							},
 						},
 				}}, cached=True),
 			]
@@ -2007,3 +2017,9 @@ class TestContent(unittest.TestCase):
 		self.assertTrue(gear.twoHanded)
 		self.assertFalse(gear.last)
 		self.assertIsNone(gear.gearSet)
+	def should_get_gear_from_tree(self):
+		habitica = core.Habitica(_api=MockAPI())
+		content = habitica.content
+
+		gear = content.gear_tree('weapon', 'rogue', 'katana')
+		self.assertEqual(gear.key, 'ninja_katana')

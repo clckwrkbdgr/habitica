@@ -138,6 +138,8 @@ class Content(base.ApiInterface):
 		return self.child(Quest, self._data['quests'][quest_key])
 	def gear(self, key):
 		return self.child(Gear, self._data['gear']['flat'][key])
+	def gear_tree(self, gear_type, gear_class, gear_index):
+		return self.child(Gear, self._data['gear']['tree'][gear_type][gear_class][gear_index])
 	def __getitem__(self, key):
 		try:
 			return object.__getitem__(self, key)
