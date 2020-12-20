@@ -140,6 +140,8 @@ class Content(base.ApiInterface):
 		return self.child(Gear, self._data['gear']['flat'][key])
 	def gear_tree(self, gear_type, gear_class, gear_index):
 		return self.child(Gear, self._data['gear']['tree'][gear_type][gear_class][gear_index])
+	def mystery(self, key):
+		return self._get_collection_entry(MysterySet, 'mystery', key=key)
 	def __getitem__(self, key):
 		try:
 			return object.__getitem__(self, key)
@@ -411,3 +413,19 @@ class Gear(ContentEntry, MarketableForGold):
 	@property
 	def last(self):
 		return self._data.get('last', False)
+
+class MysterySet(ContentEntry):
+	@property
+	def class_name(self):
+		return self._data['class']
+	@property
+	def event(self):
+		return parse_habitica_event(self._data) # Reads only 'start' and 'end'
+	@property
+	def start(self): # TODO subclass HabiticaEvent.
+		return self.event.start
+	@property
+	def end(self): # TODO subclass HabiticaEvent.
+		return self.event.end
+	def items(self):
+		return self.children(Gear, self._data['items'])

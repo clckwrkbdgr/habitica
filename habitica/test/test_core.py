@@ -462,6 +462,20 @@ class MockAPI:
 								},
 							},
 						},
+						'mystery' : {
+								'202012' : {
+									'items' : [
+										{
+											'key' : 'ninja_katana',
+											},
+										],
+										"text": "Mystery Ninja",
+										"class": "set_mystery_202012",
+										"start": "2020-12-01",
+										"end": "2020-12-31",
+										"key": "202012",
+									},
+								},
 				}}, cached=True),
 			]
 	def cached(self, *args, **kwargs):
@@ -2022,4 +2036,16 @@ class TestContent(unittest.TestCase):
 		content = habitica.content
 
 		gear = content.gear_tree('weapon', 'rogue', 'katana')
+		self.assertEqual(gear.key, 'ninja_katana')
+	def should_get_mystery_sets(self):
+		habitica = core.Habitica(_api=MockAPI())
+		content = habitica.content
+
+		mystery = content.mystery('202012')
+		self.assertEqual(mystery.key, '202012')
+		self.assertEqual(mystery.start, datetime.date(2020, 12, 1))
+		self.assertEqual(mystery.end, datetime.date(2020, 12, 31))
+		self.assertEqual(mystery.text, 'Mystery Ninja')
+		self.assertEqual(mystery.class_name, 'set_mystery_202012')
+		gear = mystery.items()[0]
 		self.assertEqual(gear.key, 'ninja_katana')
