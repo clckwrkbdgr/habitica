@@ -7,15 +7,39 @@ from . import base
 
 HabiticaEvent = namedtuple('HabiticaEvent', 'start end')
 
+def parse_habitica_event(data):
+	start = datetime.datetime.strptime(data['start'], '%Y-%m-%d').date()
+	end = datetime.datetime.strptime(data['end'], '%Y-%m-%d').date()
+	return HabiticaEvent(start, end)
+
 class Content(base.ApiInterface):
 	""" Cache for all Habitica content. """
 	# TODO achievements (pet colors, quest series etc).
 	# TODO itemList
 	# TODO events
 	# TODO bundles (purchaseable quests)
+	# TODO questsByLevel
 	def __init__(self, _api=None):
 		super().__init__(_api=_api, _content=self)
 		self._data = self.api.cached('content').get('content').data
+	def _get_collection_entry(self, entry_type, collection_name, key=None):
+		""" Returns list of all entries from collection.
+		If key is specified, returns only that entry.
+		"""
+		if key:
+			return self.child(entry_type, self._data[collection_name][key])
+		return self.children(entry_type, self._data[collection_name].values())
+	def _get_collection_entry_by_access(self, entry_type, access_list_name, collection_name, key=None, **params):
+		""" Returns list of all entries from collection access list.
+		If key is specified, returns only that entry.
+		NOTE: only entries with allowed access are returned!
+		If access is denied for specific key mode, it returns None.
+		"""
+		if key is not None:
+			if self._data[access_list_name].get(key):
+				return self.child(entry_type, self._data[collection_name][key])
+			return None
+		return [self.child(entry_type, self._data[collection_name][key], **params) for key, value in self._data[access_list_name].items() if value]
 	@property
 	def potion(self):
 		return self.child(HealthPotion, self._data['potion'])
@@ -28,42 +52,56 @@ class Content(base.ApiInterface):
 	@property
 	def gearTypes(self):
 		return self._data['gearTypes']
-	def questEggs(self):
-		return self.children(Egg, self._data['questEggs'].values())
-	def eggs(self):
-		return self.children(Egg, self._data['eggs'].values())
-	def dropEggs(self):
-		return self.children(Egg, self._data['dropEggs'].values())
-	def wackyHatchingPotions(self):
-		return self.children(HatchingPotion, self._data['wackyHatchingPotions'].values())
-	def hatchingPotions(self):
-		return self.children(HatchingPotion, self._data['hatchingPotions'].values())
-	def dropHatchingPotions(self):
-		return self.children(HatchingPotion, self._data['dropHatchingPotions'].values())
-	def premiumHatchingPotions(self):
-		return self.children(HatchingPotion, self._data['premiumHatchingPotions'].values())
+	def food(self, key=None):
+		return self._get_collection_entry(Food, 'food', key=key)
+	def questEggs(self, key=None):
+		return self._get_collection_entry(Egg, 'questEggs', key=key)
+	def eggs(self, key=None):
+		return self._get_collection_entry(Egg, 'eggs', key=key)
+	def dropEggs(self, key=None):
+		return self._get_collection_entry(Egg, 'dropEggs', key=key)
+	def wackyHatchingPotions(self, key=None):
+		return self._get_collection_entry(HatchingPotion, 'wackyHatchingPotions', key=key)
+	def hatchingPotions(self, key=None):
+		return self._get_collection_entry(HatchingPotion, 'hatchingPotions', key=key)
+	def dropHatchingPotions(self, key=None):
+		return self._get_collection_entry(HatchingPotion, 'dropHatchingPotions', key=key)
+	def premiumHatchingPotions(self, key=None):
+		return self._get_collection_entry(HatchingPotion, 'premiumHatchingPotions', key=key)
 	def petInfo(self, key=None):
-		if key:
-			return self.child(Pet, self._data['petInfo'][key])
-		return self.children(Pet, self._data['petInfo'].values())
-	def questPets(self):
-		return [self.child(Pet, self._data['petInfo'][key]) for key, value in self._data['questPets'].items() if value]
-	def premiumPets(self):
-		return [self.child(Pet, self._data['petInfo'][key]) for key, value in self._data['premiumPets'].items() if value]
-	def specialPets(self):
-		return [self.child(Pet, self._data['petInfo'][key], _special=value) for key, value in self._data['specialPets'].items() if value]
+		return self._get_collection_entry(Pet, 'petInfo', key=key)
+	def questPets(self, key=None):
+		return self._get_collection_entry_by_access(
+				Pet, 'questPets', 'petInfo', key=key
+				)
+	def premiumPets(self, key=None):
+		return self._get_collection_entry_by_access(
+				Pet, 'premiumPets', 'petInfo', key=key
+				)
+	def specialPets(self, key=None):
+		return self._get_collection_entry_by_access(
+				Pet, 'specialPets', 'petInfo', key=key,
+				_special=True,
+				)
 	def mountInfo(self, key=None):
-		if key:
-			return self.child(Mount, self._data['mountInfo'][key])
-		return self.children(Mount, self._data['mountInfo'].values())
-	def mounts(self):
-		return [self.child(Mount, self._data['mountInfo'][key]) for key, value in self._data['mounts'].items() if value]
-	def questMounts(self):
-		return [self.child(Mount, self._data['mountInfo'][key]) for key, value in self._data['questMounts'].items() if value]
-	def premiumMounts(self):
-		return [self.child(Mount, self._data['mountInfo'][key]) for key, value in self._data['premiumMounts'].items() if value]
-	def specialMounts(self):
-		return [self.child(Mount, self._data['mountInfo'][key], _special=value) for key, value in self._data['specialMounts'].items() if value]
+		return self._get_collection_entry(Mount, 'mountInfo', key=key)
+	def mounts(self, key=None):
+		return self._get_collection_entry_by_access(
+				Pet, 'mounts', 'mountInfo', key=key
+				)
+	def questMounts(self, key=None):
+		return self._get_collection_entry_by_access(
+				Pet, 'questMounts', 'mountInfo', key=key
+				)
+	def premiumMounts(self, key=None):
+		return self._get_collection_entry_by_access(
+				Pet, 'premiumMounts', 'mountInfo', key=key
+				)
+	def specialMounts(self, key=None):
+		return self._get_collection_entry_by_access(
+				Pet, 'specialMounts', 'mountInfo', key=key,
+				_special=True,
+				)
 	def get_background(self, name):
 		return self.child(Background, self._data['backgroundFlats'][name])
 	def get_background_set(self, year, month=None):
@@ -80,14 +118,23 @@ class Content(base.ApiInterface):
 			if key in patterns:
 				result += self.children(Background, self._data['backgrounds'][key])
 		return result
-	def special_items(self):
-		return self.children(SpecialItem, self._data['special'].values())
+	def special_items(self, key=None):
+		return self._get_collection_entry(SpecialItem, 'special', key=key)
 	def cards(self):
 		return [self.child(SpecialItem, self._data['special'][key]) for key in self._data['cardTypes'].keys()]
 	def spells(self, class_name):
 		return self.children(Spell, self._data['spells'][class_name].values())
 	def get_spell(self, class_name, spell_key):
 		return self.child(Spell, self._data['spells'][class_name][spell_key])
+	@property
+	def userCanOwnQuestCategories(self):
+		return self._data['userCanOwnQuestCategories']
+	def quests(self, key):
+		from .quests import Quest
+		return self.child(Quest, self._data['quests'][key])
+	def get_quest(self, quest_key):
+		from .quests import Quest
+		return self.child(Quest, self._data['quests'][quest_key])
 	def __getitem__(self, key):
 		try:
 			return object.__getitem__(self, key)
@@ -170,11 +217,9 @@ class HatchingPotion(ContentEntry, MarketableForGems):
 	def event(self):
 		if 'event' not in self._data:
 			return None
-		start = datetime.datetime.strptime(self._data['event']['start'], '%Y-%m-%d').date()
-		end = datetime.datetime.strptime(self._data['event']['end'], '%Y-%m-%d').date()
-		return HabiticaEvent(start, end)
+		return parse_habitica_event(self._data['event'])
 
-class Food(ContentEntry, MarketableForGems): # pragma: no cover -- FIXME no methods to retrieve yet.
+class Food(ContentEntry, MarketableForGems):
 	@property
 	def textThe(self):
 		return self._data['textThe']

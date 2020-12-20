@@ -56,6 +56,17 @@ class MockAPI:
 						'value':4,
 						},
 					},
+				'food' : {
+					'Meat' : {
+						'key':'Meat',
+						'text':'Meat',
+						'notes':'A piece of meat.',
+						'textA':'A meat',
+						'textThe':'The Meat',
+						'target':'Base',
+						'canDrop':True,
+						},
+					},
 				'eggs' : {
 					'wolf' : {
 						'key':'wolf',
@@ -123,21 +134,113 @@ class MockAPI:
 						},
 					},
 				'quests' : {
-					'mycollectquest' : {
+					'collectionquest' : {
+						'key' : 'collectionquest',
 						'text' : 'Collect N items',
+						'notes' : 'Additional notes',
+						'category' : 'pet',
+						'goldValue' : 10,
+						'group' : 'questgroup1',
+						'previous' : 'bossquest',
+						'completion' : 'You collected N items!',
+						'drop' : {
+							'exp' : 500,
+							'gp' : 100,
+							'items' : [
+								{
+									'key' : 'fox',
+									'text' : 'Fox Egg',
+									'type' : 'dropEggs',
+									},
+								],
+							},
 						'collect' : {
-							'item1' : {
-								'count' : 40,
+							'fun' : {
+								'key' : 'fun',
+								'text' : 'Fun',
+								'count' : 10,
 								},
-							'item2' : {
-								'count' : 60,
+							'games' : {
+								'key' : 'games',
+								'text' : 'Games',
+								'count' : 20,
 								},
 							},
 						},
-					'mybossquest' : {
-						'text' : 'Slay Boss',
+					'bossquest' : {
+						'key' : 'bossquest',
+						'text' : 'Defeat the Boss',
+						'notes' : 'Additional notes',
+						'category' : 'unlockable',
+						'lvl' : 33,
+						'unlockCondition' : {
+							'text' : 'Swipe to unlock',
+							'condition' : 'login',
+							'incentiveThreshold' : 3,
+							},
+						'group' : 'questgroup1',
+						'completion' : 'You defeated the Boss!',
+						'drop' : {
+							'exp' : 300,
+							'gp' : 10,
+							'items' : [
+								{
+									'key' : 'collectionquest',
+									'text' : 'Collect N items',
+									'type' : 'quests',
+									'onlyOwner' : True,
+									},
+								],
+							},
 						'boss' : {
-							'hp' : 200,
+							'name' : 'The Boss',
+							'hp' : 500,
+							'str' : 1,
+							'def' : 0.5,
+							},
+						},
+					'worldquest' : {
+						'key' : 'worldquest',
+						'text' : 'Protect the World',
+						'notes' : 'Additional notes',
+						'category' : 'world',
+						'completion' : 'You protected the World!',
+						'completionChat' : 'You protected the World!',
+						'colors' : {
+							'main' : '#ffffff',
+							},
+						'event':{
+							'start':'2020-01-01',
+							'end':'2020-01-31',
+							},
+						'drop' : {
+							'exp' : 0,
+							'gp' : 0,
+							'items' : [
+								{
+									'key' : 'fox',
+									'text' : 'Fox pet',
+									'type' : 'questPets',
+									},
+								],
+							},
+						'boss' : {
+							'name' : 'The World Boss',
+							'hp' : 50000,
+							'str' : 5,
+							'def' : 1.5,
+							'rage' : {
+								'value' : 500,
+								'title' : 'Boss Rage',
+								'healing' : 100,
+								'description': 'When rage is filled, boss rages!',
+								'effect' : 'Boss rages!',
+								'stables' : 'Boss rages!',
+								'bailey' : 'Boss rages!',
+								'guide' : 'Boss rages!',
+								'tavern' : 'Boss rages!',
+								'quests' : 'Boss rages!',
+								},
 							},
 						},
 					},
@@ -298,6 +401,10 @@ class MockAPI:
 								},
 							},
 						},
+				'userCanOwnQuestCategories' : [
+						'unlockable',
+						'pet',
+						]
 				}}, cached=True),
 			]
 	def cached(self, *args, **kwargs):
@@ -866,11 +973,11 @@ class TestQuest(unittest.TestCase):
 			MockRequest('get', ['groups', 'party'], {'data': {
 				'quest' : {
 					'active' : True,
-					'key' : 'mycollectquest',
+					'key' : 'collectionquest',
 					'progress' : {
 						'collect' : {
-							'item1' : 7,
-							'item2' : 3,
+							'fun' : 7,
+							'games' : 3,
 							}
 						},
 					},
@@ -879,10 +986,10 @@ class TestQuest(unittest.TestCase):
 		party = habitica.user().party()
 		quest = party.quest
 		self.assertTrue(quest.active)
-		self.assertEqual(quest.key, 'mycollectquest')
+		self.assertEqual(quest.key, 'collectionquest')
 		self.assertEqual(quest.title, 'Collect N items')
 		self.assertEqual(quest.progress, 10)
-		self.assertEqual(quest.max_progress, 100)
+		self.assertEqual(quest.max_progress, 30)
 	def should_show_progress_of_boss_quest(self):
 		habitica = core.Habitica(_api=MockAPI(
 			MockRequest('get', ['user'], {'data': {
@@ -890,7 +997,7 @@ class TestQuest(unittest.TestCase):
 			MockRequest('get', ['groups', 'party'], {'data': {
 				'quest' : {
 					'active' : True,
-					'key' : 'mybossquest',
+					'key' : 'bossquest',
 					'progress': {
 						'hp' : 20,
 						},
@@ -900,10 +1007,10 @@ class TestQuest(unittest.TestCase):
 		party = habitica.user().party()
 		quest = party.quest
 		self.assertTrue(quest.active)
-		self.assertEqual(quest.key, 'mybossquest')
-		self.assertEqual(quest.title, 'Slay Boss')
+		self.assertEqual(quest.key, 'bossquest')
+		self.assertEqual(quest.title, 'Defeat the Boss')
 		self.assertEqual(quest.progress, 20)
-		self.assertEqual(quest.max_progress, 200)
+		self.assertEqual(quest.max_progress, 500)
 
 class TestRewards(unittest.TestCase):
 	def should_get_user_rewards(self):
@@ -1416,6 +1523,18 @@ class TestContent(unittest.TestCase):
 			"head",
 			"headAccessory",
 			])
+	def should_retrieve_food(self):
+		habitica = core.Habitica(_api=MockAPI())
+		content = habitica.content
+
+		food = content.food()[0]
+		self.assertEqual(food.key, 'Meat')
+		self.assertEqual(food.text, 'Meat')
+		self.assertEqual(food.notes, 'A piece of meat.')
+		self.assertEqual(food.textA, 'A meat')
+		self.assertEqual(food.textThe, 'The Meat')
+		self.assertEqual(food.target, 'Base')
+		self.assertTrue(food.canDrop)
 	def should_retrieve_various_eggs(self):
 		habitica = core.Habitica(_api=MockAPI())
 		content = habitica.content
@@ -1548,6 +1667,7 @@ class TestContent(unittest.TestCase):
 		mount = content.premiumMounts()[0]
 		self.assertEqual(mount.key, 'fox')
 
+		self.assertIsNone(content.specialMounts('fox'))
 		mount = content.specialMounts()[0]
 		self.assertEqual(mount.key, 'wolf')
 		self.assertEqual(mount.text, 'Wolf')
@@ -1658,3 +1778,135 @@ class TestContent(unittest.TestCase):
 
 		spell = content.get_spell('rogue', 'stealth')
 		self.assertEqual(spell.key, 'stealth')
+	def should_have_quest_with_boss(self):
+		habitica = core.Habitica(_api=MockAPI())
+		content = habitica.content
+		quest = content.get_quest('bossquest')
+
+		self.assertEqual(quest.key, 'bossquest')
+		self.assertEqual(quest.text, 'Defeat the Boss')
+		self.assertEqual(quest.notes, 'Additional notes')
+		self.assertTrue(quest.userCanOwn)
+		self.assertEqual(quest.category, 'unlockable')
+
+		condition = quest.unlockCondition
+		self.assertEqual(condition.text, 'Swipe to unlock')
+		self.assertEqual(condition.condition, 'login')
+		self.assertEqual(condition.incentiveThreshold, 3)
+
+		self.assertEqual(quest.level, 33)
+		self.assertIsNone(quest.goldValue)
+		self.assertEqual(quest.group, 'questgroup1')
+		self.assertIsNone(quest.previous)
+		self.assertEqual(quest.completion, 'You defeated the Boss!')
+		self.assertIsNone(quest.completionChat)
+		self.assertEqual(quest.colors, {})
+		self.assertIsNone(quest.event)
+
+		drop = quest.drop
+		self.assertEqual(drop.unlock, '')
+		self.assertEqual(drop.experience, 300)
+		self.assertEqual(drop.gold, 10)
+		items = drop.items
+		self.assertEqual(items[0].key, 'collectionquest')
+		self.assertEqual(items[0].text, 'Collect N items')
+		self.assertEqual(items[0].type, 'quests')
+		self.assertTrue(items[0].onlyOwner)
+		self.assertEqual(items[0].get_content_entry().key, 'collectionquest')
+
+		self.assertIsNone(quest.collect)
+		boss = quest.boss
+		self.assertEqual(boss.name, 'The Boss')
+		self.assertEqual(boss.strength, 1)
+		self.assertEqual(boss.defense, 0.5)
+		self.assertEqual(boss.hp, 500)
+		self.assertIsNone(boss.rage)
+	def should_have_quest_with_collection(self):
+		habitica = core.Habitica(_api=MockAPI())
+		content = habitica.content
+		quest = content.get_quest('collectionquest')
+
+		self.assertEqual(quest.key, 'collectionquest')
+		self.assertEqual(quest.text, 'Collect N items')
+		self.assertEqual(quest.notes, 'Additional notes')
+		self.assertTrue(quest.userCanOwn)
+		self.assertEqual(quest.category, 'pet')
+		self.assertIsNone(quest.unlockCondition)
+		self.assertEqual(quest.goldValue, Price(10, 'gold'))
+		self.assertEqual(quest.group, 'questgroup1')
+		self.assertEqual(quest.previous.key, 'bossquest')
+		self.assertEqual(quest.completion, 'You collected N items!')
+		self.assertIsNone(quest.completionChat)
+		self.assertEqual(quest.colors, {})
+		self.assertIsNone(quest.event)
+
+		drop = quest.drop
+		self.assertEqual(drop.unlock, '')
+		self.assertEqual(drop.experience, 500)
+		self.assertEqual(drop.gold, 100)
+		items = drop.items
+		self.assertEqual(items[0].key, 'fox')
+		self.assertEqual(items[0].text, 'Fox Egg')
+		self.assertEqual(items[0].type, 'dropEggs')
+		self.assertFalse(items[0].onlyOwner)
+		self.assertEqual(items[0].get_content_entry().key, 'fox')
+
+		self.assertIsNone(quest.boss)
+		collect = quest.collect
+		self.assertEqual(set(collect.names), {'fun', 'games'})
+		self.assertEqual(collect.get_item('fun'), ('fun', 'Fun', 10))
+		self.assertEqual(collect.get_item('games'), ('games', 'Games', 20))
+		collect_items = sorted(collect.items(), key=lambda _:_[0])
+		self.assertEqual(collect_items[0], ('fun', 'Fun', 10))
+		self.assertEqual(collect_items[1], ('games', 'Games', 20))
+		self.assertEqual(collect.total, 30)
+	def should_have_world_quest(self):
+		habitica = core.Habitica(_api=MockAPI())
+		content = habitica.content
+		quest = content.get_quest('worldquest')
+
+		self.assertEqual(quest.key, 'worldquest')
+		self.assertEqual(quest.text, 'Protect the World')
+		self.assertEqual(quest.notes, 'Additional notes')
+		self.assertFalse(quest.userCanOwn)
+		self.assertEqual(quest.category, 'world')
+		self.assertIsNone(quest.goldValue)
+		self.assertIsNone(quest.group)
+		self.assertIsNone(quest.previous)
+		self.assertEqual(quest.completion, 'You protected the World!')
+		self.assertEqual(quest.completionChat, 'You protected the World!')
+		self.assertEqual(quest.colors, {'main':'#ffffff'})
+		self.assertEqual(quest.event.start, datetime.date(2020, 1, 1))
+		self.assertEqual(quest.event.end, datetime.date(2020, 1, 31))
+
+		drop = quest.drop
+		self.assertFalse(drop.unlock)
+		self.assertEqual(drop.experience, 0)
+		self.assertEqual(drop.gold, 0)
+		items = drop.items
+		self.assertEqual(items[0].key, 'fox')
+		self.assertEqual(items[0].text, 'Fox pet')
+		self.assertEqual(items[0].type, 'questPets')
+		self.assertFalse(items[0].onlyOwner)
+		self.assertEqual(items[0].get_content_entry().key, 'fox')
+
+		self.assertIsNone(quest.collect)
+		boss = quest.boss
+		self.assertEqual(boss.name, 'The World Boss')
+		self.assertEqual(boss.strength, 5)
+		self.assertEqual(boss.defense, 1.5)
+		self.assertEqual(boss.hp, 50000)
+		rage = boss.rage
+		self.assertEqual(rage.value, 500)
+		self.assertEqual(rage.title, 'Boss Rage')
+		self.assertEqual(rage.healing, 100)
+		self.assertIsNone(rage.mpDrain)
+		self.assertEqual(rage.description, 'When rage is filled, boss rages!')
+		self.assertEqual(rage.effect, 'Boss rages!')
+		self.assertEqual(rage.stables, 'Boss rages!')
+		self.assertEqual(rage.bailey, 'Boss rages!')
+		self.assertEqual(rage.guide, 'Boss rages!')
+		self.assertEqual(rage.tavern, 'Boss rages!')
+		self.assertEqual(rage.quests, 'Boss rages!')
+		self.assertIsNone(rage.seasonalShop)
+		self.assertIsNone(rage.market)
