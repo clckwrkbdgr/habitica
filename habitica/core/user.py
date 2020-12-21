@@ -84,6 +84,9 @@ class UserProxy(base.ApiInterface, _UserMethods):
 
 class User(base.ApiObject, _UserMethods):
 	@property
+	def id(self):
+		return self._data['id']
+	@property
 	def stats(self):
 		return UserStats(_data=self._data['stats'])
 	@property
@@ -92,6 +95,14 @@ class User(base.ApiObject, _UserMethods):
 	@property
 	def inventory(self):
 		return Inventory(_data=self._data['items'], _content=self.content)
+	def avatar(self):
+		""" Returns pure HTML code to render user avatar.
+		Behavior may change in the future.
+		"""
+		# TODO Rendering avatar as PNG is broken for years.
+		# TODO There are also other (private) methods on /export/ route.
+		# TODO Render as image and cache.
+		return self.api.get('export', 'avatar-{0}.html'.format(self.id), _as_json=False)
 	def buy(self, item):
 		# TODO gold check?
 		item._buy(user=self)

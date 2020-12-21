@@ -557,6 +557,11 @@ class TestBaseHabitica(unittest.TestCase):
 		self.assertEqual(groups[1].name, 'My Guild')
 		self.assertEqual(groups[1].type, 'guild')
 		self.assertEqual(groups[1].privacy, 'public')
+	def should_run_cron(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockRequest('post', ['cron'], {}),
+			))
+		habitica.run_cron()
 
 class TestChallenges(unittest.TestCase):
 	def _challenge(self, path=('groups', 'group1')):
@@ -960,6 +965,7 @@ class TestChat(unittest.TestCase):
 class TestUser(unittest.TestCase):
 	def _user_data(self, stats=None, **kwargs):
 		result = {
+				'id' : 'USER-ID',
 				'stats' : {
 					'class': 'rogue',
 					'hp': 30.0,
@@ -1061,6 +1067,14 @@ class TestUser(unittest.TestCase):
 
 		user.buy(coupon)
 		self.assertEqual(user.stats.gold, 45.0)
+	def should_get_user_avatar(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockRequest('get', ['user'], {'data': self._user_data()}),
+			MockRequest('get', ['export', 'avatar-USER-ID.html'], '<html/>'),
+			))
+
+		user = habitica.user()
+		self.assertEqual(user.avatar(), '<html/>')
 
 class TestQuest(unittest.TestCase):
 	def should_show_progress_of_collection_quest(self):

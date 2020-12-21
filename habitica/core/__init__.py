@@ -6,6 +6,8 @@ from .tasks import *
 from .user import *
 from .user import UserProxy
 
+# TODO the whole /debug/ route for development
+
 class Coupon(base.ApiObject):
 	# TODO get/ and generate/ - require sudo permissions.
 	@property
@@ -35,6 +37,8 @@ class Habitica(base.ApiInterface):
 		return self._content
 	def coupon(self, code):
 		return self.child(Coupon, code)
+	def run_cron(self):
+		self.api.post('cron')
 
 	@property
 	def user(self):
