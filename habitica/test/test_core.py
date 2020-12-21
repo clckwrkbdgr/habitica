@@ -1035,6 +1035,32 @@ class TestUser(unittest.TestCase):
 			potion = core.HealthPotion()
 			user.buy(potion)
 		self.assertEqual(str(e.exception), 'HP is too high, part of health potion would be wasted.')
+	def should_validate_and_buy_coupon(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockRequest('get', ['user'], {'data': self._user_data()}),
+			MockRequest('post', ['coupons', 'validate', 'ABCD-1234'], {
+				'valid': False,
+				}),
+			MockRequest('post', ['coupons', 'validate', '1234-ABCD'], {
+				'valid': True,
+				}),
+			MockRequest('post', ['coupons', 'enter', '1234-ABCD'], {
+				'data': self._user_data(stats={'gp':45.0}),
+				}),
+			))
+
+		user = habitica.user()
+
+		coupon = habitica.coupon('ABCD-1234')
+		self.assertEqual(coupon.code, 'ABCD-1234')
+		self.assertFalse(coupon.validate())
+
+		coupon = habitica.coupon('1234-ABCD')
+		self.assertEqual(coupon.code, '1234-ABCD')
+		self.assertTrue(coupon.validate())
+
+		user.buy(coupon)
+		self.assertEqual(user.stats.gold, 45.0)
 
 class TestQuest(unittest.TestCase):
 	def should_show_progress_of_collection_quest(self):

@@ -6,6 +6,16 @@ from .tasks import *
 from .user import *
 from .user import UserProxy
 
+class Coupon(base.ApiObject):
+	# TODO get/ and generate/ - require sudo permissions.
+	@property
+	def code(self):
+		return self._data
+	def validate(self):
+		return self.api.post('coupons', 'validate', self._data).valid
+	def _buy(self, user):
+		user._data = self.api.post('coupons', 'enter', self._data).data
+
 class Habitica(base.ApiInterface):
 	""" Main Habitica entry point. """
 	def __init__(self, auth=None, _api=None):
@@ -23,6 +33,8 @@ class Habitica(base.ApiInterface):
 		if self._content is None:
 			self._content = Content(_api=self.api)
 		return self._content
+	def coupon(self, code):
+		return self.child(Coupon, code)
 
 	@property
 	def user(self):
