@@ -557,11 +557,38 @@ class TestBaseHabitica(unittest.TestCase):
 		self.assertEqual(groups[1].name, 'My Guild')
 		self.assertEqual(groups[1].type, 'guild')
 		self.assertEqual(groups[1].privacy, 'public')
+	def should_paginate_list_of_groups(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockRequest('get', ['groups'], {'data': [
+				{
+					'name' : 'My Guild',
+					'type' : 'guild',
+					'privacy' : 'public',
+					},
+				]}),
+			))
+		groups = habitica.groups(core.Group.PARTY, core.Group.GUILDS, page=1)
+		self.assertEqual(len(groups), 1)
+		self.assertEqual(groups[0].name, 'My Guild')
+		self.assertEqual(groups[0].type, 'guild')
+		self.assertEqual(groups[0].privacy, 'public')
 	def should_run_cron(self):
 		habitica = core.Habitica(_api=MockAPI(
 			MockRequest('post', ['cron'], {}),
 			))
 		habitica.run_cron()
+	def should_get_tavern(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockRequest('get', ['groups', 'habitrpg'], {'data': 
+				{
+					'name' : 'Tavern',
+					'type' : 'habitrpg',
+					},
+				}),
+			))
+		group = habitica.tavern()
+		self.assertEqual(group.name, 'Tavern')
+		self.assertEqual(group.type, 'habitrpg')
 
 class TestChallenges(unittest.TestCase):
 	def _challenge(self, path=('groups', 'group1')):
@@ -962,6 +989,73 @@ class TestChat(unittest.TestCase):
 		self.assertEqual(chat.messages()[2].user, 'person2')
 		self.assertEqual(chat.messages()[2].text, 'Hello back')
 
+class TestGroup(unittest.TestCase):
+	def should_fetch_messages(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockRequest('get', ['groups'], {'data': [{
+					'name' : 'Party',
+					'id' : 'group1',
+					}]}),
+			MockRequest('post', ['groups', 'group1', 'add-manager'], {'data': {}}),
+			))
+
+		party = habitica.groups(core.Group.PARTY)[0]
+		party.add_manager(core.Member(_data={'id':'member1'}))
+	def should_create_group_plan(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockRequest('post', ['groups', 'create-plan'], {'data': {
+					'name' : 'Party',
+					'id' : 'group1',
+					}}),
+			))
+		group = habitica.create_plan()
+		self.assertEqual(group.id, 'group1')
+		self.assertEqual(group.name, 'Party')
+	def should_create_guild(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockRequest('post', ['groups'], {'data': {
+					'name' : 'My Guild',
+					'id' : 'group1',
+					'type' : 'guild',
+					'privacy' : 'public',
+					}}),
+			))
+		group = habitica.create_guild('My Guild', public=True)
+		self.assertEqual(group.id, 'group1')
+		self.assertEqual(group.name, 'My Guild')
+		self.assertTrue(group.is_public)
+	def should_create_party(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockRequest('post', ['groups'], {'data': {
+					'name' : 'My Party',
+					'id' : 'group1',
+					'type' : 'party',
+					'privacy' : 'private',
+					'leader' : {
+						'_id' : 'user1',
+						'profile' : {
+							'somedata' : 'somevalue???',
+							},
+						},
+					'memberCount' : 1,
+					'challengeCount' : 0,
+					'balance' : 1,
+					'logo' : "foo",
+					'leaderMessage' : "bar",
+					}}),
+			))
+		group = habitica.create_party('My Party')
+		self.assertTrue(type(group) is core.Party)
+		self.assertEqual(group.id, 'group1')
+		self.assertEqual(group.name, 'My Party')
+		self.assertFalse(group.is_public)
+		self.assertEqual(group.leader.id, 'user1')
+		self.assertEqual(group.memberCount, 1)
+		self.assertEqual(group.challengeCount, 0)
+		self.assertEqual(group.balance, Price(1, 'gems'))
+		self.assertEqual(group.logo, 'foo')
+		self.assertEqual(group.leaderMessage, 'bar')
+
 class TestUser(unittest.TestCase):
 	def _user_data(self, stats=None, **kwargs):
 		result = {
@@ -1075,6 +1169,19 @@ class TestUser(unittest.TestCase):
 
 		user = habitica.user()
 		self.assertEqual(user.avatar(), '<html/>')
+	def should_get_user_group_plans(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockRequest('get', ['user'], {'data': self._user_data()}),
+			MockRequest('get', ['group-plans'], {'data':[
+				{
+					'id' : 'group1',
+					}
+				]}),
+			))
+
+		user = habitica.user()
+		groups = user.group_plans()
+		self.assertEqual(groups[0].id, 'group1')
 
 class TestQuest(unittest.TestCase):
 	def should_show_progress_of_collection_quest(self):

@@ -48,10 +48,32 @@ class Habitica(base.ApiInterface):
 			habitica.user.rewards()
 		"""
 		return self.child_interface(UserProxy)
-	def groups(self, *group_types):
+	def groups(self, *group_types, paginate=False, page=0):
 		""" Returns list of groups of given types.
 		Supported types are: PARTY, GUILDS, PRIVATE_GUILDS, PUBLIC_GUILDS, TAVERN
 		"""
-		result = self.api.get('groups', type=','.join(group_types)).data
+		if paginate or page:
+			result = self.api.get('groups', type=','.join(group_types), paginate="true", page=page).data
+		else:
+			result = self.api.get('groups', type=','.join(group_types)).data
 		# TODO recognize party and return Party object instead.
-		return self.children(Group, result)
+		return self.children(groups.Group, result)
+	def tavern(self):
+		return self.child(Group, self.api.get('groups', 'habitrpg').data)
+	def create_plan(self):
+		result = self.api.post('groups', 'create-plan').data
+		return self.child(Group, result)
+	def create_guild(self, name, public=False):
+		result = self.api.post('groups', _body={
+			'name' : name,
+			'type' : 'guild',
+			'public' : 'public' if public else 'private',
+			}).data
+		return self.child(Group, result)
+	def create_party(self, name):
+		result = self.api.post('groups', _body={
+			'name' : name,
+			'type' : 'party',
+			'public' : 'private',
+			}).data
+		return self.child(Party, result)

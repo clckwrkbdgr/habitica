@@ -56,6 +56,9 @@ class _UserMethods:
 	def party(self):
 		""" Returns user's party. """
 		return self.child(groups.Party, self.api.get('groups', 'party').data)
+	def group_plans(self):
+		return self.children(groups.Group, self.api.get('group-plans').data)
+
 	def habits(self):
 		return self.children(tasks.Habit, self.api.get('tasks', 'user', type='habits').data)
 	def dailies(self):
@@ -82,10 +85,16 @@ class UserProxy(base.ApiInterface, _UserMethods):
 	def __call__(self):
 		return self.child(User, self.api.get('user').data, _parent=self._parent)
 
+class Member(base.ApiObject):
+	""" All other Habitica users beside you. """
+	@property
+	def id(self):
+		return self._data.get('_id', self._data.get('id'))
+
 class User(base.ApiObject, _UserMethods):
 	@property
 	def id(self):
-		return self._data['id']
+		return self._data.get('_id', self._data.get('id'))
 	@property
 	def stats(self):
 		return UserStats(_data=self._data['stats'])

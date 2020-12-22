@@ -1,7 +1,7 @@
 """ Groups and related functionality: chats, challenges.
 """
 from functools import lru_cache
-from . import base, content, tasks, quests
+from . import base, content, tasks, quests, user
 
 class Challenge(base.ApiObject):
 	# TODO get challenge by id: get:/challenges/:id
@@ -149,6 +149,27 @@ class Group(base.ApiObject):
 	@property
 	def privacy(self):
 		return self._data['privacy']
+	@property
+	def is_public(self):
+		return self.privacy == 'public'
+	@property
+	def leader(self):
+		return self.child(user.Member, self._data['leader'])
+	@property
+	def memberCount(self):
+		return self._data['memberCount']
+	@property
+	def challengeCount(self):
+		return self._data['challengeCount']
+	@property
+	def balance(self):
+		return base.Price(self._data['balance'], 'gems')
+	@property
+	def logo(self):
+		return self._data['logo']
+	@property
+	def leaderMessage(self):
+		return self._data['leaderMessage']
 	def challenges(self):
 		return self.children(Challenge, self.api.get('challenges', 'groups', self.id).data)
 	@property
@@ -177,6 +198,10 @@ class Group(base.ApiObject):
 			'challenge' : params,
 			}).data
 		return self.child(Challenge, data)
+	def add_manager(self, member):
+		self.api.post('groups', self.id, 'add-manager', _body={
+			'managerId' : member.id,
+			})
 
 class Party(Group):
 	@property
