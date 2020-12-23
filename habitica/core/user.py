@@ -58,6 +58,14 @@ class _UserMethods:
 		return self.child(groups.Party, self.api.get('groups', 'party').data)
 	def group_plans(self):
 		return self.children(groups.Group, self.api.get('group-plans').data)
+	def join(self, group):
+		group._data = self.api.post('groups', group.id, 'join').data
+	def leave(self, group, keep_tasks=True, leave_challenges=True):
+		self.api.post('groups', group.id, 'leave', keep='keep-all' if keep_tasks else 'remove-all', _body={
+			'keepChallenges' : 'leave-challenges' if leave_challenges else 'remain-in-challenges'
+			})
+	def reject_invite(self, group):
+		self.api.post('groups', group.id, 'reject-invite').data
 
 	def habits(self):
 		return self.children(tasks.Habit, self.api.get('tasks', 'user', type='habits').data)
@@ -84,6 +92,14 @@ class UserProxy(base.ApiInterface, _UserMethods):
 	"""
 	def __call__(self):
 		return self.child(User, self.api.get('user').data, _parent=self._parent)
+
+class Email:
+	""" External person: only e-mail and optional name.
+	Used mostly for invites.
+	"""
+	def __init__(self, email, name=None):
+		self.email = email
+		self.name = name
 
 class Member(base.ApiObject):
 	""" All other Habitica users beside you. """

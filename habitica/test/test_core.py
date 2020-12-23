@@ -997,10 +997,12 @@ class TestGroup(unittest.TestCase):
 					'id' : 'group1',
 					}]}),
 			MockRequest('post', ['groups', 'group1', 'add-manager'], {'data': {}}),
+			MockRequest('post', ['groups', 'group1', 'remove-manager'], {'data': {}}),
 			))
 
 		party = habitica.groups(core.Group.PARTY)[0]
 		party.add_manager(core.Member(_data={'id':'member1'}))
+		party.remove_manager(core.Member(_data={'id':'member1'}))
 	def should_create_group_plan(self):
 		habitica = core.Habitica(_api=MockAPI(
 			MockRequest('post', ['groups', 'create-plan'], {'data': {
@@ -1055,6 +1057,55 @@ class TestGroup(unittest.TestCase):
 		self.assertEqual(group.balance, Price(1, 'gems'))
 		self.assertEqual(group.logo, 'foo')
 		self.assertEqual(group.leaderMessage, 'bar')
+	def should_invite_users(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockRequest('get', ['groups'], {'data': [{
+					'name' : 'Group',
+					'id' : 'group1',
+					}]}),
+			MockRequest('post', ['groups', 'group1', 'invite'], {'data': {}}),
+			MockRequest('post', ['groups', 'group1', 'reject-invite'], {'data': {}}),
+			))
+		group = habitica.groups(core.Group.GUILDS)[0]
+		with self.assertRaises(ValueError):
+			group.invite('neither Email nor Member')
+		group.invite(
+				core.Email('user@example.org'),
+				core.Email('another@example.org', 'A Person'),
+				habitica.child(core.Member, {'id':'user1'}),
+				)
+
+		habitica.user.reject_invite(group)
+	def should_join_group(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockRequest('get', ['groups'], {'data': [{
+					'name' : 'Group',
+					'id' : 'group1',
+					}]}),
+			MockRequest('post', ['groups', 'group1', 'join'], {'data': {}}),
+			))
+		group = habitica.groups(core.Group.GUILDS)[0]
+		habitica.user.join(group)
+	def should_leave_group(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockRequest('get', ['groups'], {'data': [{
+					'name' : 'Group',
+					'id' : 'group1',
+					}]}),
+			MockRequest('post', ['groups', 'group1', 'leave'], {'data': {}}),
+			))
+		group = habitica.groups(core.Group.GUILDS)[0]
+		habitica.user.leave(group, keep_tasks=False, leave_challenges=False)
+	def should_remove_members_from_a_group(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockRequest('get', ['groups'], {'data': [{
+					'name' : 'Group',
+					'id' : 'group1',
+					}]}),
+			MockRequest('post', ['groups', 'group1', 'removeMember', 'member1'], {'data': {}}),
+			))
+		group = habitica.groups(core.Group.GUILDS)[0]
+		group.removeMember(habitica.child(core.Member, {'id':'member1'}))
 
 class TestUser(unittest.TestCase):
 	def _user_data(self, stats=None, **kwargs):

@@ -1,6 +1,7 @@
 """ Groups and related functionality: chats, challenges.
 """
 from functools import lru_cache
+from collections import defaultdict
 from . import base, content, tasks, quests, user
 
 class Challenge(base.ApiObject):
@@ -175,6 +176,8 @@ class Group(base.ApiObject):
 	@property
 	def chat(self):
 		return self.child_interface(Chat)
+	def update(self, **kwargs): # pragma: no cover -- TODO API docs have no description for params of this method at all.
+		self._data = self.api.put('groups', group.id, _body=kwargs)
 	def mark_chat_as_read(self):
 		self.chat.mark_as_read()
 	def create_challenge(self, name, shortName, summary=None, description=None, prize=0):
@@ -202,6 +205,34 @@ class Group(base.ApiObject):
 		self.api.post('groups', self.id, 'add-manager', _body={
 			'managerId' : member.id,
 			})
+	def remove_manager(self, member):
+		self.api.post('groups', self.id, 'remove-manager', _body={
+			'managerId' : member.id,
+			})
+	def invite(self, *users):
+		""" Invites any number of users, but at least one.
+		User either has to be a Member, or an externa Email.
+		"""
+		assert users
+		params = defaultdict(list)
+		for invited in users:
+			if isinstance(invited, user.Email):
+				email = {
+						'email' : invited.email,
+						}
+				if invited.name:
+					email['name'] = invited.name
+				params['emails'].append(email)
+			elif isinstance(invited, user.Member):
+				params['uuids'].append(invited.id)
+			else:
+				raise ValueError("Value is not a Member or an Email: {0}".format(repr(invited)))
+		# TODO It returns array of successful invites (email&members),
+		# but what is it useful for?
+		self.api.post('groups', self.id, 'invite', _body=params)
+	def removeMember(self, member, message=''):
+		self.api.post('groups', self.id, 'removeMember', member.id, message=message)
+
 
 class Party(Group):
 	@property
