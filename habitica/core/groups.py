@@ -44,6 +44,8 @@ class Challenge(base.ApiObject):
 	def leader(self):
 		# FIXME get person profile by id.
 		return self._data['leader']
+	def member(self, id):
+		return self.child(user.Member, self.api.get('challenges', self.id, 'members', id).data)
 	def group(self):
 		# FIXME get group by id.
 		return self.child(Group, self._data['group'])
@@ -230,6 +232,18 @@ class Group(base.ApiObject):
 		# TODO It returns array of successful invites (email&members),
 		# but what is it useful for?
 		self.api.post('groups', self.id, 'invite', _body=params)
+	def all_invites(self, includeAllPublicFields=False):
+		""" Yields all current invites for the group. """
+		limit = 30
+		batch = self.children(user.Member, self.api.get('groups', self.id, 'invites', includeAllPublicFields=includeAllPublicFields).data)
+		lastId = batch[-1].id
+		while len(batch) >= limit:
+			for member in batch:
+				yield member
+			batch = self.children(user.Member, self.api.get('groups', self.id, 'invites', lastId=lastId, includeAllPublicFields=includeAllPublicFields).data)
+			lastId = batch[-1].id
+		for member in batch:
+			yield member
 	def removeMember(self, member, message=''):
 		self.api.post('groups', self.id, 'removeMember', member.id, message=message)
 

@@ -106,6 +106,31 @@ class Member(base.ApiObject):
 	@property
 	def id(self):
 		return self._data.get('_id', self._data.get('id'))
+	@property
+	def name(self):
+		return self._data.get('profile', {}).get('name')
+	@property
+	def preferences(self):
+		return self._data.get('preferences', {})
+	@property
+	def inbox(self):
+		return self._data.get('inbox', {})
+	@property
+	def stats(self):
+		return self._data.get('stats', {})
+	@property
+	def items(self):
+		return self._data.get('items', {})
+	@property
+	def achievements(self):
+		return self._data.get('achievements', {})
+	@property
+	def auth(self):
+		return self._data.get('auth', {})
+	def party(self):
+		return self.child(groups.Party, self._data.get('party', {}))
+	def tasks(self):
+		return self.children(tasks.Task, self._data.get('tasks', []))
 
 class User(base.ApiObject, _UserMethods):
 	@property

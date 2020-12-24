@@ -88,3 +88,5 @@ class Habitica(base.ApiInterface):
 		if conversation: # pragma: no cover -- TODO
 			params['conversation'] = conversation.id
 		return self.children(Message, self.api.get('inbox', 'messages', **params).data)
+	def member(self, id):
+		return self.child(user.Member, self.api.get('members', id).data)

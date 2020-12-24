@@ -597,6 +597,45 @@ class TestBaseHabitica(unittest.TestCase):
 				}),
 			))
 		group = habitica.inbox(page=1)
+	def should_get_member(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockRequest('get', ['members', 'member1'], {'data': {
+				'_id' : 'member1',
+				'profile' : {
+					'name' : 'John Doe',
+					},
+				'party' : {
+					'id' : 'party1',
+					},
+				'preferences' : {
+					'not' : 'explained',
+					},
+				'inbox' : {
+					'not' : 'explained',
+					},
+				'stats' : {
+					'not' : 'explained',
+					},
+				'items' : {
+					'not' : 'explained',
+					},
+				'achievements' : {
+					'not' : 'explained',
+					},
+				'auth' : {
+					'not' : 'explained',
+					},
+				}}),
+			))
+		member = habitica.member('member1')
+		self.assertEqual(member.name, 'John Doe')
+		self.assertEqual(member.party().id, 'party1')
+		self.assertEqual(member.inbox, {'not':'explained'})
+		self.assertEqual(member.preferences, {'not':'explained'})
+		self.assertEqual(member.stats, {'not':'explained'})
+		self.assertEqual(member.items, {'not':'explained'})
+		self.assertEqual(member.achievements, {'not':'explained'})
+		self.assertEqual(member.auth, {'not':'explained'})
 
 class TestChallenges(unittest.TestCase):
 	def _challenge(self, path=('groups', 'group1')):
@@ -804,6 +843,32 @@ class TestChallenges(unittest.TestCase):
 		challenge.delete()
 		self.assertEqual(challenge.api.responses[-1].method, 'delete')
 		self.assertEqual(challenge.api.responses[-1].path[-1], 'chlng1')
+	def should_get_member(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockRequest('get', ['groups'], {'data': [{
+					'name' : 'Party',
+					'id' : 'group1',
+					}]}),
+			self._challenge(),
+			MockRequest('get', ['challenges', 'chlng1', 'members', 'member1'], {'data': {
+					'_id' : 'member1',
+					'profile' : {'name' : 'John Doe'},
+					'tasks' : [
+						{
+							'id' : 'task1',
+							'text' : 'Do a barrel roll',
+							},
+						],
+					}}),
+			))
+		party = habitica.groups(core.Group.PARTY)[0]
+		challenge = party.challenges()[0]
+		member = challenge.member('member1')
+		self.assertEqual(member.id, 'member1')
+		self.assertEqual(member.name, 'John Doe')
+		tasks = member.tasks()
+		self.assertEqual(tasks[0].id, 'task1')
+		self.assertEqual(tasks[0].text, 'Do a barrel roll')
 
 class TestChat(unittest.TestCase):
 	def should_fetch_messages(self):
@@ -1114,6 +1179,23 @@ class TestGroup(unittest.TestCase):
 			))
 		group = habitica.groups(core.Group.GUILDS)[0]
 		group.removeMember(habitica.child(core.Member, {'id':'member1'}))
+	def should_get_invites_for_a_group(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockRequest('get', ['groups'], {'data': [{
+					'name' : 'Group',
+					'id' : 'group1',
+					}]}),
+			MockRequest('get', ['groups', 'group1', 'invites'], {'data': [
+				{ 'id' : 'member{0}'.format(i) } for i in range(1, 31)
+				]}),
+			MockRequest('get', ['groups', 'group1', 'invites'], {'data': [
+				{ 'id' : 'member31' },
+				]}),
+			))
+		group = habitica.groups(core.Group.GUILDS)[0]
+		members = list(group.all_invites())
+		self.assertEqual(members[0].id, 'member1')
+		self.assertEqual(members[30].id, 'member31')
 
 class TestUser(unittest.TestCase):
 	def _user_data(self, stats=None, **kwargs):
