@@ -18,8 +18,12 @@ class Coupon(base.ApiObject):
 	def _buy(self, user):
 		user._data = self.api.post('coupons', 'enter', self._data).data
 
+class Message(base.ApiObject):
+	pass
+
 class Habitica(base.ApiInterface):
 	""" Main Habitica entry point. """
+	# TODO /hall/{heroes,patrons}
 	def __init__(self, auth=None, _api=None):
 		self.api = _api or api.API(auth['url'], auth['x-api-user'], auth['x-api-key'])
 		self._content = None
@@ -77,3 +81,10 @@ class Habitica(base.ApiInterface):
 			'public' : 'private',
 			}).data
 		return self.child(Party, result)
+	def inbox(self, page=None, conversation=None):
+		params = {}
+		if page:
+			params['page'] = page
+		if conversation: # pragma: no cover -- TODO
+			params['conversation'] = conversation.id
+		return self.children(Message, self.api.get('inbox', 'messages', **params).data)

@@ -589,6 +589,14 @@ class TestBaseHabitica(unittest.TestCase):
 		group = habitica.tavern()
 		self.assertEqual(group.name, 'Tavern')
 		self.assertEqual(group.type, 'habitrpg')
+	def should_get_inbox_messages(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockRequest('get', ['inbox', 'messages'], {'data':
+				[
+					],
+				}),
+			))
+		group = habitica.inbox(page=1)
 
 class TestChallenges(unittest.TestCase):
 	def _challenge(self, path=('groups', 'group1')):
