@@ -620,6 +620,13 @@ class TestBaseHabitica(unittest.TestCase):
 					'not' : 'explained',
 					},
 				'achievements' : {
+					'basic' : {
+						'achievements' : {
+							'signup' : {
+								'title' : 'Sign Up',
+								},
+							},
+						},
 					'not' : 'explained',
 					},
 				'auth' : {
@@ -634,7 +641,7 @@ class TestBaseHabitica(unittest.TestCase):
 		self.assertEqual(member.preferences, {'not':'explained'})
 		self.assertEqual(member.stats, {'not':'explained'})
 		self.assertEqual(member.items, {'not':'explained'})
-		self.assertEqual(member.achievements, {'not':'explained'})
+		self.assertEqual(list(member.achievements().basic)[0].title, 'Sign Up')
 		self.assertEqual(member.auth, {'not':'explained'})
 
 class TestChallenges(unittest.TestCase):
@@ -1323,6 +1330,43 @@ class TestUser(unittest.TestCase):
 		user = habitica.user()
 		groups = user.group_plans()
 		self.assertEqual(groups[0].id, 'group1')
+	def should_get_member_achievements(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockRequest('get', ['members', 'member1'], {'data':{
+				'id' : 'member1',
+				}}),
+			MockRequest('get', ['members', 'member1', 'achievements'], {'data':{
+				'basic' : {
+					'label' : 'Basic',
+					'achievements' : {
+						'signup' : {
+							'title' : 'Sign Up',
+							'text' : 'Sign Up with Habitica',
+							'icon' : 'achievement-login',
+							'earned' : True,
+							'value' : 0,
+							'index' : 60,
+							'optionalCount': 0,
+							},
+						},
+					}
+				}}),
+			))
+
+		member = habitica.member('member1')
+		achievements = member.achievements().basic
+		self.assertEqual(achievements.label, 'Basic')
+		self.assertEqual(len(achievements), 1)
+		achievements = list(achievements)
+		achievement = achievements[0]
+		self.assertEqual(achievement.label, 'Basic')
+		self.assertEqual(achievement.title, 'Sign Up')
+		self.assertEqual(achievement.text, 'Sign Up with Habitica')
+		self.assertEqual(achievement.icon, 'achievement-login')
+		self.assertTrue(achievement.earned)
+		self.assertEqual(achievement.value, 0)
+		self.assertEqual(achievement.index, 60)
+		self.assertEqual(achievement.optionalCount, 0)
 
 class TestQuest(unittest.TestCase):
 	def should_show_progress_of_collection_quest(self):

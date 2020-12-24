@@ -1,6 +1,7 @@
 """ User and user-related functionality: inventory, spells etc.
 """
 from . import base, content, tasks, groups
+from ..api import dotdict
 
 class UserPreferences(base.ApiObject):
 	@property
@@ -101,6 +102,45 @@ class Email:
 		self.email = email
 		self.name = name
 
+class Achievement(base.ApiObject):
+	@property
+	def label(self):
+		return self._parent._data['label']
+	@property
+	def title(self):
+		return self._data['title']
+	@property
+	def text(self):
+		return self._data['text']
+	@property
+	def icon(self):
+		# TODO returns icon name. Should return icon object/file.
+		return self._data['icon']
+	@property
+	def earned(self):
+		return self._data['earned']
+	@property
+	def index(self):
+		return self._data['index']
+	@property
+	def value(self):
+		return self._data['value']
+	@property
+	def optionalCount(self):
+		return self._data['optionalCount']
+
+class Achievements(base.ApiObject):
+	@property
+	def label(self):
+		return self._data['label']
+	@property
+	def achievements(self):
+		return self.children(Achievement, self._data['achievements'].values())
+	def __len__(self):
+		return len(self._data['achievements'])
+	def __iter__(self):
+		return iter(self.achievements)
+
 class Member(base.ApiObject):
 	""" All other Habitica users beside you. """
 	@property
@@ -121,9 +161,13 @@ class Member(base.ApiObject):
 	@property
 	def items(self):
 		return self._data.get('items', {})
-	@property
 	def achievements(self):
-		return self._data.get('achievements', {})
+		""" Returns dict {label:Achivements()} """
+		achievements = self._data.get('achievements')
+		if not achievements:
+			achievements = self.api.get('members', self.id, 'achievements').data
+			self._data['achievements'] = achievements
+		return dotdict({label:self.child(Achievements, entries) for label, entries in achievements.items()})
 	@property
 	def auth(self):
 		return self._data.get('auth', {})
