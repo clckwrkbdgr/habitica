@@ -710,6 +710,9 @@ class TestChallenges(unittest.TestCase):
 					'id' : 'group1',
 					}]}),
 			self._challenge(),
+			MockRequest('get', ['members', 'person1'], {'data': {
+				'_id' : 'person1',
+				}}),
 			MockRequest('get', ['tasks', 'reward1'], {'data': {
 				'text' : 'Use API tool',
 				}}),
@@ -733,7 +736,7 @@ class TestChallenges(unittest.TestCase):
 		self.assertEqual(challenge.prize, 4)
 		self.assertEqual(challenge.memberCount, 2)
 		self.assertFalse(challenge.official)
-		self.assertEqual(challenge.leader(), 'person1')
+		self.assertEqual(challenge.leader().id, 'person1')
 
 		group = challenge.group()
 		self.assertEqual(group.id, party.id)
@@ -752,12 +755,15 @@ class TestChallenges(unittest.TestCase):
 			MockRequest('get', ['user'], {'data': [{
 					}]}),
 			self._challenge(path=('user',)),
+			MockRequest('get', ['members', 'person1'], {'data': {
+				'_id' : 'person1',
+				}}),
 			))
 		user = habitica.user()
 		challenge = user.challenges()[0]
 		self.assertEqual(challenge.id, 'chlng1')
 		self.assertEqual(challenge.name, 'Create Habitica API tool')
-		self.assertEqual(challenge.leader(), 'person1')
+		self.assertEqual(challenge.leader().id, 'person1')
 	def should_get_challenge_data_as_csv(self):
 		habitica = core.Habitica(_api=MockAPI(
 			MockRequest('get', ['groups'], {'data': [{
@@ -1167,25 +1173,23 @@ class TestGroup(unittest.TestCase):
 					'id' : 'group1',
 					'type' : 'party',
 					'privacy' : 'private',
-					'leader' : {
-						'_id' : 'user1',
-						'profile' : {
-							'somedata' : 'somevalue???',
-							},
-						},
+					'leader' : 'user1',
 					'memberCount' : 1,
 					'challengeCount' : 0,
 					'balance' : 1,
 					'logo' : "foo",
 					'leaderMessage' : "bar",
 					}}),
+			MockRequest('get', ['members', 'user1'], {'data': {
+				'_id' : 'user1',
+				}}),
 			))
 		group = habitica.create_party('My Party')
 		self.assertTrue(type(group) is core.Party)
 		self.assertEqual(group.id, 'group1')
 		self.assertEqual(group.name, 'My Party')
 		self.assertFalse(group.is_public)
-		self.assertEqual(group.leader.id, 'user1')
+		self.assertEqual(group.leader().id, 'user1')
 		self.assertEqual(group.memberCount, 1)
 		self.assertEqual(group.challengeCount, 0)
 		self.assertEqual(group.balance, Price(1, 'gems'))

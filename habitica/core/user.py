@@ -3,12 +3,139 @@
 from . import base, content, tasks, groups
 from ..api import dotdict
 
+class UserAppearance(base.ApiObject):
+	@property
+	def size(self):
+		return self._data['size']
+	@property
+	def hair_color(self):
+		return self._data['hair']['color']
+	@property
+	def hair_base(self):
+		return self._data['hair']['base']
+	@property
+	def hair_bangs(self):
+		return self._data['hair']['bangs']
+	@property
+	def hair_beard(self):
+		return self._data['hair']['beard']
+	@property
+	def hair_mustache(self):
+		return self._data['hair']['mustache']
+	@property
+	def hair_flower(self):
+		return self._data['hair']['flower']
+	@property
+	def skin(self):
+		return self._data['skin']
+	@property
+	def shirt(self):
+		return self._data['shirt']
+	@property
+	def sound(self):
+		return self._data['sound']
+	@property
+	def chair(self):
+		return self._data['chair']
+
 class UserPreferences(base.ApiObject):
+	# TODO .webhooks
+	# TODO .emailNotifications
+	# TODO .pushNotifications
+	# TODO .suppressModals
+	# TODO .tasks - ??
+	@property
+	def appearance(self):
+		return self.child(UserAppearance, self._data)
+	@property
+	def dayStart(self):
+		return self._data['dayStart']
 	@property
 	def timezoneOffset(self):
 		return self._data['timezoneOffset']
+	@property
+	def timezoneOffsetAtLastCron(self):
+		return self._data['timezoneOffsetAtLastCron']
+	@property
+	def hideHeader(self):
+		return self._data['hideHeader']
+	@property
+	def language(self):
+		return self._data['language']
+	@property
+	def automaticAllocation(self):
+		return self._data['automaticAllocation']
+	@property
+	def allocationMode(self):
+		return self._data['allocationMode']
+	@property
+	def autoEquip(self):
+		return self._data['autoEquip']
+	@property
+	def costume(self):
+		return self._data['costume']
+	@property
+	def dateFormat(self):
+		return self._data['dateFormat']
+	@property
+	def sleep(self):
+		return self._data['sleep']
+	@property
+	def stickyHeader(self):
+		return self._data['stickyHeader']
+	@property
+	def disableClasses(self):
+		return self._data['disableClasses']
+	@property
+	def newTaskEdit(self):
+		return self._data['newTaskEdit']
+	@property
+	def dailyDueDefaultView(self):
+		return self._data['dailyDueDefaultView']
+	@property
+	def advancedCollapsed(self):
+		return self._data['advancedCollapsed']
+	@property
+	def toolbarCollapsed(self):
+		return self._data['toolbarCollapsed']
+	@property
+	def reverseChatOrder(self):
+		return self._data['reverseChatOrder']
+	@property
+	def background(self):
+		return self._data['background']
+	@property
+	def displayInviteToPartyWhenPartyIs1(self):
+		return self._data['displayInviteToPartyWhenPartyIs1']
+	@property
+	def improvementCategories(self):
+		return self._data['improvementCategories']
 
-class UserStats(base.ApiObject):
+class Buffs(base.ApiObject, content.BaseStats):
+	@property
+	def stealth(self):
+		return self._data['stealth']
+	@property
+	def streaks(self):
+		return self._data['streaks']
+	@property
+	def snowball(self):
+		return self._data['snowball']
+	@property
+	def spookySparkles(self):
+		return self._data['spookySparkles']
+	@property
+	def shinySeeds(self):
+		return self._data['shinySeeds']
+	@property
+	def seafoam(self):
+		return self._data['seafoam']
+
+class Training(base.ApiObject, content.BaseStats):
+	pass
+
+class UserStats(base.ApiObject, content.BaseStats):
+	# TODO .points - ???
 	@property
 	def class_name(self):
 		return self._data['class']
@@ -38,8 +165,45 @@ class UserStats(base.ApiObject):
 	@property
 	def gold(self):
 		return self._data['gp']
+	@property
+	def buffs(self):
+		return self.child(Buffs, self._data['buffs'])
+	@property
+	def training(self):
+		return self.child(Training, self._data['training'])
+
+class Gear(base.ApiObject):
+	@property
+	def weapon(self):
+		return self.content.gear(self._dict['weapon'])
+	@property
+	def armor(self):
+		return self.content.gear(self._dict['armor'])
+	@property
+	def head(self):
+		return self.content.gear(self._dict['head'])
+	@property
+	def shield(self):
+		return self.content.gear(self._dict['shield'])
+	@property
+	def back(self):
+		return self.content.gear(self._dict['back'])
+	@property
+	def headAccessory(self):
+		return self.content.gear(self._dict['headAccessory'])
+	@property
+	def eyewear(self):
+		return self.content.gear(self._dict['eyewear'])
+	@property
+	def body(self):
+		return self.content.gear(self._dict['body'])
 
 class Inventory(base.ApiObject):
+	# TOOD items.special -- see User model.
+	@property
+	def lastDrop(self):
+		""" {.date, .count} """
+		return api.dotdict(self._data['lastDrop'])
 	@property
 	def food(self):
 		return self.children(content.Food, self._data['food'])
@@ -49,6 +213,30 @@ class Inventory(base.ApiObject):
 	@property
 	def mount(self):
 		return self.content.mountInfo(self._data['currentMount']) if self._data['currentMount'] else None
+	@property
+	def eggs(self):
+		return self._data['eggs'] # FIXME is it a dict of IDs?
+	@property
+	def hatchingPotions(self):
+		return self._data['hatchingPotions'] # FIXME is it a dict of IDs?
+	@property
+	def pets(self):
+		return self._data['pets'] # FIXME is it a dict of IDs?
+	@property
+	def mounts(self):
+		return self._data['mounts'] # FIXME is it a dict of IDs?
+	@property
+	def quests(self):
+		return self._data['quests'] # FIXME is it a dict of IDs?
+	@property
+	def gear(self):
+		return self._data['gear']['owned'] # FIXME is it a dict of IDs?
+	@property
+	def costume(self):
+		return self.child(Gear, self._data['gear']['costume'])
+	@property
+	def equipped(self):
+		return self.child(Gear, self._data['gear']['equipped'])
 
 class _UserMethods:
 	""" Trait to be used by ApiObject or ApiInterface
@@ -176,19 +364,108 @@ class Member(base.ApiObject):
 	def tasks(self):
 		return self.children(tasks.Task, self._data.get('tasks', []))
 
+class UserQuestProgress(base.ApiObject):
+	@property
+	def quest(self):
+		return self.content.quests(self._data['key'])
+	@property
+	def up(self):
+		return self._data['progress']['up']
+	@property
+	def down(self):
+		return self._data['progress']['down']
+	@property
+	def collect(self):
+		return self._data['progress']['collect'] # FIXME is it a dict?
+	@property
+	def collectedItems(self):
+		return self._data['progress']['collectedItems']
+	@property
+	def completed(self):
+		return self._data['completed'] # FIXME is it an ID?
+	@property
+	def RSVPNeeded(self):
+		return self._data['RSVPNeeded']
+
 class User(base.ApiObject, _UserMethods):
+	# TODO auth -- see model
+	# TODO achievements -- see model
+	# TODO backer -- see model
+	# TODO contributor -- see model
+	# TODO purchased -- see model
+	# TODO history -- see model
+	# TODO challenges -- see model
+	# TODO invitations -- see model
+	# TODO newMessages -- see model
+	# TODO notifications -- see model
+	# TODO tags -- see model
+	# TODO inbox -- see model
+	# TODO extra -- see model
+	# TODO pushDevices -- see model
+	# TODO webhooks -- see model
+	# TODO pinnedItems, pinnedItemsOrder, unpinnedItems -- see model
+	# TODO party.order, party.orderAscending -- see model
 	@property
 	def id(self):
 		return self._data.get('_id', self._data.get('id'))
 	@property
+	def name(self):
+		return self._data['profile']['name']
+	@property
+	def imageUrl(self):
+		return self._data['profile']['imageUrl']
+	@property
+	def blurb(self):
+		return self._data['profile']['blurb']
+	@property
+	def quest_progress(self):
+		return self.child(UserQuestProgress, self._data['party']['quest'])
+	@property
 	def stats(self):
 		return UserStats(_data=self._data['stats'])
+	@property
+	def flags(self):
+		# See User model (GET /models/user/paths)
+		# TODO useful flags:
+        # "flags.dropsEnabled": "Boolean",
+        # "flags.itemsEnabled": "Boolean",
+        # "flags.lastNewStuffRead": "String",
+        # "flags.rewrite": "Boolean",
+        # "flags.classSelected": "Boolean",
+        # "flags.mathUpdates": "Boolean",
+        # "flags.rebirthEnabled": "Boolean",
+        # "flags.lastFreeRebirth": "Date",
+        # "flags.levelDrops": "Mixed",
+        # "flags.chatRevoked": "Boolean",
+        # "flags.chatShadowMuted": "Boolean",
+        # "flags.lastWeeklyRecap": "Date",
+        # "flags.lastWeeklyRecapDiscriminator": "Boolean",
+        # "flags.cronCount": "Number",
+        # "flags.welcomed": "Boolean",
+        # "flags.armoireEnabled": "Boolean",
+        # "flags.armoireOpened": "Boolean",
+        # "flags.armoireEmpty": "Boolean",
+        # "flags.cardReceived": "Boolean",
+        # "flags.warnedLowHealth": "Boolean",
+		return api.dotdict(_data=self._data['flags'])
 	@property
 	def preferences(self):
 		return UserPreferences(_data=self._data['preferences'])
 	@property
 	def inventory(self):
 		return Inventory(_data=self._data['items'], _content=self.content)
+	@property
+	def balance(self):
+		return base.Price(self._data['balance'], 'gems')
+	@property
+	def loginIncentives(self):
+		return self._data['loginIncentives']
+	@property
+	def invitesSent(self):
+		return self._data['invitesSent']
+	@property
+	def lastCron(self):
+		return self._data['lastCron'] # FIXME parse date
 	def avatar(self):
 		""" Returns pure HTML code to render user avatar.
 		Behavior may change in the future.

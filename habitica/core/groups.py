@@ -22,6 +22,7 @@ def iterate_pages(api_obj, class_type, *get_request_path, _limit=30, **query_par
 
 class Challenge(base.ApiObject):
 	# TODO get challenge by id: get:/challenges/:id
+	# TODO .categories
 	@property
 	def id(self):
 		return self._data['id']
@@ -35,6 +36,9 @@ class Challenge(base.ApiObject):
 	def summary(self):
 		return self._data['summary']
 	@property
+	def description(self):
+		return self._data['description']
+	@property
 	def updatedAt(self):
 		return self._data['updatedAt'] # FIXME convert to date time using user TZ.
 	@property
@@ -42,7 +46,7 @@ class Challenge(base.ApiObject):
 		return self._data['createdAt'] # FIXME convert to date time using user TZ.
 	@property
 	def prize(self):
-		return self._data['prize']
+		return base.Price(self._data['prize'], 'gems')
 	@property
 	def memberCount(self):
 		return self._data['memberCount']
@@ -58,8 +62,7 @@ class Challenge(base.ApiObject):
 	def habits(self):
 		return [self.child(tasks.Habit, self.api.get('tasks', task_id).data) for task_id in self._data['tasksOrder']['habits']]
 	def leader(self):
-		# FIXME get person profile by id.
-		return self._data['leader']
+		return self.child(user.Member, self.api.get('members', self._data['leader']).data)
 	def member(self, id):
 		return self.child(user.Member, self.api.get('challenges', self.id, 'members', id).data)
 	def members(self, includeAllPublicFields=False, includeTasks=False):
@@ -160,12 +163,20 @@ class Group(base.ApiObject):
 
 	PRIVATE, PUBLIC = 'private', 'public'
 
+	# TODO .categories
+	# TODO .managers (Mixed)
 	@property
 	def id(self):
 		return self._data['id']
 	@property
 	def name(self):
 		return self._data['name']
+	@property
+	def summary(self):
+		return self._data['summary']
+	@property
+	def description(self):
+		return self._data['description']
 	@property
 	def type(self):
 		return self._data['type']
@@ -176,8 +187,14 @@ class Group(base.ApiObject):
 	def is_public(self):
 		return self.privacy == 'public'
 	@property
+	def bannedWordsAllowed(self):
+		return self._data['bannedWordsAllowed']
+	@property
+	def leaderOnly(self):
+		""" {.challenges, .getGems} """
+		return self._data['leaderOnly']
 	def leader(self):
-		return self.child(user.Member, self._data['leader'])
+		return self.child(user.Member, self.api.get('members', self._data['leader']).data)
 	@property
 	def memberCount(self):
 		return self._data['memberCount']
@@ -193,6 +210,14 @@ class Group(base.ApiObject):
 	@property
 	def leaderMessage(self):
 		return self._data['leaderMessage']
+	def rewards(self):
+		return [self.child(tasks.Reward, self.api.get('tasks', task_id).data) for task_id in self._data['tasksOrder']['rewards']]
+	def todos(self):
+		return [self.child(tasks.Todo, self.api.get('tasks', task_id).data) for task_id in self._data['tasksOrder']['todos']]
+	def dailies(self):
+		return [self.child(tasks.Daily, self.api.get('tasks', task_id).data) for task_id in self._data['tasksOrder']['dailys']]
+	def habits(self):
+		return [self.child(tasks.Habit, self.api.get('tasks', task_id).data) for task_id in self._data['tasksOrder']['habits']]
 	def challenges(self):
 		return self.children(Challenge, self.api.get('challenges', 'groups', self.id).data)
 	@property

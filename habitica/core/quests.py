@@ -178,8 +178,9 @@ class QuestProgress(base.ApiObject):
 	def __init__(self, *args, **kwargs):
 		super().__init__(*args, **kwargs)
 		self._quest_definition = self.content.quests(self._data['key'])
+	# TODO .extra
+	# TODO .members
 	@property
-	@lru_cache()
 	def quest(self):
 		return self._quest_definition
 	@property
@@ -187,7 +188,10 @@ class QuestProgress(base.ApiObject):
 		return bool(self._data['active'])
 	@property
 	def title(self):
-		return self.text
+		return self.quest.text
+	@property
+	def rage(self):
+		return self._data.get('rage')
 	@property
 	def progress(self):
 		if self.quest.collect:
@@ -199,5 +203,7 @@ class QuestProgress(base.ApiObject):
 	@property
 	def max_progress(self): # pragma: no cover -- FIXME deprecated
 		return self.progress.max_value
+	def leader(self):
+		return self.child(user.Member, self.api.get('members', self._data['leader']).data)
 	def __getattr__(self, attr):
 		return getattr(self.quest, attr)

@@ -197,6 +197,33 @@ class MarketableForGold(Marketable):
 class MarketableForGems(Marketable):
 	CURRENCY = 'gems'
 
+class BaseStats:
+	""" Base character stats. """
+	@property
+	def int(self):
+		return self._data['int']
+	@property
+	def intelligence(self):
+		return self.int
+	@property
+	def str(self):
+		return self._data['str']
+	@property
+	def strength(self):
+		return self.str
+	@property
+	def per(self):
+		return self._data['per']
+	@property
+	def perception(self):
+		return self.per
+	@property
+	def con(self):
+		return self._data['con']
+	@property
+	def constitution(self):
+		return self.con
+
 class Armoire(ContentEntry, MarketableForGold):
 	@property
 	def type(self):
@@ -348,7 +375,7 @@ class Spell(ContentEntry, Castable):
 	def lvl(self):
 		return self._data['lvl']
 
-class Gear(ContentEntry, MarketableForGold):
+class Gear(ContentEntry, BaseStats, MarketableForGold):
 	@property
 	def klass(self):
 		return self._data['klass']
@@ -380,30 +407,6 @@ class Gear(ContentEntry, MarketableForGold):
 		if 'event' not in self._data:
 			return None
 		return parse_habitica_event(self._data['event'])
-	@property
-	def int(self):
-		return self._data['int']
-	@property
-	def intelligence(self):
-		return self.int
-	@property
-	def str(self):
-		return self._data['str']
-	@property
-	def strength(self):
-		return self.str
-	@property
-	def per(self):
-		return self._data['per']
-	@property
-	def perception(self):
-		return self.per
-	@property
-	def con(self):
-		return self._data['con']
-	@property
-	def constitution(self):
-		return self.con
 	@property
 	def mystery(self):
 		return self._data.get('mystery')
