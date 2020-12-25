@@ -101,6 +101,8 @@ class Price:
 	Supports all arithmetic operations and casting to numbers (int, float).
 	"""
 	def __init__(self, value, currency):
+		if isinstance(value, Price) and value.currency != currency:
+			raise ValueError('Cannot convert {0} into {1}'.format(repr(value), repr(currency)))
 		self.value = value
 		self.currency = currency
 	def __str__(self):

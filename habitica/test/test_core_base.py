@@ -147,6 +147,8 @@ class TestPrice(unittest.TestCase):
 		price = base.Price(10.5, 'gems')
 		bad = base.Price(1, 'gold')
 		with self.assertRaises(ValueError):
+			new_price = base.Price(price, 'gold')
+		with self.assertRaises(ValueError):
 			price + bad
 		with self.assertRaises(ValueError):
 			bad + price
