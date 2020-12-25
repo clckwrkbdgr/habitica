@@ -643,6 +643,41 @@ class TestBaseHabitica(unittest.TestCase):
 		self.assertEqual(member.items, {'not':'explained'})
 		self.assertEqual(list(member.achievements().basic)[0].title, 'Sign Up')
 		self.assertEqual(member.auth, {'not':'explained'})
+	def should_transfer_gems_to_a_member(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockRequest('get', ['members', 'member1'], {'data': {
+				'_id' : 'member1',
+				}}),
+			MockRequest('get', ['members', 'member1', 'objections', 'transfer-gems'], {'data': [
+				{'not':'explained'},
+				]}),
+			MockRequest('get', ['members', 'member1', 'objections', 'transfer-gems'], {'data': [
+				]}),
+			MockRequest('post', ['members', 'transfer-gems'], {'data': [ ]}),
+			))
+		member = habitica.member('member1')
+		with self.assertRaises(RuntimeError):
+			habitica.transfer_gems(member, Price(1, 'gems'), 'Here you go.')
+		habitica.transfer_gems(member, Price(1, 'gems'), 'Here you go.')
+	def should_send_private_message_to_a_member(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockRequest('get', ['members', 'member1'], {'data': {
+				'_id' : 'member1',
+				}}),
+			MockRequest('get', ['members', 'member1', 'objections', 'send-private-message'], {'data': [
+				{'not':'explained'},
+				]}),
+			MockRequest('get', ['members', 'member1', 'objections', 'send-private-message'], {'data': [
+				]}),
+			MockRequest('post', ['members', 'send-private-message'], {'data': {
+				'not':'explained',
+				}}),
+			))
+		member = habitica.member('member1')
+		with self.assertRaises(RuntimeError):
+			habitica.send_private_message(member, 'Incoming message.')
+		message = habitica.send_private_message(member, 'Incoming message.')
+		self.assertEqual(message._data, {'not':'explained'})
 
 class TestChallenges(unittest.TestCase):
 	def _challenge(self, path=('groups', 'group1')):
@@ -876,6 +911,25 @@ class TestChallenges(unittest.TestCase):
 		tasks = member.tasks()
 		self.assertEqual(tasks[0].id, 'task1')
 		self.assertEqual(tasks[0].text, 'Do a barrel roll')
+	def should_get_members_for_challenge(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockRequest('get', ['groups'], {'data': [{
+					'name' : 'Party',
+					'id' : 'group1',
+					}]}),
+			self._challenge(),
+			MockRequest('get', ['challenges', 'chlng1', 'members'], {'data': [
+				{ 'id' : 'member{0}'.format(i) } for i in range(1, 31)
+				]}),
+			MockRequest('get', ['challenges', 'chlng1', 'members'], {'data': [
+				{ 'id' : 'member31' },
+				]}),
+			))
+		party = habitica.groups(core.Group.PARTY)[0]
+		challenge = party.challenges()[0]
+		members = list(challenge.members())
+		self.assertEqual(members[0].id, 'member1')
+		self.assertEqual(members[30].id, 'member31')
 
 class TestChat(unittest.TestCase):
 	def should_fetch_messages(self):
@@ -1201,6 +1255,23 @@ class TestGroup(unittest.TestCase):
 			))
 		group = habitica.groups(core.Group.GUILDS)[0]
 		members = list(group.all_invites())
+		self.assertEqual(members[0].id, 'member1')
+		self.assertEqual(members[30].id, 'member31')
+	def should_get_members_for_a_group(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockRequest('get', ['groups'], {'data': [{
+					'name' : 'Group',
+					'id' : 'group1',
+					}]}),
+			MockRequest('get', ['groups', 'group1', 'members'], {'data': [
+				{ 'id' : 'member{0}'.format(i) } for i in range(1, 31)
+				]}),
+			MockRequest('get', ['groups', 'group1', 'members'], {'data': [
+				{ 'id' : 'member31' },
+				]}),
+			))
+		group = habitica.groups(core.Group.GUILDS)[0]
+		members = list(group.members())
 		self.assertEqual(members[0].id, 'member1')
 		self.assertEqual(members[30].id, 'member31')
 

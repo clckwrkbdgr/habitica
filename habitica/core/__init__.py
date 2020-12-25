@@ -90,3 +90,21 @@ class Habitica(base.ApiInterface):
 		return self.children(Message, self.api.get('inbox', 'messages', **params).data)
 	def member(self, id):
 		return self.child(user.Member, self.api.get('members', id).data)
+	def transfer_gems(self, member, gems, message):
+		gems = base.Price(gems, 'gems')
+		objections = self.api.get('members', member.id, 'objections', 'transfer-gems').data
+		if objections:
+			raise RuntimeError(objections)
+		self.api.post('members', 'transfer-gems', _body={
+			'toUserId' : member.id,
+			'gemAmount' : gems.value,
+			'message' : message,
+			})
+	def send_private_message(self, member, message):
+		objections = self.api.get('members', member.id, 'objections', 'send-private-message').data
+		if objections:
+			raise RuntimeError(objections)
+		return self.child(Message, self.api.post('members', 'send-private-message', _body={
+			'toUserId' : member.id,
+			'message' : message,
+			}).data)

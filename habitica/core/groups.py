@@ -4,6 +4,22 @@ from functools import lru_cache
 from collections import defaultdict
 from . import base, content, tasks, quests, user
 
+def iterate_pages(api_obj, class_type, *get_request_path, _limit=30, **query_params):
+	""" Loads paged entities via GET request.
+	Yields produced objects of class_type.
+	Produced object should support field .id
+	Request should support optional 'lastId'
+	"""
+	batch = api_obj.children(class_type, api_obj.api.get(*get_request_path, **query_params).data)
+	lastId = batch[-1].id
+	while len(batch) >= _limit:
+		for entity in batch:
+			yield entity
+		batch = api_obj.children(class_type, api_obj.api.get(*get_request_path, lastId=lastId, **query_params).data)
+		lastId = batch[-1].id
+	for entity in batch:
+		yield entity
+
 class Challenge(base.ApiObject):
 	# TODO get challenge by id: get:/challenges/:id
 	@property
@@ -46,6 +62,10 @@ class Challenge(base.ApiObject):
 		return self._data['leader']
 	def member(self, id):
 		return self.child(user.Member, self.api.get('challenges', self.id, 'members', id).data)
+	def members(self, includeAllPublicFields=False, includeTasks=False):
+		""" Yields all current invites for the group. """
+		for member in iterate_pages(self, user.Member, 'challenges', self.id, 'members', includeAllPublicFields=includeAllPublicFields, includeTasks=includeTasks):
+			yield member
 	def group(self):
 		# FIXME get group by id.
 		return self.child(Group, self._data['group'])
@@ -234,15 +254,11 @@ class Group(base.ApiObject):
 		self.api.post('groups', self.id, 'invite', _body=params)
 	def all_invites(self, includeAllPublicFields=False):
 		""" Yields all current invites for the group. """
-		limit = 30
-		batch = self.children(user.Member, self.api.get('groups', self.id, 'invites', includeAllPublicFields=includeAllPublicFields).data)
-		lastId = batch[-1].id
-		while len(batch) >= limit:
-			for member in batch:
-				yield member
-			batch = self.children(user.Member, self.api.get('groups', self.id, 'invites', lastId=lastId, includeAllPublicFields=includeAllPublicFields).data)
-			lastId = batch[-1].id
-		for member in batch:
+		for member in iterate_pages(self, user.Member, 'groups', self.id, 'invites', includeAllPublicFields=includeAllPublicFields):
+			yield member
+	def members(self, includeAllPublicFields=False, includeTasks=False):
+		""" Yields all current invites for the group. """
+		for member in iterate_pages(self, user.Member, 'groups', self.id, 'members', includeAllPublicFields=includeAllPublicFields, includeTasks=includeTasks):
 			yield member
 	def removeMember(self, member, message=''):
 		self.api.post('groups', self.id, 'removeMember', member.id, message=message)
