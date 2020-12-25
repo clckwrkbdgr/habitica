@@ -4,508 +4,7 @@ import datetime
 from collections import namedtuple
 from .. import core, api, timeutils
 from ..core.base import Price
-
-class MockRequest:
-	def __init__(self, method, path, response, cached=False):
-		self.method = method
-		self.path = path
-		self.response = api.dotdict(response) if type(response) is dict else response
-		self.params = None
-		self.body = None
-		self.cached = cached
-
-class MockAPI:
-	""" /content call is cached. """
-	def __init__(self, *requests):
-		self.base_url = 'http://localhost'
-		self.requests = list(requests)
-		self.responses = []
-		self.cache = [
-			MockRequest('get', ['content'], {'data': {
-				'potion' : {
-					'text' : 'Health Potion',
-					'notes' : 'Heals 15 hp',
-					'type' : 'potion',
-					'key' : 'HealthPotion',
-					'value' : 25,
-					},
-				'armoire' : {
-					'text' : 'Enchanted Armoire',
-					'type' : 'armoire',
-					'key' : 'Armoire',
-					'value' : 100,
-					},
-				'classes' : [
-					'warrior',
-					'rogue',
-					'wizard',
-					'healer',
-					],
-				'gearTypes' : [
-					"headAccessory",
-					"armor",
-					"head",
-					],
-				'questEggs' : {
-					'badger' : {
-						'key':'badger',
-						'text':'Badger',
-						'mountText':'Badger',
-						'notes':'This is a Badger egg.',
-						'adjective':'serious',
-						'value':4,
-						},
-					},
-				'food' : {
-					'Meat' : {
-						'key':'Meat',
-						'text':'Meat',
-						'notes':'A piece of meat.',
-						'textA':'A meat',
-						'textThe':'The Meat',
-						'target':'Base',
-						'canDrop':True,
-						},
-					},
-				'eggs' : {
-					'wolf' : {
-						'key':'wolf',
-						'text':'Wolf',
-						'mountText':'Wolf',
-						'notes':'This is a Wolf egg.',
-						'adjective':'fierce',
-						'value':3,
-						},
-					},
-				'dropEggs' : {
-					'fox' : {
-						'key':'fox',
-						'text':'Fox',
-						'mountText':'Fox',
-						'notes':'This is a Fox egg.',
-						'adjective':'sly',
-						'value':2,
-						},
-					},
-				'hatchingPotions' : {
-					'base' : {
-						'key':'base',
-						'text':'Base',
-						'notes':'Makes Base pet.',
-						'value':2,
-						},
-					},
-				'wackyHatchingPotions' : {
-					'wacky' : {
-						'key':'wacky',
-						'text':'Wacky',
-						'notes':'Makes Wacky pet.',
-						'value':3,
-						'_addlNotes':'Wacky!',
-						'premium':True,
-						'limited':True,
-						'wacky':True,
-						'event':{
-							'start':'2020-01-01',
-							'end':'2020-01-31',
-							},
-						},
-					},
-				'dropHatchingPotions' : {
-					'red' : {
-						'key':'red',
-						'text':'Red',
-						'notes':'Makes Red pet.',
-						'value':4,
-						'premium':False,
-						'limited':True,
-						'wacky':False,
-						},
-					},
-				'premiumHatchingPotions' : {
-					'shadow' : {
-						'key':'shadow',
-						'text':'Shadow',
-						'notes':'Makes Shadow pet.',
-						'value':5,
-						'_addlNotes':'Premium!',
-						'premium':True,
-						'limited':False,
-						},
-					},
-				'quests' : {
-					'collectionquest' : {
-						'key' : 'collectionquest',
-						'text' : 'Collect N items',
-						'notes' : 'Additional notes',
-						'category' : 'pet',
-						'goldValue' : 10,
-						'group' : 'questgroup1',
-						'previous' : 'bossquest',
-						'completion' : 'You collected N items!',
-						'drop' : {
-							'exp' : 500,
-							'gp' : 100,
-							'items' : [
-								{
-									'key' : 'fox',
-									'text' : 'Fox Egg',
-									'type' : 'dropEggs',
-									},
-								],
-							},
-						'collect' : {
-							'fun' : {
-								'key' : 'fun',
-								'text' : 'Fun',
-								'count' : 10,
-								},
-							'games' : {
-								'key' : 'games',
-								'text' : 'Games',
-								'count' : 20,
-								},
-							},
-						},
-					'bossquest' : {
-						'key' : 'bossquest',
-						'text' : 'Defeat the Boss',
-						'notes' : 'Additional notes',
-						'category' : 'unlockable',
-						'lvl' : 33,
-						'unlockCondition' : {
-							'text' : 'Swipe to unlock',
-							'condition' : 'login',
-							'incentiveThreshold' : 3,
-							},
-						'group' : 'questgroup1',
-						'completion' : 'You defeated the Boss!',
-						'drop' : {
-							'exp' : 300,
-							'gp' : 10,
-							'items' : [
-								{
-									'key' : 'collectionquest',
-									'text' : 'Collect N items',
-									'type' : 'quests',
-									'onlyOwner' : True,
-									},
-								],
-							},
-						'boss' : {
-							'name' : 'The Boss',
-							'hp' : 500,
-							'str' : 1,
-							'def' : 0.5,
-							},
-						},
-					'worldquest' : {
-						'key' : 'worldquest',
-						'text' : 'Protect the World',
-						'notes' : 'Additional notes',
-						'category' : 'world',
-						'completion' : 'You protected the World!',
-						'completionChat' : 'You protected the World!',
-						'colors' : {
-							'main' : '#ffffff',
-							},
-						'event':{
-							'start':'2020-01-01',
-							'end':'2020-01-31',
-							},
-						'drop' : {
-							'exp' : 0,
-							'gp' : 0,
-							'items' : [
-								{
-									'key' : 'fox',
-									'text' : 'Fox pet',
-									'type' : 'questPets',
-									},
-								],
-							},
-						'boss' : {
-							'name' : 'The World Boss',
-							'hp' : 50000,
-							'str' : 5,
-							'def' : 1.5,
-							'rage' : {
-								'value' : 500,
-								'title' : 'Boss Rage',
-								'healing' : 100,
-								'description': 'When rage is filled, boss rages!',
-								'effect' : 'Boss rages!',
-								'stables' : 'Boss rages!',
-								'bailey' : 'Boss rages!',
-								'guide' : 'Boss rages!',
-								'tavern' : 'Boss rages!',
-								'quests' : 'Boss rages!',
-								},
-							},
-						},
-					},
-				'petInfo': {
-					'fox' : {
-						'key' : 'fox',
-						'text' : 'Fox',
-						'type' : 'Base',
-						'egg' : 'fox',
-						'potion' : 'base',
-						'canFind' : True,
-						},
-					'badger' : {
-						'key' : 'badger',
-						'text' : 'Badger',
-						'type' : 'Clockwork',
-						'egg' : 'badger',
-						},
-					},
-				'questPets': {
-						'fox':True,
-						},
-				'specialPets': {
-						'fox':False,
-						'badger':True,
-						},
-				'premiumPets': {
-						'fox':True,
-						},
-				'mountInfo': {
-					'wolf' : {
-						'text' : 'Wolf',
-						},
-					},
-				'mountInfo': {
-					'fox' : {
-						'key' : 'fox',
-						'text' : 'Fox',
-						'type' : 'Base',
-						'egg' : 'fox',
-						'potion' : 'base',
-						'canFind' : True,
-						},
-					'wolf' : {
-						'key' : 'wolf',
-						'text' : 'Wolf',
-						'type' : 'Clockwork',
-						'egg' : 'wolf',
-						},
-					},
-				'mounts': {
-						'fox':True,
-						},
-				'questMounts': {
-						'fox':True,
-						},
-				'specialMounts': {
-						'fox':False,
-						'wolf':True,
-						},
-				'premiumMounts': {
-						'fox':True,
-						},
-				'backgroundFlats': {
-						'blizzard' : {
-							'key' : 'blizzard',
-							'text' : 'Blizzard',
-							'notes' : 'Hurling Blizzard',
-							'price' : 7,
-							'set' : 'Winter',
-							},
-						},
-				'backgrounds': {
-						'backgrounds122020' : [
-							{
-								'key' : 'blizzard',
-								'text' : 'Blizzard',
-								'notes' : 'Hurling Blizzard',
-								'price' : 7,
-								'set' : 'Winter',
-								},
-							],
-						'backgrounds082020' : [
-							{
-								'key' : 'fall',
-								'text' : 'Fall',
-								'notes' : "Summer's End",
-								'price' : 7,
-								'set' : 'Fall',
-								},
-							],
-						'timeTravelBackgrounds' : [
-							{
-								'key' : 'core',
-								'text' : 'The Core',
-								'notes' : "The Core",
-								'price' : 1,
-								'currency' : 'hourglass',
-								'set' : 'timeTravel',
-								},
-							],
-						},
-				"special": {
-						"congrats": {
-							"key": "congrats",
-							"text": "Congratulations Card",
-							"mana": 0,
-							"target": "user",
-							"notes": "Send a Congratulations card to a party member.",
-							"value": 10,
-							"silent": True,
-							"immediateUse": True
-							},
-						"petalFreePotion": {
-							"purchaseType": "debuffPotion",
-							"key": "petalFreePotion",
-							"text": "Petal-Free Potion",
-							"mana": 0,
-							"target": "self",
-							"notes": "Reverse the spell that made you a flower.",
-							"value": 5,
-							"immediateUse": True
-							},
-						"shinySeed": {
-							"key": "shinySeed",
-							"text": "Shiny Seed",
-							"mana": 0,
-							"target": "user",
-							"previousPurchase": True,
-							"value": 15,
-							"notes": "Turn a friend into a joyous flower!"
-							}
-						},
-				"cardTypes": {
-						"congrats": {
-							"key": "congrats",
-							"yearRound": True,
-							"messageOptions": 5
-							},
-						},
-				"spells": {
-						"rogue": {
-							"backStab": {
-								"key": "backStab",
-								"lvl": 12,
-								"mana": 15,
-								"target": "task",
-								"notes": "Betray a task",
-								"text": "Backstab"
-								},
-							"stealth": {
-								"key": "stealth",
-								"lvl": 14,
-								"mana": 45,
-								"target": "self",
-								"notes": "Be a Ninja",
-								"text": "Stealth"
-								},
-							},
-						},
-				'userCanOwnQuestCategories' : [
-						'unlockable',
-						'pet',
-						],
-				'gear' : {
-						'flat' : {
-							'ninja_katana' : {
-								"text": "Katana",
-								"notes": "Ninja Katana.",
-								"key": "ninja_katana",
-								"klass": "rogue",
-								"set": "ninja-1",
-								"int": 1,
-								"index": "1",
-								"type": "weapon",
-								"per": 3,
-								"value": 100,
-								"con": 0,
-								"str": 5,
-								},
-							'daikatana' : {
-								"text": "Daiatana",
-								"notes": "Daikatana!",
-								"key": "daikatana",
-								"klass": "special",
-								"specialClass": "rogue",
-								"set": "ninja-special",
-								"int": 1,
-								"index": "special",
-								"type": "weapon",
-								"per": 3,
-								"value": 100,
-								"con": 0,
-								"str": 5,
-								'event':{
-									'start':'2020-01-01',
-									'end':'2020-01-31',
-									},
-								"last": True,
-								'gearSet' : 'DOOM',
-								},
-							'mysterykatana' : {
-								"text": "Mystery Katana",
-								"notes": "Mystery Katana!",
-								"key": "mysterykatana",
-								"klass": "mystery",
-								"mystery": "202012",
-								"twoHanded": True,
-								},
-							},
-						'tree' : {
-							'weapon' : {
-								'rogue' : {
-									'katana' : {
-										"text": "Katana",
-										"key": "ninja_katana",
-										},
-									},
-								},
-							},
-						},
-						'mystery' : {
-								'202012' : {
-									'items' : [
-										{
-											'key' : 'ninja_katana',
-											},
-										],
-										"text": "Mystery Ninja",
-										"class": "set_mystery_202012",
-										"start": "2020-12-01",
-										"end": "2020-12-31",
-										"key": "202012",
-									},
-								},
-				}}, cached=True),
-			]
-	def cached(self, *args, **kwargs):
-		return self
-	def _perform_request(self, method, path, params=None, body=None):
-		for _ in self.cache:
-			if _.method == method and list(_.path) == list(path):
-				return _.response
-
-		request = None
-		for _ in self.requests:
-			if _.method == method and list(_.path) == list(path):
-				request = _
-				break
-		assert request is not None, "Expected request is not found in mock request chain: {0} /{1}".format(method.upper(), '/'.join(path))
-		self.requests.remove(request)
-		request.params = params
-		request.body = body
-		self.responses.append(request)
-		if request.cached: # pragma: no cover
-			self.cache.append(request)
-		return request.response
-	def get(self, *path, **params):
-		return self._perform_request('get', path, params=params)
-	def post(self, *path, _body=None, **params):
-		return self._perform_request('post', path, params=params, body=_body)
-	def put(self, *path, _body=None, **params):
-		return self._perform_request('put', path, params=params, body=_body)
-	def delete(self, *path, **params):
-		return self._perform_request('delete', path, params=params)
+from .mock_api import MockAPI, MockRequest, MockDataRequest, MockData
 
 class TestBaseHabitica(unittest.TestCase):
 	def should_get_home_url(self):
@@ -531,23 +30,12 @@ class TestBaseHabitica(unittest.TestCase):
 		user = habitica.user
 	def should_get_user_directly_via_proxy(self):
 		habitica = core.Habitica(_api=MockAPI(
-			MockRequest('get', ['user'], {'data': {'name': '...'}}),
+			MockDataRequest('get', ['user'], MockData.USER),
 			))
 		user = habitica.user()
 	def should_get_groups(self):
 		habitica = core.Habitica(_api=MockAPI(
-			MockRequest('get', ['groups'], {'data': [
-				{
-					'name' : 'Party',
-					'type' : 'party',
-					'privacy' : 'private',
-					},
-				{
-					'name' : 'My Guild',
-					'type' : 'guild',
-					'privacy' : 'public',
-					},
-				]}),
+			MockDataRequest('get', ['groups'], MockData.GROUPS),
 			))
 		groups = habitica.groups(core.Group.PARTY, core.Group.GUILDS)
 		self.assertEqual(len(groups), 2)
@@ -559,13 +47,7 @@ class TestBaseHabitica(unittest.TestCase):
 		self.assertEqual(groups[1].privacy, 'public')
 	def should_paginate_list_of_groups(self):
 		habitica = core.Habitica(_api=MockAPI(
-			MockRequest('get', ['groups'], {'data': [
-				{
-					'name' : 'My Guild',
-					'type' : 'guild',
-					'privacy' : 'public',
-					},
-				]}),
+			MockDataRequest('get', ['groups'], MockData.GROUPS_PAGE_1),
 			))
 		groups = habitica.groups(core.Group.PARTY, core.Group.GUILDS, page=1)
 		self.assertEqual(len(groups), 1)
@@ -579,12 +61,7 @@ class TestBaseHabitica(unittest.TestCase):
 		habitica.run_cron()
 	def should_get_tavern(self):
 		habitica = core.Habitica(_api=MockAPI(
-			MockRequest('get', ['groups', 'habitrpg'], {'data': 
-				{
-					'name' : 'Tavern',
-					'type' : 'habitrpg',
-					},
-				}),
+			MockDataRequest('get', ['groups', 'habitrpg'], MockData.TAVERN),
 			))
 		group = habitica.tavern()
 		self.assertEqual(group.name, 'Tavern')
@@ -599,40 +76,7 @@ class TestBaseHabitica(unittest.TestCase):
 		group = habitica.inbox(page=1)
 	def should_get_member(self):
 		habitica = core.Habitica(_api=MockAPI(
-			MockRequest('get', ['members', 'member1'], {'data': {
-				'_id' : 'member1',
-				'profile' : {
-					'name' : 'John Doe',
-					},
-				'party' : {
-					'id' : 'party1',
-					},
-				'preferences' : {
-					'not' : 'explained',
-					},
-				'inbox' : {
-					'not' : 'explained',
-					},
-				'stats' : {
-					'not' : 'explained',
-					},
-				'items' : {
-					'not' : 'explained',
-					},
-				'achievements' : {
-					'basic' : {
-						'achievements' : {
-							'signup' : {
-								'title' : 'Sign Up',
-								},
-							},
-						},
-					'not' : 'explained',
-					},
-				'auth' : {
-					'not' : 'explained',
-					},
-				}}),
+			MockDataRequest('get', ['members', 'member1'], MockData.MEMBERS['member1']),
 			))
 		member = habitica.member('member1')
 		self.assertEqual(member.name, 'John Doe')
@@ -645,9 +89,7 @@ class TestBaseHabitica(unittest.TestCase):
 		self.assertEqual(member.auth, {'not':'explained'})
 	def should_transfer_gems_to_a_member(self):
 		habitica = core.Habitica(_api=MockAPI(
-			MockRequest('get', ['members', 'member1'], {'data': {
-				'_id' : 'member1',
-				}}),
+			MockDataRequest('get', ['members', 'member1'], MockData.MEMBERS['member1']),
 			MockRequest('get', ['members', 'member1', 'objections', 'transfer-gems'], {'data': [
 				{'not':'explained'},
 				]}),
@@ -681,50 +123,16 @@ class TestBaseHabitica(unittest.TestCase):
 
 class TestChallenges(unittest.TestCase):
 	def _challenge(self, path=('groups', 'group1')):
-		return MockRequest('get', ['challenges'] + list(path), {'data': [{
-			'id' : 'chlng1',
-			'name' : 'Create Habitica API tool',
-			'shortName' : 'HabiticaAPI',
-			'summary' : 'You have to create Habitica API tool',
-			'createdAt' : 1600000000,
-			'updatedAt' : 1600000000,
-			'prize' : 4,
-			'memberCount' : 2,
-			'official' : False,
-			'leader' : 'person1',
-			'group' : {
-				'id': 'group1',
-				'name': 'Party',
-				},
-			'tasksOrder' : {
-				'rewards' : ['reward1'],
-				'todos' : ['todo1'],
-				'dailys' : ['daily1'],
-				'habits' : ['habit1'],
-				},
-			}]})
+		return MockRequest('get', ['challenges'] + list(path), MockData.CHALLENGES)
 	def should_fetch_challenge(self):
 		habitica = core.Habitica(_api=MockAPI(
-			MockRequest('get', ['groups'], {'data': [{
-					'name' : 'Party',
-					'id' : 'group1',
-					}]}),
+			MockDataRequest('get', ['groups'], MockData.GROUPS),
 			self._challenge(),
-			MockRequest('get', ['members', 'person1'], {'data': {
-				'_id' : 'person1',
-				}}),
-			MockRequest('get', ['tasks', 'reward1'], {'data': {
-				'text' : 'Use API tool',
-				}}),
-			MockRequest('get', ['tasks', 'todo1'], {'data': {
-				'text' : 'Complete API tool',
-				}}),
-			MockRequest('get', ['tasks', 'daily1'], {'data': {
-				'text' : 'Add feature',
-				}}),
-			MockRequest('get', ['tasks', 'habit1'], {'data': {
-				'text' : 'Write better code',
-				}}),
+			MockDataRequest('get', ['members', 'person1'], MockData.MEMBERS['member1']),
+			MockDataRequest('get', ['tasks', 'reward1'], MockData.REWARDS['reward1']),
+			MockDataRequest('get', ['tasks', 'todo1'], MockData.TODOS['todo1']),
+			MockDataRequest('get', ['tasks', 'daily1'], MockData.DAILIES['daily1']),
+			MockDataRequest('get', ['tasks', 'habit1'], MockData.HABIS['habit1']),
 			))
 		party = habitica.groups(core.Group.PARTY)[0]
 		challenge = party.challenges()[0]
@@ -752,12 +160,9 @@ class TestChallenges(unittest.TestCase):
 		self.assertEqual(habits[0].text, 'Write better code')
 	def should_fetch_user_challenges(self):
 		habitica = core.Habitica(_api=MockAPI(
-			MockRequest('get', ['user'], {'data': [{
-					}]}),
+			MockDataRequest('get', ['user'], MockData.USER),
 			self._challenge(path=('user',)),
-			MockRequest('get', ['members', 'person1'], {'data': {
-				'_id' : 'person1',
-				}}),
+			MockDataRequest('get', ['members', 'person1'], MockData.MEMBERS['member1']),
 			))
 		user = habitica.user()
 		challenge = user.challenges()[0]
@@ -766,10 +171,7 @@ class TestChallenges(unittest.TestCase):
 		self.assertEqual(challenge.leader().id, 'person1')
 	def should_get_challenge_data_as_csv(self):
 		habitica = core.Habitica(_api=MockAPI(
-			MockRequest('get', ['groups'], {'data': [{
-					'name' : 'Party',
-					'id' : 'group1',
-					}]}),
+			MockDataRequest('get', ['groups'], MockData.GROUPS),
 			self._challenge(),
 			MockRequest('get', ['challenges', 'chlng1', 'export', 'csv'], 'AS CSV'),
 			))
@@ -778,13 +180,8 @@ class TestChallenges(unittest.TestCase):
 		self.assertEqual(challenge.as_csv(), 'AS CSV')
 	def should_create_challenge(self):
 		habitica = core.Habitica(_api=MockAPI(
-			MockRequest('get', ['groups'], {'data': [{
-					'name' : 'Party',
-					'id' : 'group1',
-					}]}),
-			MockRequest('post', ['challenges'], {'data': {
-					'id' : 'chlng1',
-					}}),
+			MockDataRequest('get', ['groups'], MockData.GROUPS),
+			MockDataRequest('post', ['challenges'], MockData.NEW_CHALLENGE),
 			))
 		party = habitica.groups(core.Group.PARTY)[0]
 		challenge = party.create_challenge(
@@ -796,16 +193,9 @@ class TestChallenges(unittest.TestCase):
 		self.assertEqual(challenge.id, 'chlng1')
 	def should_clone_challenge(self):
 		habitica = core.Habitica(_api=MockAPI(
-			MockRequest('get', ['groups'], {'data': [{
-					'name' : 'Party',
-					'id' : 'group1',
-					}]}),
+			MockDataRequest('get', ['groups'], MockData.GROUPS),
 			self._challenge(),
-			MockRequest('post', ['challenges', 'chlng1', 'clone'], {'challenge': {
-				'id' : 'chlng2',
-				'name' : 'Create Habitica API tool',
-				'shortName' : 'HabiticaAPI',
-				}})
+			MockRequest('post', ['challenges', 'chlng1', 'clone'], {'challenge': MockData.NEW_CHALLENGE})
 			))
 		party = habitica.groups(core.Group.PARTY)[0]
 		challenge = party.challenges()[0]
@@ -815,17 +205,9 @@ class TestChallenges(unittest.TestCase):
 		self.assertEqual(challenge.shortName, 'HabiticaAPI')
 	def should_update_challenge(self):
 		habitica = core.Habitica(_api=MockAPI(
-			MockRequest('get', ['groups'], {'data': [{
-					'name' : 'Party',
-					'id' : 'group1',
-					}]}),
+			MockDataRequest('get', ['groups'], MockData.GROUPS),
 			self._challenge(),
-			MockRequest('put', ['challenges', 'chlng1'], {'data': {
-				'id' : 'chlng1',
-				'name' : 'Develop Habitica API tool',
-				'shortName' : 'API',
-				'summary' : 'Go and create Habitica API tool',
-				}})
+			MockDataRequest('put', ['challenges', 'chlng1'], MockData.UPDATED_CHALLENGE)
 			))
 		party = habitica.groups(core.Group.PARTY)[0]
 		challenge = party.challenges()[0]
@@ -843,17 +225,10 @@ class TestChallenges(unittest.TestCase):
 		self.assertEqual(challenge.summary, 'Go and create Habitica API tool')
 	def should_join_challenge(self):
 		habitica = core.Habitica(_api=MockAPI(
-			MockRequest('get', ['groups'], {'data': [{
-					'name' : 'Party',
-					'id' : 'group1',
-					}]}),
+			MockDataRequest('get', ['groups'], MockData.GROUPS),
 			self._challenge(),
-			MockRequest('post', ['challenges', 'chlng1', 'join'], {'data': {
-					'id' : 'chlng1',
-					'memberCount' : 3,
-					}}),
-			MockRequest('post', ['challenges', 'chlng1', 'leave'], {'data': {
-					}}),
+			MockDataRequest('post', ['challenges', 'chlng1', 'join'], dict(MockData.CHALLENGES[0], memberCount=3)),
+			MockDataRequest('post', ['challenges', 'chlng1', 'leave'], {}),
 			))
 		party = habitica.groups(core.Group.PARTY)[0]
 		challenge = party.challenges()[0]
@@ -863,13 +238,9 @@ class TestChallenges(unittest.TestCase):
 		self.assertEqual(challenge.api.responses[-1].path[-1], 'leave')
 	def should_select_winner(self):
 		habitica = core.Habitica(_api=MockAPI(
-			MockRequest('get', ['groups'], {'data': [{
-					'name' : 'Party',
-					'id' : 'group1',
-					}]}),
+			MockDataRequest('get', ['groups'], MockData.GROUPS),
 			self._challenge(),
-			MockRequest('post', ['challenges', 'chlng1', 'selectWinner', 'person1'], {'data': {
-					}}),
+			MockDataRequest('post', ['challenges', 'chlng1', 'selectWinner', 'person1'], {}),
 			))
 		party = habitica.groups(core.Group.PARTY)[0]
 		challenge = party.challenges()[0]
@@ -878,13 +249,9 @@ class TestChallenges(unittest.TestCase):
 		self.assertEqual(challenge.api.responses[-1].path[-2:], ['selectWinner', 'person1'])
 	def should_delete_challenge(self):
 		habitica = core.Habitica(_api=MockAPI(
-			MockRequest('get', ['groups'], {'data': [{
-					'name' : 'Party',
-					'id' : 'group1',
-					}]}),
+			MockDataRequest('get', ['groups'], MockDate.GROUPS),
 			self._challenge(),
-			MockRequest('delete', ['challenges', 'chlng1'], {'data': {
-					}}),
+			MockDataRequest('delete', ['challenges', 'chlng1'], {}),
 			))
 		party = habitica.groups(core.Group.PARTY)[0]
 		challenge = party.challenges()[0]
@@ -893,21 +260,9 @@ class TestChallenges(unittest.TestCase):
 		self.assertEqual(challenge.api.responses[-1].path[-1], 'chlng1')
 	def should_get_member(self):
 		habitica = core.Habitica(_api=MockAPI(
-			MockRequest('get', ['groups'], {'data': [{
-					'name' : 'Party',
-					'id' : 'group1',
-					}]}),
+			MockDataRequest('get', ['groups'], MockData.GROUPS),
 			self._challenge(),
-			MockRequest('get', ['challenges', 'chlng1', 'members', 'member1'], {'data': {
-					'_id' : 'member1',
-					'profile' : {'name' : 'John Doe'},
-					'tasks' : [
-						{
-							'id' : 'task1',
-							'text' : 'Do a barrel roll',
-							},
-						],
-					}}),
+			MockDataRequest('get', ['challenges', 'chlng1', 'members', 'member1'], MockData.MEMBERS['member1']),
 			))
 		party = habitica.groups(core.Group.PARTY)[0]
 		challenge = party.challenges()[0]
@@ -919,17 +274,14 @@ class TestChallenges(unittest.TestCase):
 		self.assertEqual(tasks[0].text, 'Do a barrel roll')
 	def should_get_members_for_challenge(self):
 		habitica = core.Habitica(_api=MockAPI(
-			MockRequest('get', ['groups'], {'data': [{
-					'name' : 'Party',
-					'id' : 'group1',
-					}]}),
+			MockDataRequest('get', ['groups'], MockData.GROUPS),
 			self._challenge(),
-			MockRequest('get', ['challenges', 'chlng1', 'members'], {'data': [
-				{ 'id' : 'member{0}'.format(i) } for i in range(1, 31)
-				]}),
-			MockRequest('get', ['challenges', 'chlng1', 'members'], {'data': [
-				{ 'id' : 'member31' },
-				]}),
+			MockDataRequest('get', ['challenges', 'chlng1', 'members'], [
+				MockData.MEMBERS['member{0}'.format(i)] for i in range(1, 31)
+				]),
+			MockDataRequest('get', ['challenges', 'chlng1', 'members'], [
+				MockData.MEMBERS['member31']
+				]),
 			))
 		party = habitica.groups(core.Group.PARTY)[0]
 		challenge = party.challenges()[0]
@@ -940,21 +292,8 @@ class TestChallenges(unittest.TestCase):
 class TestChat(unittest.TestCase):
 	def should_fetch_messages(self):
 		habitica = core.Habitica(_api=MockAPI(
-			MockRequest('get', ['groups'], {'data': [{
-					'name' : 'Party',
-					'id' : 'group1',
-					}]}),
-			MockRequest('get', ['groups', 'group1', 'chat'], {'data': [{
-					'id' : 'chat1',
-					'user' : 'person1',
-					'timestamp' : 1600000000,
-					'text' : 'Hello',
-					},{
-					'id' : 'chat2',
-					'user' : 'person2',
-					'timestamp' : 1600001000,
-					'text' : 'Hello back',
-					}]}),
+			MockDataRequest('get', ['groups'], MockData.GROUPS),
+			MockDataRequest('get', ['groups', 'group1', 'chat'], MockData.PARTY_CHAT),
 			))
 
 		party = habitica.groups(core.Group.PARTY)[0]
@@ -969,23 +308,9 @@ class TestChat(unittest.TestCase):
 		self.assertEqual(messages[1].text, 'Hello back')
 	def should_flag_message(self):
 		habitica = core.Habitica(_api=MockAPI(
-			MockRequest('get', ['groups'], {'data': [{
-					'name' : 'Party',
-					'id' : 'group1',
-					}]}),
-			MockRequest('get', ['groups', 'group1', 'chat'], {'data': [{
-					'id' : 'chat1',
-					'user' : 'person1',
-					'timestamp' : 1600000000,
-					'text' : 'Hello',
-					}]}),
-			MockRequest('post', ['groups', 'group1', 'chat', 'chat1', 'flag'], {'data': {
-					'id' : 'chat1',
-					'user' : 'person1',
-					'timestamp' : 1600000000,
-					'text' : 'Hello',
-					'flagged' : True,
-					}}),
+			MockDataRequest('get', ['groups'], MockData.GROUPS),
+			MockDataRequest('get', ['groups', 'group1', 'chat'], MockData.PARTY_CHAT),
+			MockDataRequest('post', ['groups', 'group1', 'chat', 'chat1', 'flag'], MockData.PARTY_CHAT_FLAGGED),
 			))
 
 		party = habitica.groups(core.Group.PARTY)[0]
@@ -994,18 +319,9 @@ class TestChat(unittest.TestCase):
 		self.assertTrue(message._data['flagged'])
 	def should_clear_message_from_flags(self):
 		habitica = core.Habitica(_api=MockAPI(
-			MockRequest('get', ['groups'], {'data': [{
-					'name' : 'Party',
-					'id' : 'group1',
-					}]}),
-			MockRequest('get', ['groups', 'group1', 'chat'], {'data': [{
-					'id' : 'chat1',
-					'user' : 'person1',
-					'timestamp' : 1600000000,
-					'text' : 'Hello',
-					}]}),
-			MockRequest('post', ['groups', 'group1', 'chat', 'chat1', 'clearflags'], {'data': {
-					}}),
+			MockDataRequest('get', ['groups'], MockData.GROUPS),
+			MockDataRequest('get', ['groups', 'group1', 'chat'], MockData.PARTY_CHAT),
+			MockDataRequest('post', ['groups', 'group1', 'chat', 'chat1', 'clearflags'], {}),
 			))
 
 		party = habitica.groups(core.Group.PARTY)[0]
@@ -1013,23 +329,9 @@ class TestChat(unittest.TestCase):
 		message.clearflags()
 	def should_like_message(self):
 		habitica = core.Habitica(_api=MockAPI(
-			MockRequest('get', ['groups'], {'data': [{
-					'name' : 'Party',
-					'id' : 'group1',
-					}]}),
-			MockRequest('get', ['groups', 'group1', 'chat'], {'data': [{
-					'id' : 'chat1',
-					'user' : 'person1',
-					'timestamp' : 1600000000,
-					'text' : 'Hello',
-					}]}),
-			MockRequest('post', ['groups', 'group1', 'chat', 'chat1', 'like'], {'data': {
-					'id' : 'chat1',
-					'user' : 'person1',
-					'timestamp' : 1600000000,
-					'text' : 'Hello',
-					'liked' : 1,
-					}}),
+			MockDataRequest('get', ['groups'], MockData.GROUPS),
+			MockDataRequest('get', ['groups', 'group1', 'chat'], MockDate.PARTY_CHAT),
+			MockDataRequest('post', ['groups', 'group1', 'chat', 'chat1', 'like'], MockData.PARTY_CHAT_LIKEF),
 			))
 
 		party = habitica.groups(core.Group.PARTY)[0]
@@ -1038,14 +340,9 @@ class TestChat(unittest.TestCase):
 		self.assertEqual(message._data['liked'], 1)
 	def should_mark_messages_as_read(self):
 		habitica = core.Habitica(_api=MockAPI(
-			MockRequest('get', ['groups'], {'data': [{
-					'name' : 'Party',
-					'id' : 'group1',
-					}]}),
-			MockRequest('post', ['groups', 'group1', 'chat', 'seen'], {'data': [
-					]}),
-			MockRequest('post', ['groups', 'group1', 'chat', 'seen'], {'data': [
-					]}),
+			MockDataRequest('get', ['groups'], MockData.GROUPS),
+			MockDataRequest('post', ['groups', 'group1', 'chat', 'seen'], {}),
+			MockDataRequest('post', ['groups', 'group1', 'chat', 'seen'], {}),
 			))
 
 		party = habitica.groups(core.Group.PARTY)[0]
@@ -1053,24 +350,14 @@ class TestChat(unittest.TestCase):
 		party.mark_chat_as_read()
 	def should_delete_messages(self):
 		habitica = core.Habitica(_api=MockAPI(
-			MockRequest('get', ['groups'], {'data': [{
-					'name' : 'Party',
-					'id' : 'group1',
-					}]}),
-			MockRequest('delete', ['groups', 'group1', 'chat', 'chat1'], {'data': [{
-					}]}),
-			MockRequest('get', ['groups', 'group1', 'chat'], {'data': [{
-					'id' : 'chat1',
-					'user' : 'person1',
-					'timestamp' : 1600000000,
-					'text' : 'Hello',
-					}]}),
-			MockRequest('delete', ['groups', 'group1', 'chat', 'chat1'], {'data': [{
-					'id' : 'chat2',
-					'user' : 'person2',
-					'timestamp' : 1600001000,
-					'text' : 'Hello back',
-					}]}),
+			MockDataRequest('get', ['groups'], MockData.GROUPS),
+			MockDataRequest('delete', ['groups', 'group1', 'chat', 'chat1'], {}),
+			MockDataRequest('get', ['groups', 'group1', 'chat'], [
+				MockData.PARTY_CHAT[0]
+				]),
+			MockRequest('delete', ['groups', 'group1', 'chat', 'chat1'], [
+				MockData.PARTY_CHAT[1]
+				]),
 			))
 
 		party = habitica.groups(core.Group.PARTY)[0]
@@ -1088,32 +375,9 @@ class TestChat(unittest.TestCase):
 		self.assertEqual(chat.messages()[0].text, 'Hello back')
 	def should_post_messages(self):
 		habitica = core.Habitica(_api=MockAPI(
-			MockRequest('get', ['groups'], {'data': [{
-					'name' : 'Party',
-					'id' : 'group1',
-					}]}),
-			MockRequest('post', ['groups', 'group1', 'chat'], {'data': [{
-					'id' : 'chat1',
-					'user' : 'person1',
-					'timestamp' : 1600000000,
-					'text' : 'Hello',
-					}]}),
-			MockRequest('post', ['groups', 'group1', 'chat'], {'data': [{
-					'id' : 'chat1',
-					'user' : 'person1',
-					'timestamp' : 1600000000,
-					'text' : 'Hello',
-					},{
-					'id' : 'chat1.2',
-					'user' : 'person1',
-					'timestamp' : 1600000400,
-					'text' : 'Hey?',
-					},{
-					'id' : 'chat2',
-					'user' : 'person2',
-					'timestamp' : 1600001000,
-					'text' : 'Hello back',
-					}]}),
+			MockDataRequest('get', ['groups'], MockData.GROUPS),
+			MockDataRequest('post', ['groups', 'group1', 'chat'], [MockData.PARTY_CHAT[0]]),
+			MockDataRequest('post', ['groups', 'group1', 'chat'], MockData.LONG_CHAT),
 			))
 
 		party = habitica.groups(core.Group.PARTY)[0]
@@ -1132,12 +396,9 @@ class TestChat(unittest.TestCase):
 class TestGroup(unittest.TestCase):
 	def should_fetch_messages(self):
 		habitica = core.Habitica(_api=MockAPI(
-			MockRequest('get', ['groups'], {'data': [{
-					'name' : 'Party',
-					'id' : 'group1',
-					}]}),
-			MockRequest('post', ['groups', 'group1', 'add-manager'], {'data': {}}),
-			MockRequest('post', ['groups', 'group1', 'remove-manager'], {'data': {}}),
+			MockDataRequest('get', ['groups'], MockData.GROUPS),
+			MockDataRequest('post', ['groups', 'group1', 'add-manager'], {}),
+			MockDataRequest('post', ['groups', 'group1', 'remove-manager'], {}),
 			))
 
 		party = habitica.groups(core.Group.PARTY)[0]
@@ -1145,22 +406,14 @@ class TestGroup(unittest.TestCase):
 		party.remove_manager(core.Member(_data={'id':'member1'}))
 	def should_create_group_plan(self):
 		habitica = core.Habitica(_api=MockAPI(
-			MockRequest('post', ['groups', 'create-plan'], {'data': {
-					'name' : 'Party',
-					'id' : 'group1',
-					}}),
+			MockDataRequest('post', ['groups', 'create-plan'], MockData.NEW_PLAN),
 			))
 		group = habitica.create_plan()
 		self.assertEqual(group.id, 'group1')
 		self.assertEqual(group.name, 'Party')
 	def should_create_guild(self):
 		habitica = core.Habitica(_api=MockAPI(
-			MockRequest('post', ['groups'], {'data': {
-					'name' : 'My Guild',
-					'id' : 'group1',
-					'type' : 'guild',
-					'privacy' : 'public',
-					}}),
+			MockDataRequest('post', ['groups'], MockData.NEW_GUILD),
 			))
 		group = habitica.create_guild('My Guild', public=True)
 		self.assertEqual(group.id, 'group1')
@@ -1168,21 +421,8 @@ class TestGroup(unittest.TestCase):
 		self.assertTrue(group.is_public)
 	def should_create_party(self):
 		habitica = core.Habitica(_api=MockAPI(
-			MockRequest('post', ['groups'], {'data': {
-					'name' : 'My Party',
-					'id' : 'group1',
-					'type' : 'party',
-					'privacy' : 'private',
-					'leader' : 'user1',
-					'memberCount' : 1,
-					'challengeCount' : 0,
-					'balance' : 1,
-					'logo' : "foo",
-					'leaderMessage' : "bar",
-					}}),
-			MockRequest('get', ['members', 'user1'], {'data': {
-				'_id' : 'user1',
-				}}),
+			MockDataRequest('post', ['groups'], MockData.NEW_PARTY),
+			MockDataRequest('get', ['members', 'user1'], MockData.MEMBERS['member1']),
 			))
 		group = habitica.create_party('My Party')
 		self.assertTrue(type(group) is core.Party)
@@ -1197,12 +437,9 @@ class TestGroup(unittest.TestCase):
 		self.assertEqual(group.leaderMessage, 'bar')
 	def should_invite_users(self):
 		habitica = core.Habitica(_api=MockAPI(
-			MockRequest('get', ['groups'], {'data': [{
-					'name' : 'Group',
-					'id' : 'group1',
-					}]}),
-			MockRequest('post', ['groups', 'group1', 'invite'], {'data': {}}),
-			MockRequest('post', ['groups', 'group1', 'reject-invite'], {'data': {}}),
+			MockDataRequest('get', ['groups'], MockData.GROUPS),
+			MockDataRequest('post', ['groups', 'group1', 'invite'], {}),
+			MockDataRequest('post', ['groups', 'group1', 'reject-invite'], {}),
 			))
 		group = habitica.groups(core.Group.GUILDS)[0]
 		with self.assertRaises(ValueError):
@@ -1216,46 +453,34 @@ class TestGroup(unittest.TestCase):
 		habitica.user.reject_invite(group)
 	def should_join_group(self):
 		habitica = core.Habitica(_api=MockAPI(
-			MockRequest('get', ['groups'], {'data': [{
-					'name' : 'Group',
-					'id' : 'group1',
-					}]}),
-			MockRequest('post', ['groups', 'group1', 'join'], {'data': {}}),
+			MockDataRequest('get', ['groups'], MockData.GROUPS),
+			MockDataRequest('post', ['groups', 'group1', 'join'], {}),
 			))
 		group = habitica.groups(core.Group.GUILDS)[0]
 		habitica.user.join(group)
 	def should_leave_group(self):
 		habitica = core.Habitica(_api=MockAPI(
-			MockRequest('get', ['groups'], {'data': [{
-					'name' : 'Group',
-					'id' : 'group1',
-					}]}),
-			MockRequest('post', ['groups', 'group1', 'leave'], {'data': {}}),
+			MockDataRequest('get', ['groups'], MockData.GROUPS),
+			MockDataRequest('post', ['groups', 'group1', 'leave'], {}),
 			))
 		group = habitica.groups(core.Group.GUILDS)[0]
 		habitica.user.leave(group, keep_tasks=False, leave_challenges=False)
 	def should_remove_members_from_a_group(self):
 		habitica = core.Habitica(_api=MockAPI(
-			MockRequest('get', ['groups'], {'data': [{
-					'name' : 'Group',
-					'id' : 'group1',
-					}]}),
-			MockRequest('post', ['groups', 'group1', 'removeMember', 'member1'], {'data': {}}),
+			MockDataRequest('get', ['groups'], MockData.GROUPS),
+			MockDataRequest('post', ['groups', 'group1', 'removeMember', 'member1'], {}),
 			))
 		group = habitica.groups(core.Group.GUILDS)[0]
 		group.removeMember(habitica.child(core.Member, {'id':'member1'}))
 	def should_get_invites_for_a_group(self):
 		habitica = core.Habitica(_api=MockAPI(
-			MockRequest('get', ['groups'], {'data': [{
-					'name' : 'Group',
-					'id' : 'group1',
-					}]}),
-			MockRequest('get', ['groups', 'group1', 'invites'], {'data': [
-				{ 'id' : 'member{0}'.format(i) } for i in range(1, 31)
-				]}),
-			MockRequest('get', ['groups', 'group1', 'invites'], {'data': [
-				{ 'id' : 'member31' },
-				]}),
+			MockDataRequest('get', ['groups'], MockData.GROUPS),
+			MockDataRequest('get', ['groups', 'group1', 'invites'], [
+				MockData.MEMBERS['member{0}'.format(i)] for i in range(1, 31)
+				]),
+			MockDataRequest('get', ['groups', 'group1', 'invites'], [
+				MockData.MEMBERS['member31'],
+				]),
 			))
 		group = habitica.groups(core.Group.GUILDS)[0]
 		members = list(group.all_invites())
@@ -1263,16 +488,13 @@ class TestGroup(unittest.TestCase):
 		self.assertEqual(members[30].id, 'member31')
 	def should_get_members_for_a_group(self):
 		habitica = core.Habitica(_api=MockAPI(
-			MockRequest('get', ['groups'], {'data': [{
-					'name' : 'Group',
-					'id' : 'group1',
-					}]}),
-			MockRequest('get', ['groups', 'group1', 'members'], {'data': [
-				{ 'id' : 'member{0}'.format(i) } for i in range(1, 31)
-				]}),
-			MockRequest('get', ['groups', 'group1', 'members'], {'data': [
-				{ 'id' : 'member31' },
-				]}),
+			MockDataRequest('get', ['groups'], MockData.GROUPS),
+			MockDataRequest('get', ['groups', 'group1', 'members'], [
+				MockData.MEMBERS['member{0}'.format(i)] for i in range(1, 31)
+				]),
+			MockDataRequest('get', ['groups', 'group1', 'members'], [
+				MockData.MEMBERS['member31'],
+				]),
 			))
 		group = habitica.groups(core.Group.GUILDS)[0]
 		members = list(group.members())
@@ -1281,37 +503,12 @@ class TestGroup(unittest.TestCase):
 
 class TestUser(unittest.TestCase):
 	def _user_data(self, stats=None, **kwargs):
-		result = {
-				'id' : 'USER-ID',
-				'stats' : {
-					'class': 'rogue',
-					'hp': 30.0,
-					'maxHealth': 50.0,
-					'lvl': 33,
-					'exp': 1049.4,
-					'toNextLevel': 51.6,
-					'mp': 11.0,
-					'maxMP': 55.0,
-					'gp': 15.0,
-					},
-				'preferences' : {
-					'timezoneOffset' : 180,
-					},
-				'items' : {
-					'food' : [
-						'Meat', 'Honey',
-						],
-					'currentPet' : 'fox',
-					'currentMount' : 'wolf',
-					},
-				}
-		if stats:
-			result['stats'].update(stats)
-		result.update(kwargs)
+		result = dict(MockData.USER, **kwargs)
+		result['stats'] = dict(result['stats'], stats)
 		return result
 	def should_get_user_stats(self):
 		habitica = core.Habitica(_api=MockAPI(
-			MockRequest('get', ['user'], {'data': self._user_data()}),
+			MockDataRequest('get', ['user'], self._user_data()),
 			))
 		user = habitica.user()
 		self.assertEqual(user.stats.class_name, 'rogue')
@@ -1325,29 +522,29 @@ class TestUser(unittest.TestCase):
 		self.assertEqual(user.stats.gold, 15.0)
 	def should_get_user_preferences(self):
 		habitica = core.Habitica(_api=MockAPI(
-			MockRequest('get', ['user'], {'data': self._user_data()}),
+			MockDataRequest('get', ['user'], self._user_data()),
 			))
 		user = habitica.user()
 		self.assertEqual(user.preferences.timezoneOffset, 180)
 	def should_get_food_in_user_inventory(self):
 		habitica = core.Habitica(_api=MockAPI(
-			MockRequest('get', ['user'], {'data': self._user_data()}),
+			MockDataRequest('get', ['user'], self._user_data()),
 			))
 		user = habitica.user()
 		self.assertEqual(len(user.inventory.food), 2)
 	def should_get_user_pet_and_mount(self):
 		habitica = core.Habitica(_api=MockAPI(
-			MockRequest('get', ['user'], {'data': self._user_data()}),
+			MockDataRequest('get', ['user'], self._user_data()),
 			))
 		user = habitica.user()
 		self.assertEqual(user.inventory.pet.text, 'Fox')
 		self.assertEqual(user.inventory.mount.text, 'Wolf')
 	def should_buy_health_potion(self):
 		habitica = core.Habitica(_api=MockAPI(
-			MockRequest('get', ['user'], {'data': self._user_data()}),
-			MockRequest('post', ['user', 'buy-health-potion'], {
-				'data': self._user_data(stats={'hp':45.0}),
-				}),
+			MockDataRequest('get', ['user'], self._user_data()),
+			MockDataRequest('post', ['user', 'buy-health-potion'],
+				self._user_data(stats={'hp':45.0}),
+				),
 			))
 		user = habitica.user()
 		potion = habitica.content.potion
@@ -1360,16 +557,16 @@ class TestUser(unittest.TestCase):
 		self.assertEqual(str(e.exception), 'HP is too high, part of health potion would be wasted.')
 	def should_validate_and_buy_coupon(self):
 		habitica = core.Habitica(_api=MockAPI(
-			MockRequest('get', ['user'], {'data': self._user_data()}),
+			MockDataRequest('get', ['user'], self._user_data()),
 			MockRequest('post', ['coupons', 'validate', 'ABCD-1234'], {
 				'valid': False,
 				}),
 			MockRequest('post', ['coupons', 'validate', '1234-ABCD'], {
 				'valid': True,
 				}),
-			MockRequest('post', ['coupons', 'enter', '1234-ABCD'], {
-				'data': self._user_data(stats={'gp':45.0}),
-				}),
+			MockDataRequest('post', ['coupons', 'enter', '1234-ABCD'],
+				self._user_data(stats={'gp':45.0}),
+				),
 			))
 
 		user = habitica.user()
@@ -1386,7 +583,7 @@ class TestUser(unittest.TestCase):
 		self.assertEqual(user.stats.gold, 45.0)
 	def should_get_user_avatar(self):
 		habitica = core.Habitica(_api=MockAPI(
-			MockRequest('get', ['user'], {'data': self._user_data()}),
+			MockDataRequest('get', ['user'], self._user_data()),
 			MockRequest('get', ['export', 'avatar-USER-ID.html'], '<html/>'),
 			))
 
@@ -1394,12 +591,8 @@ class TestUser(unittest.TestCase):
 		self.assertEqual(user.avatar(), '<html/>')
 	def should_get_user_group_plans(self):
 		habitica = core.Habitica(_api=MockAPI(
-			MockRequest('get', ['user'], {'data': self._user_data()}),
-			MockRequest('get', ['group-plans'], {'data':[
-				{
-					'id' : 'group1',
-					}
-				]}),
+			MockDataRequest('get', ['user'], self._user_data()),
+			MockDataRequest('get', ['group-plans'], [MockData.NEW_PLAN]),
 			))
 
 		user = habitica.user()
@@ -1407,25 +600,8 @@ class TestUser(unittest.TestCase):
 		self.assertEqual(groups[0].id, 'group1')
 	def should_get_member_achievements(self):
 		habitica = core.Habitica(_api=MockAPI(
-			MockRequest('get', ['members', 'member1'], {'data':{
-				'id' : 'member1',
-				}}),
-			MockRequest('get', ['members', 'member1', 'achievements'], {'data':{
-				'basic' : {
-					'label' : 'Basic',
-					'achievements' : {
-						'signup' : {
-							'title' : 'Sign Up',
-							'text' : 'Sign Up with Habitica',
-							'icon' : 'achievement-login',
-							'earned' : True,
-							'value' : 0,
-							'index' : 60,
-							'optionalCount': 0,
-							},
-						},
-					}
-				}}),
+			MockDataRequest('get', ['members', 'member1'], MockData.MEMBERS['member1']),
+			MockDataRequest('get', ['members', 'member1', 'achievements'], MockData.ACHIEVEMENTS),
 			))
 
 		member = habitica.member('member1')
@@ -1446,20 +622,8 @@ class TestUser(unittest.TestCase):
 class TestQuest(unittest.TestCase):
 	def should_show_progress_of_collection_quest(self):
 		habitica = core.Habitica(_api=MockAPI(
-			MockRequest('get', ['user'], {'data': {
-				}}),
-			MockRequest('get', ['groups', 'party'], {'data': {
-				'quest' : {
-					'active' : True,
-					'key' : 'collectionquest',
-					'progress' : {
-						'collect' : {
-							'fun' : 7,
-							'games' : 3,
-							}
-						},
-					},
-				}}),
+			MockDataRequest('get', ['user'], MockData.USER),
+			MockDataRequest('get', ['groups', 'party'], MockData.PARTY),
 			))
 		party = habitica.user().party()
 		quest = party.quest
@@ -1470,17 +634,8 @@ class TestQuest(unittest.TestCase):
 		self.assertEqual(quest.max_progress, 30)
 	def should_show_progress_of_boss_quest(self):
 		habitica = core.Habitica(_api=MockAPI(
-			MockRequest('get', ['user'], {'data': {
-				}}),
-			MockRequest('get', ['groups', 'party'], {'data': {
-				'quest' : {
-					'active' : True,
-					'key' : 'bossquest',
-					'progress': {
-						'hp' : 20,
-						},
-					},
-				}}),
+			MockDataRequest('get', ['user'], MockData.USER),
+			MockDataRequest('get', ['groups', 'myguild'], MockData.GROUPS[1]),
 			))
 		party = habitica.user().party()
 		quest = party.quest
@@ -1493,13 +648,8 @@ class TestQuest(unittest.TestCase):
 class TestRewards(unittest.TestCase):
 	def should_get_user_rewards(self):
 		habitica = core.Habitica(_api=MockAPI(
-			MockRequest('get', ['user'], {'data': {
-				}}),
-			MockRequest('get', ['tasks', 'user'], {'data': [
-				{'id':'reward1', 'text':'Eat'},
-				{'id':'reward2', 'text':'Sleep'},
-				],
-				}),
+			MockDataRequest('get', ['user'], MockData.USER),
+			MockDataRequest('get', ['tasks', 'user'], MockData.USER_REWARDS),
 			))
 		user = habitica.user()
 		rewards = user.rewards()
@@ -1509,16 +659,9 @@ class TestRewards(unittest.TestCase):
 		self.assertEqual(rewards[1].text, 'Sleep')
 	def should_buy_reward(self):
 		habitica = core.Habitica(_api=MockAPI(
-			MockRequest('get', ['user'], {'data': {
-				}}),
-			MockRequest('get', ['tasks', 'user'], {'data': [
-				{'id':'reward1', 'text':'Eat'},
-				{'id':'reward2', 'text':'Sleep'},
-				],
-				}),
-			MockRequest('post', ['tasks', 'reward1', 'score', 'up'], {
-				'data': {},
-				}),
+			MockDataRequest('get', ['user'], MockData.USER),
+			MockDataRequest('get', ['tasks', 'user'], MockData.USER_REWARDS),
+			MockDataRequest('post', ['tasks', 'reward1', 'score', 'up'], {}),
 			))
 		user = habitica.user()
 		rewards = user.rewards()
@@ -1527,19 +670,8 @@ class TestRewards(unittest.TestCase):
 class TestHabits(unittest.TestCase):
 	def should_get_list_of_user_habits(self):
 		habitica = core.Habitica(_api=MockAPI(
-			MockRequest('get', ['user'], {'data': {
-				}}),
-			MockRequest('get', ['tasks', 'user'], {'data': [
-				{
-					'id':'habit1',
-					'text':'Keep calm',
-					'notes':'And carry on',
-					'value':5.1,
-					'up':True,
-					'down':False,
-					},
-				],
-				}),
+			MockDataRequest('get', ['user'], MockData.USER),
+			MockDataRequest('get', ['tasks', 'user'], MockData.USER_HABITS),
 			))
 		user = habitica.user()
 		habits = user.habits()
@@ -1552,18 +684,8 @@ class TestHabits(unittest.TestCase):
 		self.assertFalse(habits[0].can_score_down)
 	def should_separate_habits_by_color(self):
 		habitica = core.Habitica(_api=MockAPI(
-			MockRequest('get', ['user'], {'data': {
-				}}),
-			MockRequest('get', ['tasks', 'user'], {'data': [
-				{ 'value':-50.1, },
-				{ 'value':-15.4, },
-				{ 'value':-5.6, },
-				{ 'value':0.0, },
-				{ 'value':1.1, },
-				{ 'value':5.1, },
-				{ 'value':15.1, },
-				],
-				}),
+			MockDataRequest('get', ['user'], MockData.USER),
+			MockDataRequest('get', ['tasks', 'user'], MockData.USER_HABITS),
 			))
 		user = habitica.user()
 		habits = user.habits()
@@ -1576,28 +698,11 @@ class TestHabits(unittest.TestCase):
 		self.assertEqual(habits[6].color, core.Task.BRIGHT_BLUE)
 	def should_score_habits_up(self):
 		habitica = core.Habitica(_api=MockAPI(
-			MockRequest('get', ['user'], {'data': {
-				}}),
-			MockRequest('get', ['tasks', 'user'], {'data': [
-				{
-					'id':'habit1',
-					'text':'Keep calm',
-					'value':5.1,
-					'up':True,
-					'down':False,
-					},
-				{
-					'id':'habit2',
-					'text':'Carry on',
-					'value':5.1,
-					'up':False,
-					'down':False,
-					},
-				],
-				}),
-			MockRequest('post', ['tasks', 'habit1', 'score', 'up'], {'data': {
+			MockDataRequest('get', ['user'], MockData.USER),
+			MockDataRequest('get', ['tasks', 'user'], MockData.USER_HABITS),
+			MockDataRequest('post', ['tasks', 'habit1', 'score', 'up'], {
 				'delta' : 1.1,
-				}}),
+				}),
 			))
 		user = habitica.user()
 		habits = user.habits()
@@ -1608,28 +713,11 @@ class TestHabits(unittest.TestCase):
 		self.assertEqual(str(e.exception), "Habit 'Carry on' cannot be incremented")
 	def should_score_habits_down(self):
 		habitica = core.Habitica(_api=MockAPI(
-			MockRequest('get', ['user'], {'data': {
-				}}),
-			MockRequest('get', ['tasks', 'user'], {'data': [
-				{
-					'id':'habit1',
-					'text':'Keep calm',
-					'value':5.1,
-					'up':False,
-					'down':True,
-					},
-				{
-					'id':'habit2',
-					'text':'Carry on',
-					'value':5.1,
-					'up':True,
-					'down':False,
-					},
-				],
-				}),
-			MockRequest('post', ['tasks', 'habit1', 'score', 'down'], {'data': {
+			MockDataRequest('get', ['user'], MockData.USER),
+			MockDataRequest('get', ['tasks', 'user'], MockData.USER_HABITS),
+			MockDataRequest('post', ['tasks', 'habit1', 'score', 'down'], {
 				'delta' : -1.1,
-				}}),
+				}),
 			))
 		user = habitica.user()
 		habits = user.habits()
@@ -1642,29 +730,8 @@ class TestHabits(unittest.TestCase):
 class TestDailies(unittest.TestCase):
 	def should_get_list_of_user_dailies(self):
 		habitica = core.Habitica(_api=MockAPI(
-			MockRequest('get', ['user'], {'data': {
-				}}),
-			MockRequest('get', ['tasks', 'user'], {'data': [
-				{
-					'id':'daily1',
-					'text':'Rise',
-					'notes':'And shine',
-					'completed':False,
-					'checklist': [
-						{
-							'id':'subdaily1',
-							'text':'Rise',
-							'completed':True,
-							},
-						{
-							'id':'subdaily2',
-							'text':'Shine',
-							'completed':False,
-							},
-						],
-					},
-				],
-				}),
+			MockDataRequest('get', ['user'], MockData.USER),
+			MockDataRequest('get', ['tasks', 'user'], MockData.USER_DAILIES),
 			))
 		user = habitica.user()
 		dailies = user.dailies()
@@ -1684,32 +751,8 @@ class TestDailies(unittest.TestCase):
 		self.assertFalse(dailies[0][1].is_completed)
 	def should_detect_due_dailies(self):
 		habitica = core.Habitica(_api=MockAPI(
-			MockRequest('get', ['user'], {'data': {
-				}}),
-			MockRequest('get', ['tasks', 'user'], {'data': [
-				{
-					'id':'daily1',
-					'text':'Rise',
-					'frequency':'daily',
-					'startDate':'2016-06-20T21:00:00.000Z',
-					'everyX':12,
-					},
-				{
-					'id':'daily2',
-					'text':'Survive Monday',
-					'frequency':'weekly',
-					'repeat':{
-						"m":True,
-						"t":False,
-						"w":False,
-						"th":False,
-						"f":False,
-						"s":False,
-						"su":False,
-						},
-					},
-				],
-				}),
+			MockDataRequest('get', ['user'], MockData.USER),
+			MockDataRequest('get', ['tasks', 'user'], MockData.USER_DAILIES),
 			))
 		user = habitica.user()
 		dailies = user.dailies()
@@ -1730,21 +773,10 @@ class TestDailies(unittest.TestCase):
 		self.assertFalse(dailies[1].is_due(today=timeutils.parse_isodate('2016-11-16 16:51:15.930842'), timezoneOffset=-120))
 	def should_complete_daily(self):
 		habitica = core.Habitica(_api=MockAPI(
-			MockRequest('get', ['user'], {'data': {
-				}}),
-			MockRequest('get', ['tasks', 'user'], {'data': [
-				{
-					'id':'daily1',
-					'text':'Rise',
-					'notes':'And shine',
-					'completed':False,
-					},
-				],
-				}),
-			MockRequest('post', ['tasks', 'daily1', 'score', 'up'], {'data': {
-				}}),
-			MockRequest('post', ['tasks', 'daily1', 'score', 'down'], {'data': {
-				}}),
+			MockDataRequest('get', ['user'], MockData.USER),
+			MockDataRequest('get', ['tasks', 'user'], MockData.USER_DAILIES),
+			MockDataRequest('post', ['tasks', 'daily1', 'score', 'up'], {}),
+			MockDataRequest('post', ['tasks', 'daily1', 'score', 'down'], {}),
 			))
 		user = habitica.user()
 		dailies = user.dailies()
@@ -1757,33 +789,10 @@ class TestDailies(unittest.TestCase):
 		self.assertFalse(dailies[0].is_completed)
 	def should_complete_check_items(self):
 		habitica = core.Habitica(_api=MockAPI(
-			MockRequest('get', ['user'], {'data': {
-				}}),
-			MockRequest('get', ['tasks', 'user'], {'data': [
-				{
-					'id':'daily1',
-					'text':'Rise',
-					'notes':'And shine',
-					'completed':False,
-					'checklist': [
-						{
-							'id':'subdaily1',
-							'text':'Rise',
-							'completed':True,
-							},
-						{
-							'id':'subdaily2',
-							'text':'Shine',
-							'completed':False,
-							},
-						],
-					},
-				],
-				}),
-			MockRequest('post', ['tasks', 'daily1', 'checklist', 'subdaily1', 'score'], {'data': {
-				}}),
-			MockRequest('post', ['tasks', 'daily1', 'checklist', 'subdaily2', 'score'], {'data': {
-				}}),
+			MockDataRequest('get', ['user'], MockData.USER),
+			MockDataRequest('get', ['tasks', 'user'], MockData.USER_DAILIES),
+			MockDataRequest('post', ['tasks', 'daily1', 'checklist', 'subdaily1', 'score'], {}),
+			MockDataRequest('post', ['tasks', 'daily1', 'checklist', 'subdaily2', 'score'], {}),
 			))
 		user = habitica.user()
 		dailies = user.dailies()
@@ -1802,29 +811,8 @@ class TestDailies(unittest.TestCase):
 class TestTodos(unittest.TestCase):
 	def should_get_list_of_user_todos(self):
 		habitica = core.Habitica(_api=MockAPI(
-			MockRequest('get', ['user'], {'data': {
-				}}),
-			MockRequest('get', ['tasks', 'user'], {'data': [
-				{
-					'id':'todo1',
-					'text':'Rise',
-					'notes':'And shine',
-					'completed':False,
-					'checklist': [
-						{
-							'id':'subtodo1',
-							'text':'Rise',
-							'completed':True,
-							},
-						{
-							'id':'subtodo2',
-							'text':'Shine',
-							'completed':False,
-							},
-						],
-					},
-				],
-				}),
+			MockDataRequest('get', ['user'], MockData.USER),
+			MockDataRequest('get', ['tasks', 'user'], MockData.USER_TODOS),
 			))
 		user = habitica.user()
 		todos = user.todos()
@@ -1844,21 +832,10 @@ class TestTodos(unittest.TestCase):
 		self.assertFalse(todos[0][1].is_completed)
 	def should_complete_todo(self):
 		habitica = core.Habitica(_api=MockAPI(
-			MockRequest('get', ['user'], {'data': {
-				}}),
-			MockRequest('get', ['tasks', 'user'], {'data': [
-				{
-					'id':'todo1',
-					'text':'Rise',
-					'notes':'And shine',
-					'completed':False,
-					},
-				],
-				}),
-			MockRequest('post', ['tasks', 'todo1', 'score', 'up'], {'data': {
-				}}),
-			MockRequest('post', ['tasks', 'todo1', 'score', 'down'], {'data': {
-				}}),
+			MockDataRequest('get', ['user'], MockData.USER),
+			MockDataRequest('get', ['tasks', 'user'], MockData.USER_TODOS),
+			MockDataRequest('post', ['tasks', 'todo1', 'score', 'up'], {}),
+			MockDataRequest('post', ['tasks', 'todo1', 'score', 'down'], {}),
 			))
 		user = habitica.user()
 		todos = user.todos()
@@ -1871,33 +848,10 @@ class TestTodos(unittest.TestCase):
 		self.assertFalse(todos[0].is_completed)
 	def should_complete_check_items(self):
 		habitica = core.Habitica(_api=MockAPI(
-			MockRequest('get', ['user'], {'data': {
-				}}),
-			MockRequest('get', ['tasks', 'user'], {'data': [
-				{
-					'id':'todo1',
-					'text':'Rise',
-					'notes':'And shine',
-					'completed':False,
-					'checklist': [
-						{
-							'id':'subtodo1',
-							'text':'Rise',
-							'completed':True,
-							},
-						{
-							'id':'subtodo2',
-							'text':'Shine',
-							'completed':False,
-							},
-						],
-					},
-				],
-				}),
-			MockRequest('post', ['tasks', 'todo1', 'checklist', 'subtodo1', 'score'], {'data': {
-				}}),
-			MockRequest('post', ['tasks', 'todo1', 'checklist', 'subtodo2', 'score'], {'data': {
-				}}),
+			MockDataRequest('get', ['user'], MockData.USER),
+			MockDataRequest('get', ['tasks', 'user'], MockData.USER_TODOS),
+			MockDataRequest('post', ['tasks', 'todo1', 'checklist', 'subtodo1', 'score'], {}),
+			MockDataRequest('post', ['tasks', 'todo1', 'checklist', 'subtodo2', 'score'], {}),
 			))
 		user = habitica.user()
 		todos = user.todos()
@@ -1916,11 +870,7 @@ class TestTodos(unittest.TestCase):
 class TestSpells(unittest.TestCase):
 	def should_get_full_list_of_spells_for_user(self):
 		habitica = core.Habitica(_api=MockAPI(
-			MockRequest('get', ['user'], {'data': {
-				'stats': {
-					'class':'rogue',
-					},
-				}}),
+			MockDataRequest('get', ['user'], MockData.USER),
 			))
 		user = habitica.user()
 		spells = sorted(user.spells(), key=lambda s:s.key)
@@ -1928,11 +878,7 @@ class TestSpells(unittest.TestCase):
 		self.assertEqual(spells[1].key, 'stealth')
 	def should_get_specific_spell(self):
 		habitica = core.Habitica(_api=MockAPI(
-			MockRequest('get', ['user'], {'data': {
-				'stats': {
-					'class':'rogue',
-					},
-				}}),
+			MockDataRequest('get', ['user'], MockData.USER),
 			))
 		user = habitica.user()
 		spell = user.get_spell('stealth')
@@ -1940,24 +886,10 @@ class TestSpells(unittest.TestCase):
 		self.assertEqual(spell.text, "Stealth")
 	def should_cast_spell(self):
 		habitica = core.Habitica(_api=MockAPI(
-			MockRequest('get', ['user'], {'data': {
-				'stats': {
-					'class':'rogue',
-					},
-				}}),
-			MockRequest('post', ['user', 'class', 'cast', 'stealth'], {'data': {
-				}}),
-			MockRequest('get', ['tasks', 'user'], {'data': [
-				{
-					'id':'todo1',
-					'text':'Rise',
-					'notes':'And shine',
-					'completed':False,
-					},
-				],
-				}),
-			MockRequest('post', ['user', 'class', 'cast', 'backStab'], {'data': {
-				}}),
+			MockDataRequest('get', ['user'], MockData.USER),
+			MockDataRequest('post', ['user', 'class', 'cast', 'stealth'], {}),
+			MockDataRequest('get', ['tasks', 'user'], MockData.USER_TODOS),
+			MockDataRequest('post', ['user', 'class', 'cast', 'backStab'], {}),
 			))
 		user = habitica.user()
 		spell = user.get_spell('stealth')
