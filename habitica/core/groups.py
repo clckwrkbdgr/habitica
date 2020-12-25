@@ -20,12 +20,9 @@ def iterate_pages(api_obj, class_type, *get_request_path, _limit=30, **query_par
 	for entity in batch:
 		yield entity
 
-class Challenge(base.ApiObject):
+class Challenge(base.Entity):
 	# TODO get challenge by id: get:/challenges/:id
 	# TODO .categories
-	@property
-	def id(self):
-		return self._data['id']
 	@property
 	def name(self):
 		return self._data['name']
@@ -96,10 +93,7 @@ class Challenge(base.ApiObject):
 	def delete(self):
 		self.api.delete('challenges', self.id)
 
-class ChatMessage(base.ApiObject):
-	@property
-	def id(self):
-		return self._data['id']
+class ChatMessage(base.Entity):
 	@property
 	def group(self):
 		return self._parent
@@ -153,7 +147,7 @@ class Chat(base.ApiInterface):
 			new_entries = self.api.post('groups', self.group.id, 'chat', _body={'message':message_text}).data
 		self._entries = self.children(ChatMessage, new_entries, _parent=self.group)
 
-class Group(base.ApiObject):
+class Group(base.Entity):
 	""" Habitica's user group: a guild, a party, the Tavern. """
 	PARTY = 'party'
 	GUILDS = 'guilds'
@@ -165,9 +159,6 @@ class Group(base.ApiObject):
 
 	# TODO .categories
 	# TODO .managers (Mixed)
-	@property
-	def id(self):
-		return self._data['id']
 	@property
 	def name(self):
 		return self._data['name']

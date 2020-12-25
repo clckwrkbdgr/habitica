@@ -22,10 +22,7 @@ class Approval(base.ApiObject):
 	def requestedDate(self):
 		return self._data['requestedDate']
 
-class GroupInfo(base.ApiObject):
-	@property
-	def id(self):
-		return self._data['id']
+class GroupInfo(base.Entity):
 	def __call__(self):
 		from . import groups
 		return self.child(groups.Group, self.api.get('groups', self.id).data)
@@ -54,10 +51,7 @@ class GroupInfo(base.ApiObject):
 	def approval(self):
 		return self.child(Approval, self._data['approval'])
 
-class ChallengeInfo(base.ApiObject):
-	@property
-	def id(self):
-		return self._data['id']
+class ChallengeInfo(base.Entity):
 	def __call__(self):
 		from . import groups
 		return self.child(groups.Challenge, self.api.get('challenges', self.id).data)
@@ -74,15 +68,12 @@ class ChallengeInfo(base.ApiObject):
 	def winner(self):
 		return self._data['winner']
 
-class Task(base.ApiObject):
+class Task(base.Entity):
 	""" Parent class for any task (habit, daily, todo, reward). """
 	DARK_RED, RED, ORANGE = -20, -10, -1
 	YELLOW = 0
 	GREEN, LIGHT_BLUE, BRIGHT_BLUE = 1, 5, 10
 
-	@property
-	def id(self):
-		return self._data['id']
 	@property
 	def text(self):
 		return self._data['text']

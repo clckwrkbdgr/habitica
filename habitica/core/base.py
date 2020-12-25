@@ -46,6 +46,18 @@ class ApiObject(ApiInterface):
 		super().__init__(_api=_api, _content=_content, _parent=_parent)
 		self._data = _data
 
+class Entity(ApiObject):
+	""" Base class for all API objects that have ID.
+	Supports property .id
+	Recognizes both data fields 'id' and '_id'.
+	"""
+	@property
+	def id(self):
+		result = self._data.get('_id')
+		if result:
+			return result
+		return self._data['id']
+
 @functools.total_ordering
 class ValueBar:
 	""" Represents value (int or float) bounded by 0 and some maximum value.

@@ -329,11 +329,8 @@ class Achievements(base.ApiObject):
 	def __iter__(self):
 		return iter(self.achievements)
 
-class Member(base.ApiObject):
+class Member(base.Entity):
 	""" All other Habitica users beside you. """
-	@property
-	def id(self):
-		return self._data.get('_id', self._data.get('id'))
 	@property
 	def name(self):
 		return self._data.get('profile', {}).get('name')
@@ -387,7 +384,7 @@ class UserQuestProgress(base.ApiObject):
 	def RSVPNeeded(self):
 		return self._data['RSVPNeeded']
 
-class User(base.ApiObject, _UserMethods):
+class User(base.Entity, _UserMethods):
 	# TODO auth -- see model
 	# TODO achievements -- see model
 	# TODO backer -- see model
@@ -405,9 +402,6 @@ class User(base.ApiObject, _UserMethods):
 	# TODO webhooks -- see model
 	# TODO pinnedItems, pinnedItemsOrder, unpinnedItems -- see model
 	# TODO party.order, party.orderAscending -- see model
-	@property
-	def id(self):
-		return self._data.get('_id', self._data.get('id'))
 	@property
 	def name(self):
 		return self._data['profile']['name']
