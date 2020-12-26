@@ -38,7 +38,7 @@ class TestBaseHabitica(unittest.TestCase):
 			MockDataRequest('get', ['groups'], MockData.GROUPS),
 			))
 		groups = habitica.groups(core.Group.PARTY, core.Group.GUILDS)
-		self.assertEqual(len(groups), 2)
+		self.assertEqual(len(groups), 3)
 		self.assertEqual(groups[0].name, 'Party')
 		self.assertEqual(groups[0].type, 'party')
 		self.assertEqual(groups[0].privacy, 'private')
@@ -51,9 +51,9 @@ class TestBaseHabitica(unittest.TestCase):
 			))
 		groups = habitica.groups(core.Group.PARTY, core.Group.GUILDS, page=1)
 		self.assertEqual(len(groups), 1)
-		self.assertEqual(groups[0].name, 'My Guild')
-		self.assertEqual(groups[0].type, 'guild')
-		self.assertEqual(groups[0].privacy, 'public')
+		self.assertEqual(groups[0].name, 'Party')
+		self.assertEqual(groups[0].type, 'party')
+		self.assertEqual(groups[0].privacy, 'private')
 	def should_run_cron(self):
 		habitica = core.Habitica(_api=MockAPI(
 			MockRequest('post', ['cron'], {}),
@@ -123,7 +123,7 @@ class TestBaseHabitica(unittest.TestCase):
 
 class TestChallenges(unittest.TestCase):
 	def _challenge(self, path=('groups', 'group1')):
-		return MockRequest('get', ['challenges'] + list(path), MockData.CHALLENGES)
+		return MockDataRequest('get', ['challenges'] + list(path), MockData.CHALLENGES)
 	def should_fetch_challenge(self):
 		habitica = core.Habitica(_api=MockAPI(
 			MockDataRequest('get', ['groups'], MockData.GROUPS),
@@ -132,7 +132,7 @@ class TestChallenges(unittest.TestCase):
 			MockDataRequest('get', ['tasks', 'reward1'], MockData.REWARDS['reward1']),
 			MockDataRequest('get', ['tasks', 'todo1'], MockData.TODOS['todo1']),
 			MockDataRequest('get', ['tasks', 'daily1'], MockData.DAILIES['daily1']),
-			MockDataRequest('get', ['tasks', 'habit1'], MockData.HABIS['habit1']),
+			MockDataRequest('get', ['tasks', 'habit1'], MockData.HABITS['habit1']),
 			))
 		party = habitica.groups(core.Group.PARTY)[0]
 		challenge = party.challenges()[0]
@@ -144,7 +144,7 @@ class TestChallenges(unittest.TestCase):
 		self.assertEqual(challenge.prize, 4)
 		self.assertEqual(challenge.memberCount, 2)
 		self.assertFalse(challenge.official)
-		self.assertEqual(challenge.leader().id, 'person1')
+		self.assertEqual(challenge.leader().id, 'member1')
 
 		group = challenge.group()
 		self.assertEqual(group.id, party.id)
@@ -168,7 +168,7 @@ class TestChallenges(unittest.TestCase):
 		challenge = user.challenges()[0]
 		self.assertEqual(challenge.id, 'chlng1')
 		self.assertEqual(challenge.name, 'Create Habitica API tool')
-		self.assertEqual(challenge.leader().id, 'person1')
+		self.assertEqual(challenge.leader().id, 'member1')
 	def should_get_challenge_data_as_csv(self):
 		habitica = core.Habitica(_api=MockAPI(
 			MockDataRequest('get', ['groups'], MockData.GROUPS),
@@ -190,7 +190,7 @@ class TestChallenges(unittest.TestCase):
 				description='You have to create Habitica API tool',
 				prize=4,
 				)
-		self.assertEqual(challenge.id, 'chlng1')
+		self.assertEqual(challenge.id, 'chlng2')
 	def should_clone_challenge(self):
 		habitica = core.Habitica(_api=MockAPI(
 			MockDataRequest('get', ['groups'], MockData.GROUPS),
@@ -249,7 +249,7 @@ class TestChallenges(unittest.TestCase):
 		self.assertEqual(challenge.api.responses[-1].path[-2:], ['selectWinner', 'person1'])
 	def should_delete_challenge(self):
 		habitica = core.Habitica(_api=MockAPI(
-			MockDataRequest('get', ['groups'], MockDate.GROUPS),
+			MockDataRequest('get', ['groups'], MockData.GROUPS),
 			self._challenge(),
 			MockDataRequest('delete', ['challenges', 'chlng1'], {}),
 			))
@@ -330,8 +330,8 @@ class TestChat(unittest.TestCase):
 	def should_like_message(self):
 		habitica = core.Habitica(_api=MockAPI(
 			MockDataRequest('get', ['groups'], MockData.GROUPS),
-			MockDataRequest('get', ['groups', 'group1', 'chat'], MockDate.PARTY_CHAT),
-			MockDataRequest('post', ['groups', 'group1', 'chat', 'chat1', 'like'], MockData.PARTY_CHAT_LIKEF),
+			MockDataRequest('get', ['groups', 'group1', 'chat'], MockData.PARTY_CHAT),
+			MockDataRequest('post', ['groups', 'group1', 'chat', 'chat1', 'like'], MockData.PARTY_CHAT_LIKED),
 			))
 
 		party = habitica.groups(core.Group.PARTY)[0]
@@ -355,7 +355,7 @@ class TestChat(unittest.TestCase):
 			MockDataRequest('get', ['groups', 'group1', 'chat'], [
 				MockData.PARTY_CHAT[0]
 				]),
-			MockRequest('delete', ['groups', 'group1', 'chat', 'chat1'], [
+			MockDataRequest('delete', ['groups', 'group1', 'chat', 'chat1'], [
 				MockData.PARTY_CHAT[1]
 				]),
 			))
@@ -429,7 +429,7 @@ class TestGroup(unittest.TestCase):
 		self.assertEqual(group.id, 'group1')
 		self.assertEqual(group.name, 'My Party')
 		self.assertFalse(group.is_public)
-		self.assertEqual(group.leader().id, 'user1')
+		self.assertEqual(group.leader().id, 'member1')
 		self.assertEqual(group.memberCount, 1)
 		self.assertEqual(group.challengeCount, 0)
 		self.assertEqual(group.balance, Price(1, 'gems'))
@@ -468,10 +468,12 @@ class TestGroup(unittest.TestCase):
 	def should_remove_members_from_a_group(self):
 		habitica = core.Habitica(_api=MockAPI(
 			MockDataRequest('get', ['groups'], MockData.GROUPS),
+			MockDataRequest('get', ['members', 'member1'], MockData.MEMBERS['member1']),
 			MockDataRequest('post', ['groups', 'group1', 'removeMember', 'member1'], {}),
 			))
 		group = habitica.groups(core.Group.GUILDS)[0]
-		group.removeMember(habitica.child(core.Member, {'id':'member1'}))
+		member = habitica.member('member1')
+		group.removeMember(member)
 	def should_get_invites_for_a_group(self):
 		habitica = core.Habitica(_api=MockAPI(
 			MockDataRequest('get', ['groups'], MockData.GROUPS),
@@ -504,7 +506,7 @@ class TestGroup(unittest.TestCase):
 class TestUser(unittest.TestCase):
 	def _user_data(self, stats=None, **kwargs):
 		result = dict(MockData.USER, **kwargs)
-		result['stats'] = dict(result['stats'], stats)
+		result['stats'] = dict(result['stats'], **(stats or {}))
 		return result
 	def should_get_user_stats(self):
 		habitica = core.Habitica(_api=MockAPI(
@@ -635,10 +637,10 @@ class TestQuest(unittest.TestCase):
 	def should_show_progress_of_boss_quest(self):
 		habitica = core.Habitica(_api=MockAPI(
 			MockDataRequest('get', ['user'], MockData.USER),
-			MockDataRequest('get', ['groups', 'myguild'], MockData.GROUPS[1]),
+			MockDataRequest('get', ['groups', 'party'], MockData.GROUPS[1]),
 			))
-		party = habitica.user().party()
-		quest = party.quest
+		myguild = habitica.user.party()
+		quest = myguild.quest
 		self.assertTrue(quest.active)
 		self.assertEqual(quest.key, 'bossquest')
 		self.assertEqual(quest.title, 'Defeat the Boss')
@@ -678,8 +680,8 @@ class TestHabits(unittest.TestCase):
 		self.assertEqual(habits[0].id, 'habit1')
 		self.assertEqual(habits[0].text, 'Keep calm')
 		self.assertEqual(habits[0].notes, 'And carry on')
-		self.assertEqual(habits[0].value, 5.1)
-		self.assertEqual(habits[0].color, core.Task.LIGHT_BLUE)
+		self.assertEqual(habits[0].value, -50.1)
+		self.assertEqual(habits[0].color, core.Task.DARK_RED)
 		self.assertTrue(habits[0].can_score_up)
 		self.assertFalse(habits[0].can_score_down)
 	def should_separate_habits_by_color(self):
@@ -700,14 +702,14 @@ class TestHabits(unittest.TestCase):
 		habitica = core.Habitica(_api=MockAPI(
 			MockDataRequest('get', ['user'], MockData.USER),
 			MockDataRequest('get', ['tasks', 'user'], MockData.USER_HABITS),
-			MockDataRequest('post', ['tasks', 'habit1', 'score', 'up'], {
+			MockDataRequest('post', ['tasks', 'habit5', 'score', 'up'], {
 				'delta' : 1.1,
 				}),
 			))
 		user = habitica.user()
 		habits = user.habits()
-		habits[0].up()
-		self.assertAlmostEqual(habits[0].value, 6.2)
+		habits[5].up()
+		self.assertAlmostEqual(habits[5].value, 6.2)
 		with self.assertRaises(core.CannotScoreUp) as e:
 			habits[1].up()
 		self.assertEqual(str(e.exception), "Habit 'Carry on' cannot be incremented")
@@ -715,14 +717,14 @@ class TestHabits(unittest.TestCase):
 		habitica = core.Habitica(_api=MockAPI(
 			MockDataRequest('get', ['user'], MockData.USER),
 			MockDataRequest('get', ['tasks', 'user'], MockData.USER_HABITS),
-			MockDataRequest('post', ['tasks', 'habit1', 'score', 'down'], {
+			MockDataRequest('post', ['tasks', 'habit5', 'score', 'down'], {
 				'delta' : -1.1,
 				}),
 			))
 		user = habitica.user()
 		habits = user.habits()
-		habits[0].down()
-		self.assertAlmostEqual(habits[0].value, 4.0)
+		habits[5].down()
+		self.assertAlmostEqual(habits[5].value, 4.0)
 		with self.assertRaises(core.CannotScoreDown) as e:
 			habits[1].down()
 		self.assertEqual(str(e.exception), "Habit 'Carry on' cannot be decremented")
@@ -757,20 +759,22 @@ class TestDailies(unittest.TestCase):
 		user = habitica.user()
 		dailies = user.dailies()
 
-		self.assertFalse(dailies[0].is_due(today=timeutils.parse_isodate('2016-11-09 16:51:15.930842'), timezoneOffset=-120))
-		self.assertFalse(dailies[0].is_due(today=timeutils.parse_isodate('2016-11-10 16:51:15.930842'), timezoneOffset=-120))
-		self.assertTrue(dailies[0].is_due(today=timeutils.parse_isodate('2016-11-11 16:51:15.930842'), timezoneOffset=-120))
-		self.assertFalse(dailies[0].is_due(today=timeutils.parse_isodate('2016-11-12 16:51:15.930842'), timezoneOffset=-120))
-		self.assertTrue(dailies[0].is_due(today=timeutils.parse_isodate('2016-11-23 16:51:15.930842'), timezoneOffset=-120))
+		daily = dailies[1]
+		self.assertFalse(daily.is_due(today=timeutils.parse_isodate('2016-11-09 16:51:15.930842'), timezoneOffset=-120))
+		self.assertFalse(daily.is_due(today=timeutils.parse_isodate('2016-11-10 16:51:15.930842'), timezoneOffset=-120))
+		self.assertTrue(daily.is_due(today=timeutils.parse_isodate('2016-11-11 16:51:15.930842'), timezoneOffset=-120))
+		self.assertFalse(daily.is_due(today=timeutils.parse_isodate('2016-11-12 16:51:15.930842'), timezoneOffset=-120))
+		self.assertTrue(daily.is_due(today=timeutils.parse_isodate('2016-11-23 16:51:15.930842'), timezoneOffset=-120))
 
-		self.assertFalse(dailies[1].is_due(today=timeutils.parse_isodate('2016-11-09 16:51:15.930842'), timezoneOffset=-120))
-		self.assertFalse(dailies[1].is_due(today=timeutils.parse_isodate('2016-11-10 16:51:15.930842'), timezoneOffset=-120))
-		self.assertFalse(dailies[1].is_due(today=timeutils.parse_isodate('2016-11-11 16:51:15.930842'), timezoneOffset=-120))
-		self.assertFalse(dailies[1].is_due(today=timeutils.parse_isodate('2016-11-12 16:51:15.930842'), timezoneOffset=-120))
-		self.assertFalse(dailies[1].is_due(today=timeutils.parse_isodate('2016-11-13 16:51:15.930842'), timezoneOffset=-120))
-		self.assertTrue(dailies[1].is_due(today=timeutils.parse_isodate('2016-11-14 16:51:15.930842'), timezoneOffset=-120))
-		self.assertFalse(dailies[1].is_due(today=timeutils.parse_isodate('2016-11-15 16:51:15.930842'), timezoneOffset=-120))
-		self.assertFalse(dailies[1].is_due(today=timeutils.parse_isodate('2016-11-16 16:51:15.930842'), timezoneOffset=-120))
+		daily = dailies[2]
+		self.assertFalse(daily.is_due(today=timeutils.parse_isodate('2016-11-09 16:51:15.930842'), timezoneOffset=-120))
+		self.assertFalse(daily.is_due(today=timeutils.parse_isodate('2016-11-10 16:51:15.930842'), timezoneOffset=-120))
+		self.assertFalse(daily.is_due(today=timeutils.parse_isodate('2016-11-11 16:51:15.930842'), timezoneOffset=-120))
+		self.assertFalse(daily.is_due(today=timeutils.parse_isodate('2016-11-12 16:51:15.930842'), timezoneOffset=-120))
+		self.assertFalse(daily.is_due(today=timeutils.parse_isodate('2016-11-13 16:51:15.930842'), timezoneOffset=-120))
+		self.assertTrue(daily.is_due(today=timeutils.parse_isodate('2016-11-14 16:51:15.930842'), timezoneOffset=-120))
+		self.assertFalse(daily.is_due(today=timeutils.parse_isodate('2016-11-15 16:51:15.930842'), timezoneOffset=-120))
+		self.assertFalse(daily.is_due(today=timeutils.parse_isodate('2016-11-16 16:51:15.930842'), timezoneOffset=-120))
 	def should_complete_daily(self):
 		habitica = core.Habitica(_api=MockAPI(
 			MockDataRequest('get', ['user'], MockData.USER),

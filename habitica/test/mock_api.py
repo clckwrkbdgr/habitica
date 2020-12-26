@@ -1,4 +1,4 @@
-import types
+import types, copy
 from .. import core, api
 
 MockData = types.SimpleNamespace()
@@ -14,7 +14,7 @@ class MockRequest:
 
 class MockDataRequest(MockRequest):
 	def __init__(self, method, path, data, cached=False):
-		super().__init__(method, path, {'data':data}, cached=cached)
+		super().__init__(method, path, {'data':copy.deepcopy(data)}, cached=cached)
 
 class MockAPI:
 	""" /content call is cached. """
@@ -175,7 +175,7 @@ MockData.HABITS = {
 			'id':'habit1',
 			'text':'Keep calm',
 			'notes':'And carry on',
-			'value':5.1,
+			'value':-50.1,
 			'up':True,
 			'down':False,
 			},
@@ -185,21 +185,20 @@ MockData.USER_HABITS = [
 		{
 			'id':'habit2',
 			'text':'Carry on',
-			'value':5.1,
+			'value':-15.4,
 			'up':False,
 			'down':False,
 			},
-		{ 'value':-50.1, },
-		{ 'value':-15.4, },
 		{ 'value':-5.6, },
 		{ 'value':0.0, },
 		{ 'value':1.1, },
-		{ 'value':5.1, },
+		{ 'value':5.1, 'id' : 'habit5', 'up' : True, 'down':True },
 		{ 'value':15.1, },
 		]
 
 MockData.GROUPS = [
 	{
+		'id': 'group1',
 		'name' : 'Party',
 		'type' : 'party',
 		'privacy' : 'private',
@@ -342,6 +341,22 @@ MockData.UPDATED_CHALLENGE = {
 		'summary' : 'Go and create Habitica API tool',
 		}
 
+MockData.ACHIEVEMENTS = {
+		'basic' : {
+			'label' : 'Basic',
+			'achievements' : {
+				'signup' : {
+					'title' : 'Sign Up',
+					'text' : 'Sign Up with Habitica',
+					'icon' : 'achievement-login',
+					'earned' : True,
+					'value' : 0,
+					'index' : 60,
+					'optionalCount': 0,
+					},
+				},
+			}
+		}
 MockData.MEMBERS = {
 		'member1' : {
 			'_id' : 'member1',
@@ -370,14 +385,7 @@ MockData.MEMBERS = {
 					},
 				],
 			'achievements' : {
-				'basic' : {
-					'achievements' : {
-						'signup' : {
-							'title' : 'Sign Up',
-							},
-						},
-					},
-				'not' : 'explained',
+				'basic' : MockData.ACHIEVEMENTS['basic'],
 				},
 			'auth' : {
 				'not' : 'explained',
@@ -388,24 +396,8 @@ MockData.MEMBERS.update({
 	'member{0}'.format(i):{
 		'id' : 'member{0}'.format(i),
 		}
-	for i in range(1, 31+1)
+	for i in range(2, 31+1)
 	})
-MockData.ACHIEVEMENTS = {
-		'basic' : {
-			'label' : 'Basic',
-			'achievements' : {
-				'signup' : {
-					'title' : 'Sign Up',
-					'text' : 'Sign Up with Habitica',
-					'icon' : 'achievement-login',
-					'earned' : True,
-					'value' : 0,
-					'index' : 60,
-					'optionalCount': 0,
-					},
-				},
-			}
-		}
 
 MockData.CONTENT_DATA = {
 		'potion' : {
