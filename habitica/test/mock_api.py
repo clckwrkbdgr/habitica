@@ -56,8 +56,17 @@ class MockAPI:
 
 #### DATABASE AND REQUESTS #####################################################
 
+class OrderedDataAccess:
+	def __init__(self, parent):
+		self.parent = parent
+	def __getattr__(self, attr):
+		obj = getattr(self.parent, attr)
+		return [value for key, value in sorted(obj.items(), key=lambda _:_[0])]
+
+MockData.ORDERED = OrderedDataAccess(MockData)
+
 MockData.USER = {
-		'id' : 'USER-ID',
+		'id' : 'jcdenton',
 		'stats' : {
 			'class': 'rogue',
 			'hp': 30.0,
@@ -82,78 +91,70 @@ MockData.USER = {
 		}
 
 MockData.REWARDS = {
-		'reward1' : {
-			'text' : 'Use API tool',
+		'augments' : {
+			'id':'augments',
+			'text':'Use augmentation canister',
 			},
-		'reward2' : {'id':'reward1', 'text':'Eat'},
-		'reward3' : {'id':'reward2', 'text':'Sleep'},
+		'read' : {
+			'id':'read',
+			'text':'Read "The man who was Thursday"',
+			},
 		}
-MockData.USER_REWARDS = [
-		MockData.REWARDS['reward2'],
-		MockData.REWARDS['reward3'],
-		]
 
 MockData.TODOS = {
-		'todo1' : {
-			'text' : 'Complete API tool',
-			},
-		}
-MockData.USER_TODOS = [
-		{
-			'id':'todo1',
-			'text':'Rise',
-			'notes':'And shine',
+		'majestic12' : {
+			'id':'majestic12',
+			'text':'Escape Majestic 12 facilities',
+			'notes':'Be stealth as possible',
 			'completed':False,
 			'checklist': [
 				{
-					'id':'subtodo1',
-					'text':'Rise',
+					'id':'armory',
+					'text':'Get back all equipment',
 					'completed':True,
 					},
 				{
-					'id':'subtodo2',
-					'text':'Shine',
+					'id':'killswitch',
+					'text':'Get killswitch schematics from medlab',
 					'completed':False,
 					},
 				],
 			},
-		]
+		'liberty' : {
+			'id': 'liberty',
+			'text': 'Free Liberty statue and resque agent.',
+			},
+		}
 
 MockData.DAILIES = {
-		'daily1' : {
-			'text' : 'Add feature',
-			},
-		'daily2' : {
-			'id':'daily1',
-			'text':'Rise',
-			'notes':'And shine',
+		'armory' : {
+			'id':'armory',
+			'text':'Restock at armory',
+			'notes':'See Sam Carter for equipment',
 			'completed':False,
 			'checklist': [
 				{
-					'id':'subdaily1',
-					'text':'Rise',
+					'id':'stealthpistol',
+					'text':'Ask for stealth pistol',
 					'completed':True,
 					},
 				{
-					'id':'subdaily2',
-					'text':'Shine',
+					'id':'lockpick',
+					'text':'Choose lockpick',
 					'completed':False,
 					},
 				],
 			},
-		}
-MockData.USER_DAILIES = [
-		MockData.DAILIES['daily2'],
-		{
-			'id':'daily1',
-			'text':'Rise',
+		'manderley' : {
+			'id':'manderley',
+			'text':'Visit Manderley for new missions',
 			'frequency':'daily',
 			'startDate':'2016-06-20T21:00:00.000Z',
 			'everyX':12,
 			},
-		{
-			'id':'daily2',
-			'text':'Survive Monday',
+		'medbay' : {
+			'id':'medbay',
+			'text':'Visit medbay on Monday',
 			'frequency':'weekly',
 			'repeat':{
 				"m":True,
@@ -165,180 +166,195 @@ MockData.USER_DAILIES = [
 				"su":False,
 				},
 			},
-		]
+		}
 
 MockData.HABITS = {
-		'habit1' : {
-			'text' : 'Write better code',
-			},
-		'habit2' : {
-			'id':'habit1',
-			'text':'Keep calm',
-			'notes':'And carry on',
+		'bobpage' : {
+			'id' : 'bobpage',
+			'text' : 'Join Bob Page',
 			'value':-50.1,
 			'up':True,
 			'down':False,
 			},
-		}
-MockData.USER_HABITS = [
-		MockData.HABITS['habit2'],
-		{
-			'id':'habit2',
-			'text':'Carry on',
+		'shoot' : {
+			'id':'shoot',
+			'text':'Shoot terrorists',
+			'notes':'And gain respect of Anna Navarre',
 			'value':-15.4,
+			},
+		'carryon' : {
+			'id':'carryon',
+			'text':'Carry on, agent',
+			'value':-5.6,
 			'up':False,
 			'down':False,
 			},
-		{ 'value':-5.6, },
-		{ 'value':0.0, },
-		{ 'value':1.1, },
-		{ 'value':5.1, 'id' : 'habit5', 'up' : True, 'down':True },
-		{ 'value':15.1, },
-		]
+		'steal' : {
+			'text' : 'Steal credits from ATMs',
+			'value':0.0,
+			},
+		'upgrade' : {
+			'text' : 'Upgrade weapons',
+			'value':1.1,
+			},
+		'stealth' : {
+			'id' : 'stealth',
+			'text' : 'Be quiet as possible',
+			'value':5.1,
+			'up' : True,
+			'down':True,
+			},
+		'civilian': {
+			'text' : 'Keep civilian safe',
+			'value':15.1,
+			},
+		}
 
-MockData.GROUPS = [
-	{
-		'id': 'group1',
-		'name' : 'Party',
+MockData.GROUPS = {
+	'party' : {
+		'id': 'party',
+		'name' : 'Denton brothers',
 		'type' : 'party',
 		'privacy' : 'private',
+		'leader' : 'pauldenton',
+		'memberCount' : 1,
+		'challengeCount' : 0,
+		'balance' : 1,
+		'logo' : 'deusex-logo',
+		'leaderMessage' : 'Way to go',
 		'quest' : {
 			'active' : True,
-			'key' : 'collectionquest',
+			'key' : 'laguardia1',
 			'progress' : {
 				'collect' : {
-					'fun' : 7,
-					'games' : 3,
+					'ambrosia' : 1,
+					'turret' : 5,
 					}
 				},
 			},
 		},
-	{
-		'name' : 'My Guild',
+	'unatco' : {
+		'id' : 'unatco',
+		'name' : 'UNATCO',
+		'type' : 'guild',
+		'privacy' : 'public',
+		},
+	'nsf' : {
+		'id' : 'nsf',
+		'name' : 'NSF',
 		'type' : 'guild',
 		'privacy' : 'public',
 		'quest' : {
 			'active' : True,
-			'key' : 'bossquest',
-			'progress': {
+			'key' : '747',
+			'progress' : {
 				'hp' : 20,
 				},
 			},
 		},
-	{
+	'tavern' : {
+		'id' : 'tavern',
 		'name' : 'Tavern',
 		'type' : 'habitrpg',
 		},
-	]
-MockData.GROUPS_PAGE_1 = MockData.GROUPS[:1]
-MockData.PARTY = MockData.GROUPS[0]
-MockData.TAVERN = MockData.GROUPS[-1]
-MockData.NEW_PLAN = {
-		'name' : 'Party',
-		'id' : 'group1',
-		}
-MockData.NEW_GUILD = {
-		'name' : 'My Guild',
-		'id' : 'group1',
+	'illuminati' : {
+		'name' : 'Illuminati',
+		'id' : 'illuminati',
 		'type' : 'guild',
-		'privacy' : 'public',
-		}
-MockData.NEW_PARTY = {
-		'name' : 'My Party',
-		'id' : 'group1',
-		'type' : 'party',
 		'privacy' : 'private',
-		'leader' : 'user1',
-		'memberCount' : 1,
-		'challengeCount' : 0,
-		'balance' : 1,
-		'logo' : "foo",
-		'leaderMessage' : "bar",
+		},
+	}
+MockData.BOSS_QUEST_PROGRESS = {
+		'active' : True,
+		'key' : '747',
+		'progress': {
+			'hp' : 20,
+			},
 		}
 
 MockData.PARTY_CHAT = [
 		{
 			'id' : 'chat1',
-			'user' : 'person1',
+			'user' : 'jcdenton',
 			'timestamp' : 1600000000,
-			'text' : 'Hello',
+			'text' : 'Hello Paul',
 			},
 		{
 			'id' : 'chat2',
-			'user' : 'person2',
+			'user' : 'pauldenton',
 			'timestamp' : 1600001000,
-			'text' : 'Hello back',
+			'text' : 'Hello JC',
 			}
 		]
 MockData.PARTY_CHAT_FLAGGED = {
-		'id' : 'chat1',
-		'user' : 'person1',
+		'id' : 'chat3',
+		'user' : 'simons',
 		'timestamp' : 1600000000,
-		'text' : 'Hello',
+		'text' : 'Prepare to die!',
 		'flagged' : True,
 		}
 MockData.PARTY_CHAT_LIKED = {
-		'id' : 'chat1',
-		'user' : 'person1',
-		'timestamp' : 1600000000,
-		'text' : 'Hello',
+		'id' : 'chat2',
+		'user' : 'pauldenton',
+		'timestamp' : 1600001000,
+		'text' : 'Hello JC',
 		'liked' : 1,
 		}
 MockData.LONG_CHAT = [
 		{
-			'id' : 'chat1',
-			'user' : 'person1',
+			'id' : 'chat5',
+			'user' : 'annanavarre',
 			'timestamp' : 1600000000,
-			'text' : 'Hello',
+			'text' : 'I will have to kill you myself.',
 			},
 		{
-			'id' : 'chat1.2',
-			'user' : 'person1',
+			'id' : 'chat6',
+			'user' : 'jsdenton',
 			'timestamp' : 1600000400,
-			'text' : 'Hey?',
+			'text' : 'Take your best shot, Flatlander Woman.',
 			},
 		{
-			'id' : 'chat2',
-			'user' : 'person2',
+			'id' : 'chat7',
+			'user' : 'annanavarre',
 			'timestamp' : 1600001000,
-			'text' : 'Hello back',
+			'text' : 'How did you know--?',
 			}
 		]
 
-MockData.CHALLENGES = [
-		{
-			'id' : 'chlng1',
-			'name' : 'Create Habitica API tool',
-			'shortName' : 'HabiticaAPI',
-			'summary' : 'You have to create Habitica API tool',
+MockData.CHALLENGES = {
+		'unatco' : {
+			'id' : 'unatco',
+			'name' : 'UNATCO missions',
+			'shortName' : 'UNATCO',
+			'summary' : 'Perform missions for UNATCO',
 			'createdAt' : 1600000000,
 			'updatedAt' : 1600000000,
 			'prize' : 4,
 			'memberCount' : 2,
 			'official' : False,
-			'leader' : 'person1',
+			'leader' : 'manderley',
 			'group' : {
-				'id': 'group1',
-				'name': 'Party',
+				'id': 'unatco',
+				'name': 'UNATCO',
 				},
 			'tasksOrder' : {
-				'rewards' : ['reward1'],
-				'todos' : ['todo1'],
-				'dailys' : ['daily1'],
-				'habits' : ['habit1'],
+				'rewards' : ['augments'],
+				'todos' : ['liberty'],
+				'dailys' : ['armory'],
+				'habits' : ['carryon'],
 				},
 			},
-		]
-MockData.NEW_CHALLENGE = {
-		'id' : 'chlng2',
-		'name' : 'Create Habitica API tool',
-		'shortName' : 'HabiticaAPI',
-		}
-MockData.UPDATED_CHALLENGE = {
-		'id' : 'chlng1',
-		'name' : 'Develop Habitica API tool',
-		'shortName' : 'API',
-		'summary' : 'Go and create Habitica API tool',
+		'nsf' : {
+			'id' : 'nsf',
+			'name' : 'NSF missions',
+			'shortName' : 'NSF',
+			},
+		'illuminati' : {
+			'id' : 'illuminati',
+			'name' : 'Illuminati missions',
+			'shortName' : 'Illuminati',
+			'summary' : 'Help Illuminati to bring power back',
+			},
 		}
 
 MockData.ACHIEVEMENTS = {
@@ -358,13 +374,16 @@ MockData.ACHIEVEMENTS = {
 			}
 		}
 MockData.MEMBERS = {
-		'member1' : {
-			'_id' : 'member1',
+		'manderley' : {
+			'_id' : 'manderley',
+			},
+		'pauldenton' : {
+			'_id' : 'pauldenton',
 			'profile' : {
-				'name' : 'John Doe',
+				'name' : 'Paul Denton',
 				},
 			'party' : {
-				'id' : 'party1',
+				'id' : 'party',
 				},
 			'preferences' : {
 				'not' : 'explained',
@@ -379,10 +398,7 @@ MockData.MEMBERS = {
 				'not' : 'explained',
 				},
 			'tasks' : [
-				{
-					'id' : 'task1',
-					'text' : 'Do a barrel roll',
-					},
+				MockData.DAILIES['manderley'],
 				],
 			'achievements' : {
 				'basic' : MockData.ACHIEVEMENTS['basic'],
@@ -393,10 +409,10 @@ MockData.MEMBERS = {
 			},
 		}
 MockData.MEMBERS.update({
-	'member{0}'.format(i):{
-		'id' : 'member{0}'.format(i),
+	'mj12trooper{0}'.format(i):{
+		'id' : 'mj12trooper{0}'.format(i),
 		}
-	for i in range(2, 31+1)
+	for i in range(1, 31+1)
 	})
 
 MockData.CONTENT_DATA = {
@@ -512,18 +528,56 @@ MockData.CONTENT_DATA = {
 					},
 				},
 		'quests' : {
-				'collectionquest' : {
-					'key' : 'collectionquest',
-					'text' : 'Collect N items',
-					'notes' : 'Additional notes',
-					'category' : 'pet',
+				'laguardia1' : {
+					'key' : 'laguardia1',
+					'text' : 'Find 3 more barrels of Ambrosia',
+					'notes' : 'Also deactivate 5 turret towers',
+					'category' : 'unlockable',
 					'goldValue' : 10,
-					'group' : 'questgroup1',
-					'previous' : 'bossquest',
-					'completion' : 'You collected N items!',
+					'group' : 'unatco',
+					'unlockCondition' : {
+						'text' : 'Swipe to unlock',
+						'condition' : 'login',
+						'incentiveThreshold' : 3,
+						},
+					'completion' : 'You have found all 4 Ambrosia containers!',
 					'drop' : {
 						'exp' : 500,
 						'gp' : 100,
+						'items' : [
+							{
+								'key' : '747',
+								'text' : 'Kill Anna Navarre',
+								'type' : 'quests',
+								'onlyOwner' : True,
+								},
+							],
+						},
+					'collect' : {
+						'ambrosia' : {
+							'key' : 'ambrosia',
+							'text' : 'Barrel of Ambrosia',
+							'count' : 3,
+							},
+						'turret' : {
+							'key' : 'turret',
+							'text' : 'Turret',
+							'count' : 5,
+							},
+						},
+					},
+				'747' : {
+					'key' : '747',
+					'text' : 'Kill Anna Navarre',
+					'notes' : 'Additional notes',
+					'lvl' : 33,
+					'category' : 'pet',
+					'previous' : 'laguardia1',
+					'group' : 'nsf',
+					'completion' : 'You killed Anna Navarre!',
+					'drop' : {
+						'exp' : 200,
+						'gp' : 10,
 						'items' : [
 							{
 								'key' : 'fox',
@@ -532,58 +586,20 @@ MockData.CONTENT_DATA = {
 								},
 							],
 						},
-					'collect' : {
-						'fun' : {
-							'key' : 'fun',
-							'text' : 'Fun',
-							'count' : 10,
-							},
-						'games' : {
-							'key' : 'games',
-							'text' : 'Games',
-							'count' : 20,
-							},
-						},
-					},
-				'bossquest' : {
-					'key' : 'bossquest',
-					'text' : 'Defeat the Boss',
-					'notes' : 'Additional notes',
-					'category' : 'unlockable',
-					'lvl' : 33,
-					'unlockCondition' : {
-						'text' : 'Swipe to unlock',
-						'condition' : 'login',
-						'incentiveThreshold' : 3,
-						},
-					'group' : 'questgroup1',
-					'completion' : 'You defeated the Boss!',
-					'drop' : {
-						'exp' : 300,
-						'gp' : 10,
-						'items' : [
-							{
-								'key' : 'collectionquest',
-								'text' : 'Collect N items',
-								'type' : 'quests',
-								'onlyOwner' : True,
-								},
-							],
-						},
 					'boss' : {
-						'name' : 'The Boss',
+						'name' : 'Anna Navarre',
 						'hp' : 500,
 						'str' : 1,
 						'def' : 0.5,
 						},
 					},
-				'worldquest' : {
-						'key' : 'worldquest',
-						'text' : 'Protect the World',
-						'notes' : 'Additional notes',
+				'area51' : {
+						'key' : 'area51',
+						'text' : 'Join Illuminati',
+						'notes' : 'Kill Bob Page',
 						'category' : 'world',
-						'completion' : 'You protected the World!',
-						'completionChat' : 'You protected the World!',
+						'completion' : 'You have joined Illuminati!',
+						'completionChat' : 'You have joined Illuminati!',
 						'colors' : {
 							'main' : '#ffffff',
 							},
@@ -603,7 +619,7 @@ MockData.CONTENT_DATA = {
 								],
 							},
 						'boss' : {
-							'name' : 'The World Boss',
+							'name' : 'Bob Page',
 							'hp' : 50000,
 							'str' : 5,
 							'def' : 1.5,
@@ -647,11 +663,6 @@ MockData.CONTENT_DATA = {
 						},
 				'premiumPets': {
 						'fox':True,
-						},
-				'mountInfo': {
-						'wolf' : {
-							'text' : 'Wolf',
-							},
 						},
 				'mountInfo': {
 						'fox' : {
@@ -799,10 +810,10 @@ MockData.CONTENT_DATA = {
 								"con": 0,
 								"str": 5,
 								},
-							'daikatana' : {
-								"text": "Daiatana",
-								"notes": "Daikatana!",
-								"key": "daikatana",
+							'dragonstooth' : {
+								"text": "Dragon's Tooth",
+								"notes": "A nano sword",
+								"key": "dragonstooth",
 								"klass": "special",
 								"specialClass": "rogue",
 								"set": "ninja-special",
@@ -818,7 +829,7 @@ MockData.CONTENT_DATA = {
 									'end':'2020-01-31',
 									},
 								"last": True,
-								'gearSet' : 'DOOM',
+								'gearSet' : 'Nanoweapons',
 								},
 							'mysterykatana' : {
 								"text": "Mystery Katana",
