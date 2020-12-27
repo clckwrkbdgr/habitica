@@ -684,6 +684,7 @@ class TestRewards(unittest.TestCase):
 		rewards = user.rewards()
 		self.assertEqual(rewards[0].id, 'augments')
 		self.assertEqual(rewards[0].text, 'Use augmentation canister')
+		self.assertEqual(rewards[0].value, Price(100, 'gold'))
 		self.assertEqual(rewards[1].id, 'read')
 		self.assertEqual(rewards[1].text, 'Read "The man who was Thursday"')
 	def should_buy_reward(self):
@@ -711,6 +712,10 @@ class TestHabits(unittest.TestCase):
 		self.assertEqual(habits[0].color, core.Task.DARK_RED)
 		self.assertTrue(habits[0].can_score_up)
 		self.assertFalse(habits[0].can_score_down)
+
+		self.assertEqual(habits[5].counterUp, 3)
+		self.assertEqual(habits[5].counterDown, 1)
+		self.assertEqual(habits[5].frequency, 'daily')
 	def should_separate_habits_by_color(self):
 		habitica = core.Habitica(_api=MockAPI(
 			MockDataRequest('get', ['user'], MockData.USER),
@@ -768,6 +773,11 @@ class TestDailies(unittest.TestCase):
 		self.assertEqual(dailies[0].text, 'Restock at armory')
 		self.assertEqual(dailies[0].notes, 'See Sam Carter for equipment')
 		self.assertFalse(dailies[0].is_completed)
+		self.assertEqual(dailies[0].streak, 3)
+		self.assertFalse(dailies[0].yesterDaily)
+		self.assertTrue(dailies[0].isDue)
+		self.assertFalse(dailies[0].collapseChecklist)
+		self.assertEqual(dailies[0].nextDue, '2016-06-20T21:00:00.000Z')
 
 		checklist = dailies[0].checklist
 		self.assertEqual(checklist[0].id, 'stealthpistol')
@@ -787,6 +797,12 @@ class TestDailies(unittest.TestCase):
 		dailies = user.dailies()
 
 		daily = dailies[1]
+		trigger = daily.trigger
+		self.assertEqual(timeutils.parse_isodate(trigger.startDate.replace('T', ' ').replace('Z', '')).date(), datetime.date(2016, 6, 20))
+		self.assertEqual(trigger.everyX, 12)
+		self.assertEqual(trigger.daysOfMonth, 1)
+		self.assertEqual(trigger.weeksOfMonth, 1)
+
 		self.assertFalse(daily.is_due(today=timeutils.parse_isodate('2016-11-09 16:51:15.930842'), timezoneOffset=-120))
 		self.assertFalse(daily.is_due(today=timeutils.parse_isodate('2016-11-10 16:51:15.930842'), timezoneOffset=-120))
 		self.assertTrue(daily.is_due(today=timeutils.parse_isodate('2016-11-11 16:51:15.930842'), timezoneOffset=-120))
@@ -794,6 +810,16 @@ class TestDailies(unittest.TestCase):
 		self.assertTrue(daily.is_due(today=timeutils.parse_isodate('2016-11-23 16:51:15.930842'), timezoneOffset=-120))
 
 		daily = dailies[2]
+		trigger = daily.trigger
+		self.assertEqual(trigger.weekdays, [0])
+		self.assertTrue(trigger.monday)
+		self.assertFalse(trigger.tuesday)
+		self.assertFalse(trigger.wednesday)
+		self.assertFalse(trigger.thursday)
+		self.assertFalse(trigger.friday)
+		self.assertFalse(trigger.saturday)
+		self.assertFalse(trigger.sunday)
+
 		self.assertFalse(daily.is_due(today=timeutils.parse_isodate('2016-11-09 16:51:15.930842'), timezoneOffset=-120))
 		self.assertFalse(daily.is_due(today=timeutils.parse_isodate('2016-11-10 16:51:15.930842'), timezoneOffset=-120))
 		self.assertFalse(daily.is_due(today=timeutils.parse_isodate('2016-11-11 16:51:15.930842'), timezoneOffset=-120))
@@ -846,15 +872,26 @@ class TestTodos(unittest.TestCase):
 		habitica = core.Habitica(_api=MockAPI(
 			MockDataRequest('get', ['user'], MockData.USER),
 			MockDataRequest('get', ['tasks', 'user'], MockData.ORDERED.TODOS),
+			MockDataRequest('get', ['groups', 'unatco'], MockData.GROUPS['unatco']),
+			MockDataRequest('get', ['challenges', 'unatco'], MockData.CHALLENGES['unatco']),
 			))
 		user = habitica.user()
 		todos = user.todos()
 		todo = todos[1]
 
 		self.assertEqual(todo.id, 'majestic12')
+		self.assertEqual(todo.type, 'todo')
 		self.assertEqual(todo.text, 'Escape Majestic 12 facilities')
 		self.assertEqual(todo.notes, 'Be stealth as possible')
 		self.assertFalse(todo.is_completed)
+		self.assertEqual(todo.createdAt, 1600000000)
+		self.assertEqual(todo.updatedAt, 1600000000)
+		self.assertFalse(todo.byHabitica)
+		self.assertEqual(todo.alias, 'escape')
+		self.assertEqual(todo.priority, 'not-explained')
+		self.assertEqual(todo.attribute, 'dex')
+		self.assertEqual(todo.userId, 'jcdenton')
+		self.assertEqual(todo.reminders[0], 'not-explained')
 
 		checklist = todo.checklist
 		self.assertEqual(checklist[0].id, 'armory')
@@ -865,6 +902,33 @@ class TestTodos(unittest.TestCase):
 		self.assertEqual(todo[1].id, 'killswitch')
 		self.assertEqual(todo[1].text, 'Get killswitch schematics from medlab')
 		self.assertFalse(todo[1].is_completed)
+
+		todo = todos[0]
+		self.assertEqual(todo.date, 'not-explained')
+		self.assertEqual(todo.dateCompleted, 'not-explained')
+
+		group = todo.group
+		self.assertFalse(group.broken)
+		self.assertEqual(group.assignedUsers, ['jcdenton'])
+		self.assertEqual(group.assignedDate, 'DATE')
+		self.assertEqual(group.assignedUsername, 'pauldenton')
+		self.assertEqual(group.taskId, todo.id)
+		self.assertFalse(group.sharedCompletion)
+		self.assertEqual(group.managerNotes, 'Track progress of agent.')
+		self.assertEqual(group().id, 'unatco')
+		approval = group.approval
+		self.assertTrue(approval.required)
+		self.assertTrue(approval.requested)
+		self.assertEqual(approval.requestedDate, 'DATE')
+		self.assertEqual(approval.dateApproved, 'DATE')
+		self.assertEqual(approval.approvingUser, 'manderley')
+
+		challenge = todo.challenge
+		self.assertEqual(challenge.shortName, 'UNATCO')
+		self.assertEqual(challenge.taskId, todo.id)
+		self.assertTrue(challenge.broken)
+		self.assertEqual(challenge.winner, 'jcdenton')
+		self.assertEqual(challenge().id, 'unatco')
 	def should_complete_todo(self):
 		habitica = core.Habitica(_api=MockAPI(
 			MockDataRequest('get', ['user'], MockData.USER),

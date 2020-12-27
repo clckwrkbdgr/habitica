@@ -96,11 +96,11 @@ class Task(base.Entity):
 	def alias(self):
 		return self._data['alias']
 	@property
-	def tags(self):
-		return self._data['tags'] # FIXME produce Tag children.
+	def tags(self): # pragma: no cover -- FIXME produce Tag children.
+		return self._data['tags']
 	@property
 	def priority(self):
-		return self._data['priority'] # FIXME produce Tag children.
+		return self._data['priority']
 	@property
 	def attribute(self):
 		return self._data['attribute'] # TODO is it one of base stats?
@@ -249,7 +249,7 @@ class WeeklyTrigger(base.ApiObject):
 	@property
 	def weekdays(self):
 		""" Returns list of weekday numbers (starts with Mon=0). """
-		return [self._data['repeat'][self.ABBR[weekday]] for weekday in range(7)]
+		return [weekday for weekday in range(7) if self._data['repeat'][self.ABBR[weekday]]]
 	@property
 	def monday(self):
 		return self._data['repeat'][self.ABBR[0]]

@@ -94,6 +94,7 @@ MockData.REWARDS = {
 		'augments' : {
 			'id':'augments',
 			'text':'Use augmentation canister',
+			'value' : 100,
 			},
 		'read' : {
 			'id':'read',
@@ -106,6 +107,15 @@ MockData.TODOS = {
 			'id':'majestic12',
 			'text':'Escape Majestic 12 facilities',
 			'notes':'Be stealth as possible',
+			'type' : 'todo',
+			'createdAt' : 1600000000,
+			'updatedAt' : 1600000000,
+			'byHabitica' : False,
+			'alias' : 'escape',
+			'priority' : 'not-explained',
+			'attribute' : 'dex',
+			'userId' : 'jcdenton',
+			'reminders' : ['not-explained'],
 			'completed':False,
 			'checklist': [
 				{
@@ -123,6 +133,32 @@ MockData.TODOS = {
 		'liberty' : {
 			'id': 'liberty',
 			'text': 'Free Liberty statue and resque agent.',
+			'date' : 'not-explained',
+			'dateCompleted' : 'not-explained',
+			'group' : {
+				'id' : 'unatco',
+				'broken' : False,
+				'assignedUsers' : ['jcdenton'],
+				'assignedDate' : 'DATE',
+				'assignedUsername' : 'pauldenton',
+				'taskId' : 'liberty',
+				'sharedCompletion' : False,
+				'managerNotes' : 'Track progress of agent.',
+				'approval' : {
+					'required' : True,
+					'requested' : True,
+					'requestedDate' : 'DATE',
+					'dateApproved' : 'DATE',
+					'approvingUser' : 'manderley',
+					},
+				},
+			'challenge' : {
+				'id' : 'unatco',
+				'shortName' : 'UNATCO',
+				'taskId' : 'liberty',
+				'broken' : True,
+				'winner' : 'jcdenton',
+				},
 			},
 		}
 
@@ -132,6 +168,11 @@ MockData.DAILIES = {
 			'text':'Restock at armory',
 			'notes':'See Sam Carter for equipment',
 			'completed':False,
+			'collapseChecklist': False,
+			'streak' : 3,
+			'yesterDaily' : False,
+			'isDue' : True,
+			'nextDue' : '2016-06-20T21:00:00.000Z',
 			'checklist': [
 				{
 					'id':'stealthpistol',
@@ -151,6 +192,8 @@ MockData.DAILIES = {
 			'frequency':'daily',
 			'startDate':'2016-06-20T21:00:00.000Z',
 			'everyX':12,
+			'daysOfMonth':1,
+			'weeksOfMonth':1,
 			},
 		'medbay' : {
 			'id':'medbay',
@@ -203,6 +246,9 @@ MockData.HABITS = {
 			'value':5.1,
 			'up' : True,
 			'down':True,
+			'counterUp' : 3,
+			'counterDown' : 1,
+			'frequency' : 'daily',
 			},
 		'civilian': {
 			'text' : 'Keep civilian safe',
