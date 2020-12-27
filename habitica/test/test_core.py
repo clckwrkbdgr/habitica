@@ -546,12 +546,90 @@ class TestUser(unittest.TestCase):
 		self.assertEqual(user.stats.mana, 11.0)
 		self.assertEqual(user.stats.maxMana, 55.0)
 		self.assertEqual(user.stats.gold, 15.0)
+
+		self.assertEqual(user.stats.buffs.strength, 1)
+		self.assertEqual(user.stats.buffs.intelligence, 2)
+		self.assertEqual(user.stats.buffs.perception, 1)
+		self.assertEqual(user.stats.buffs.constitution, 0)
+		self.assertTrue(user.stats.buffs.stealth)
+		self.assertTrue(user.stats.buffs.streaks)
+		self.assertFalse(user.stats.buffs.snowball)
+		self.assertFalse(user.stats.buffs.spookySparkles)
+		self.assertFalse(user.stats.buffs.shinySeeds)
+		self.assertFalse(user.stats.buffs.seafoam)
+
+		self.assertEqual(user.stats.training.strength, 0)
+		self.assertEqual(user.stats.training.intelligence, 1)
+		self.assertEqual(user.stats.training.perception, 1)
+		self.assertEqual(user.stats.training.constitution, 2)
+	def should_get_user_appearance(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockDataRequest('get', ['user'], self._user_data()),
+			))
+		user = habitica.user()
+		appearance = user.preferences.appearance
+		self.assertEqual(appearance.size, 1)
+		self.assertEqual(appearance.hair_color, 2)
+		self.assertEqual(appearance.hair_base, 3)
+		self.assertEqual(appearance.hair_bangs, 4)
+		self.assertEqual(appearance.hair_beard, 5)
+		self.assertEqual(appearance.hair_mustache, 6)
+		self.assertEqual(appearance.hair_flower, 7)
+		self.assertEqual(appearance.skin, 8)
+		self.assertEqual(appearance.shirt, 9)
+		self.assertEqual(appearance.sound, 10)
+		self.assertEqual(appearance.chair, 11)
 	def should_get_user_preferences(self):
 		habitica = core.Habitica(_api=MockAPI(
 			MockDataRequest('get', ['user'], self._user_data()),
 			))
 		user = habitica.user()
-		self.assertEqual(user.preferences.timezoneOffset, 180)
+		prefs = user.preferences
+		self.assertEqual(prefs.timezoneOffset, 180)
+		self.assertEqual(prefs.timezoneOffsetAtLastCron, 180)
+		self.assertEqual(prefs.dayStart, 180)
+		self.assertTrue(prefs.hideHeader)
+		self.assertEqual(prefs.language, 'en')
+		self.assertFalse(prefs.automaticAllocation)
+		self.assertEqual(prefs.allocationMode, 'not-explained')
+		self.assertFalse(prefs.autoEquip)
+		self.assertTrue(prefs.costume)
+		self.assertEqual(prefs.dateFormat, 'not-explained')
+		self.assertFalse(prefs.sleep)
+		self.assertFalse(prefs.stickyHeader)
+		self.assertFalse(prefs.disableClasses)
+		self.assertFalse(prefs.newTaskEdit)
+		self.assertFalse(prefs.dailyDueDefaultView)
+		self.assertFalse(prefs.advancedCollapsed)
+		self.assertFalse(prefs.toolbarCollapsed)
+		self.assertFalse(prefs.reverseChatOrder)
+		self.assertFalse(prefs.background)
+		self.assertFalse(prefs.displayInviteToPartyWhenPartyIs1)
+		self.assertFalse(prefs.improvementCategories)
+	def should_get_user_gear(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockDataRequest('get', ['user'], self._user_data()),
+			))
+		user = habitica.user()
+		gear = user.inventory.equipped
+		self.assertEqual(gear.weapon.key, 'ninja_katana')
+		self.assertEqual(gear.armor.key, 'Dummy')
+		self.assertEqual(gear.head.key, 'Dummy')
+		self.assertEqual(gear.shield.key, 'Dummy')
+		self.assertEqual(gear.back.key, 'Dummy')
+		self.assertEqual(gear.headAccessory.key, 'Dummy')
+		self.assertEqual(gear.eyewear.key, 'Dummy')
+		self.assertEqual(gear.body.key, 'Dummy')
+
+		gear = user.inventory.costume
+		self.assertEqual(gear.weapon.key, 'ninja_katana')
+		self.assertEqual(gear.armor.key, 'Dummy')
+		self.assertEqual(gear.head.key, 'Dummy')
+		self.assertEqual(gear.shield.key, 'Dummy')
+		self.assertEqual(gear.back.key, 'Dummy')
+		self.assertEqual(gear.headAccessory.key, 'Dummy')
+		self.assertEqual(gear.eyewear.key, 'Dummy')
+		self.assertEqual(gear.body.key, 'Dummy')
 	def should_get_food_in_user_inventory(self):
 		habitica = core.Habitica(_api=MockAPI(
 			MockDataRequest('get', ['user'], self._user_data()),

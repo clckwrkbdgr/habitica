@@ -175,28 +175,28 @@ class UserStats(base.ApiObject, content.BaseStats):
 class Gear(base.ApiObject):
 	@property
 	def weapon(self):
-		return self.content.gear(self._dict['weapon'])
+		return self.content.gear(self._data['weapon'])
 	@property
 	def armor(self):
-		return self.content.gear(self._dict['armor'])
+		return self.content.gear(self._data['armor'])
 	@property
 	def head(self):
-		return self.content.gear(self._dict['head'])
+		return self.content.gear(self._data['head'])
 	@property
 	def shield(self):
-		return self.content.gear(self._dict['shield'])
+		return self.content.gear(self._data['shield'])
 	@property
 	def back(self):
-		return self.content.gear(self._dict['back'])
+		return self.content.gear(self._data['back'])
 	@property
 	def headAccessory(self):
-		return self.content.gear(self._dict['headAccessory'])
+		return self.content.gear(self._data['headAccessory'])
 	@property
 	def eyewear(self):
-		return self.content.gear(self._dict['eyewear'])
+		return self.content.gear(self._data['eyewear'])
 	@property
 	def body(self):
-		return self.content.gear(self._dict['body'])
+		return self.content.gear(self._data['body'])
 
 class Inventory(base.ApiObject):
 	# TOOD items.special -- see User model.
