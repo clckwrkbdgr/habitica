@@ -204,6 +204,7 @@ class QuestProgress(base.ApiObject):
 	def max_progress(self): # pragma: no cover -- FIXME deprecated
 		return self.progress.max_value
 	def leader(self):
+		from . import user
 		return self.child(user.Member, self.api.get('members', self._data['leader']).data)
 	def __getattr__(self, attr):
 		return getattr(self.quest, attr)

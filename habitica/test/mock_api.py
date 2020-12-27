@@ -215,7 +215,14 @@ MockData.GROUPS = {
 		'id': 'party',
 		'name' : 'Denton brothers',
 		'type' : 'party',
+		'summary' : 'Paul and JC',
+		'description' : 'Coalition of Paul and JC Denton',
 		'privacy' : 'private',
+		'bannedWordsAllowed' : True,
+		'leaderOnly' : {
+			'challenges' : True,
+			'getGems' : False,
+			},
 		'leader' : 'pauldenton',
 		'memberCount' : 1,
 		'challengeCount' : 0,
@@ -232,6 +239,12 @@ MockData.GROUPS = {
 					}
 				},
 			},
+		'tasksOrder' : {
+			'rewards' : ['augments'],
+			'todos' : ['liberty'],
+			'dailys' : ['armory'],
+			'habits' : ['carryon'],
+			},
 		},
 	'unatco' : {
 		'id' : 'unatco',
@@ -247,6 +260,8 @@ MockData.GROUPS = {
 		'quest' : {
 			'active' : True,
 			'key' : '747',
+			'leader' : 'jcdenton',
+			'rage' : 1.05,
 			'progress' : {
 				'hp' : 20,
 				},
@@ -326,7 +341,8 @@ MockData.CHALLENGES = {
 			'id' : 'unatco',
 			'name' : 'UNATCO missions',
 			'shortName' : 'UNATCO',
-			'summary' : 'Perform missions for UNATCO',
+			'summary' : 'Missions for UNATCO',
+			'description' : 'Perform missions for UNATCO',
 			'createdAt' : 1600000000,
 			'updatedAt' : 1600000000,
 			'prize' : 4,

@@ -137,6 +137,8 @@ class TestChallenges(unittest.TestCase):
 		self.assertEqual(challenge.id, 'unatco')
 		self.assertEqual(challenge.name, 'UNATCO missions')
 		self.assertEqual(challenge.shortName, 'UNATCO')
+		self.assertEqual(challenge.summary, 'Missions for UNATCO')
+		self.assertEqual(challenge.description, 'Perform missions for UNATCO')
 		self.assertEqual(challenge.createdAt, 1600000000)
 		self.assertEqual(challenge.updatedAt, 1600000000)
 		self.assertEqual(challenge.prize, 4)
@@ -218,7 +220,7 @@ class TestChallenges(unittest.TestCase):
 		challenge.update()
 		self.assertEqual(challenge.name, 'UNATCO missions')
 		self.assertEqual(challenge.shortName, 'UNATCO')
-		self.assertEqual(challenge.summary, 'Perform missions for UNATCO')
+		self.assertEqual(challenge.summary, 'Missions for UNATCO')
 		challenge.update(
 				name = 'Escape UNATCO',
 				summary = 'EscapeUNATCO',
@@ -427,18 +429,35 @@ class TestGroup(unittest.TestCase):
 		habitica = core.Habitica(_api=MockAPI(
 			MockDataRequest('post', ['groups'], MockData.GROUPS['party']),
 			MockDataRequest('get', ['members', 'pauldenton'], MockData.MEMBERS['pauldenton']),
+			MockDataRequest('get', ['tasks', 'augments'], MockData.REWARDS['augments']),
+			MockDataRequest('get', ['tasks', 'liberty'], MockData.TODOS['liberty']),
+			MockDataRequest('get', ['tasks', 'armory'], MockData.DAILIES['armory']),
+			MockDataRequest('get', ['tasks', 'carryon'], MockData.HABITS['carryon']),
 			))
 		group = habitica.create_party('Denton brothers')
 		self.assertTrue(type(group) is core.Party)
 		self.assertEqual(group.id, 'party')
 		self.assertEqual(group.name, 'Denton brothers')
+		self.assertEqual(group.summary, 'Paul and JC')
+		self.assertEqual(group.description, 'Coalition of Paul and JC Denton')
 		self.assertFalse(group.is_public)
+		self.assertTrue(group.bannedWordsAllowed)
+		self.assertEqual(group.leaderOnly, {'challenges':True,'getGems':False})
 		self.assertEqual(group.leader().id, 'pauldenton')
 		self.assertEqual(group.memberCount, 1)
 		self.assertEqual(group.challengeCount, 0)
 		self.assertEqual(group.balance, Price(1, 'gems'))
 		self.assertEqual(group.logo, 'deusex-logo')
 		self.assertEqual(group.leaderMessage, 'Way to go')
+
+		rewards = group.rewards()
+		self.assertEqual(rewards[0].text, 'Use augmentation canister')
+		todos = group.todos()
+		self.assertEqual(todos[0].text, 'Free Liberty statue and resque agent.')
+		dailies = group.dailies()
+		self.assertEqual(dailies[0].text, 'Restock at armory')
+		habits = group.habits()
+		self.assertEqual(habits[0].text, 'Carry on, agent')
 	def should_invite_users(self):
 		habitica = core.Habitica(_api=MockAPI(
 			MockDataRequest('get', ['groups'], MockData.ORDERED.GROUPS),
@@ -643,12 +662,15 @@ class TestQuest(unittest.TestCase):
 		habitica = core.Habitica(_api=MockAPI(
 			MockDataRequest('get', ['user'], MockData.USER),
 			MockDataRequest('get', ['groups', 'party'], MockData.GROUPS['nsf']),
+			MockDataRequest('get', ['members', 'jcdenton'], MockData.USER),
 			))
 		myguild = habitica.user.party()
 		quest = myguild.quest
 		self.assertTrue(quest.active)
 		self.assertEqual(quest.key, '747')
 		self.assertEqual(quest.title, 'Kill Anna Navarre')
+		self.assertEqual(quest.leader().id, 'jcdenton')
+		self.assertAlmostEqual(quest.rage, 1.05)
 		self.assertEqual(quest.progress, 20)
 		self.assertEqual(quest.max_progress, 500)
 
