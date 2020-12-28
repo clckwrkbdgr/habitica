@@ -67,6 +67,18 @@ MockData.ORDERED = OrderedDataAccess(MockData)
 
 MockData.USER = {
 		'id' : 'jcdenton',
+		'profile' : {
+			'name' : 'JC Denton',
+			'blurb' : 'not-explained',
+			'imageUrl' : 'jcdenton-image',
+			},
+		'balance' : 10,
+		'loginIncentives' : 400,
+		'invitesSent' : 2,
+		'lastCron' : '2016-06-20T21:00:00.000Z',
+		'flags' : {
+			'not' : 'explained',
+			},
 		'stats' : {
 			'class': 'rogue',
 			'hp': 30.0,
@@ -94,6 +106,19 @@ MockData.USER = {
 				'int' : 1,
 				'per' : 1,
 				'con' : 2,
+				},
+			},
+		'party' : {
+			'quest' : {
+				'key' : 'laguardia1',
+				'progress' : {
+					'up' : 'not-explained',
+					'down' : 'not-explained',
+					'collect' : 'not-explained',
+					'collectedItems' : 'not-explained',
+					},
+				'completed' : 'not-explained',
+				'RSVPNeeded' : False,
 				},
 			},
 		'preferences' : {
@@ -133,7 +158,17 @@ MockData.USER = {
 			'chair' : 11,
 			},
 		'items' : {
+			'lastDrop' : {
+				'date' : 'not-explained',
+				'count' : 'not-explained',
+				},
+			'eggs' : { 'not' : 'explained', },
+			'hatchingPotions' : { 'not' : 'explained', },
+			'quests' : { 'not' : 'explained', },
+			'pets' : { 'not' : 'explained', },
+			'mounts' : { 'not' : 'explained', },
 			'gear' :{
+				'owned' : { 'not' : 'explained', },
 				'costume' : {
 					'weapon' : 'ninja_katana',
 					'armor' : 'Dummy',

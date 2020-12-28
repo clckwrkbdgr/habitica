@@ -203,7 +203,7 @@ class Inventory(base.ApiObject):
 	@property
 	def lastDrop(self):
 		""" {.date, .count} """
-		return api.dotdict(self._data['lastDrop'])
+		return dotdict(self._data['lastDrop'])
 	@property
 	def food(self):
 		return self.children(content.Food, self._data['food'])
@@ -441,7 +441,7 @@ class User(base.Entity, _UserMethods):
         # "flags.armoireEmpty": "Boolean",
         # "flags.cardReceived": "Boolean",
         # "flags.warnedLowHealth": "Boolean",
-		return api.dotdict(_data=self._data['flags'])
+		return dotdict(self._data['flags'])
 	@property
 	def preferences(self):
 		return UserPreferences(_data=self._data['preferences'])

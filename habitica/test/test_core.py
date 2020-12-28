@@ -532,6 +532,19 @@ class TestUser(unittest.TestCase):
 		result = dict(MockData.USER, **kwargs)
 		result['stats'] = dict(result['stats'], **(stats or {}))
 		return result
+	def should_get_user_basic_info(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockDataRequest('get', ['user'], self._user_data()),
+			))
+		user = habitica.user()
+		self.assertEqual(user.name, 'JC Denton')
+		self.assertEqual(user.blurb, 'not-explained')
+		self.assertEqual(user.imageUrl, 'jcdenton-image')
+		self.assertEqual(user.flags, {'not':'explained'})
+		self.assertEqual(user.balance, Price(10, 'gems'))
+		self.assertEqual(user.loginIncentives, 400)
+		self.assertEqual(user.invitesSent, 2)
+		self.assertEqual(user.lastCron, '2016-06-20T21:00:00.000Z')
 	def should_get_user_stats(self):
 		habitica = core.Habitica(_api=MockAPI(
 			MockDataRequest('get', ['user'], self._user_data()),
@@ -606,6 +619,22 @@ class TestUser(unittest.TestCase):
 		self.assertFalse(prefs.background)
 		self.assertFalse(prefs.displayInviteToPartyWhenPartyIs1)
 		self.assertFalse(prefs.improvementCategories)
+	def should_get_user_inventory(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockDataRequest('get', ['user'], self._user_data()),
+			))
+		user = habitica.user()
+		inventory = user.inventory
+		self.assertEqual(inventory.lastDrop, {
+			'date' : 'not-explained',
+			'count' : 'not-explained',
+			})
+		self.assertEqual(inventory.eggs, { 'not' : 'explained', })
+		self.assertEqual(inventory.hatchingPotions, { 'not' : 'explained', })
+		self.assertEqual(inventory.quests, { 'not' : 'explained', })
+		self.assertEqual(inventory.pets, { 'not' : 'explained', })
+		self.assertEqual(inventory.mounts, { 'not' : 'explained', })
+		self.assertEqual(inventory.gear, { 'not' : 'explained', })
 	def should_get_user_gear(self):
 		habitica = core.Habitica(_api=MockAPI(
 			MockDataRequest('get', ['user'], self._user_data()),
@@ -702,10 +731,25 @@ class TestUser(unittest.TestCase):
 		user = habitica.user()
 		groups = user.group_plans()
 		self.assertEqual(groups[0].id, 'illuminati')
+	def should_get_user_quest_daily_progress(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockDataRequest('get', ['user'], self._user_data()),
+			))
+
+		user = habitica.user()
+		progress = user.quest_progress
+		self.assertEqual(progress.quest.key, 'laguardia1')
+		self.assertEqual(progress.up, 'not-explained')
+		self.assertEqual(progress.down, 'not-explained')
+		self.assertEqual(progress.collect, 'not-explained')
+		self.assertEqual(progress.collectedItems, 'not-explained')
+		self.assertEqual(progress.completed, 'not-explained')
+		self.assertFalse(progress.RSVPNeeded)
 	def should_get_member_achievements(self):
 		habitica = core.Habitica(_api=MockAPI(
 			MockDataRequest('get', ['members', 'pauldenton'], MockData.MEMBERS['pauldenton']),
-			MockDataRequest('get', ['members', 'pauldenton', 'achievements'], MockData.ACHIEVEMENTS),
+			MockDataRequest('get', ['members', 'jcdenton'], MockData.USER),
+			MockDataRequest('get', ['members', 'jcdenton', 'achievements'], MockData.ACHIEVEMENTS),
 			))
 
 		member = habitica.member('pauldenton')
@@ -722,6 +766,11 @@ class TestUser(unittest.TestCase):
 		self.assertEqual(achievement.value, 0)
 		self.assertEqual(achievement.index, 60)
 		self.assertEqual(achievement.optionalCount, 0)
+
+		member = habitica.member('jcdenton')
+		achievements = member.achievements().basic
+		self.assertEqual(achievements.label, 'Basic')
+		self.assertEqual(len(achievements), 1)
 
 class TestQuest(unittest.TestCase):
 	def should_show_progress_of_collection_quest(self):
