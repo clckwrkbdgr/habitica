@@ -547,6 +547,12 @@ MockData.MEMBERS = {
 		'manderley' : {
 			'_id' : 'manderley',
 			},
+		'joegreen' : {
+			'_id' : 'joegreen',
+			'profile' : {
+				'name' : 'Joe Green',
+				},
+			},
 		'pauldenton' : {
 			'_id' : 'pauldenton',
 			'profile' : {
@@ -584,6 +590,18 @@ MockData.MEMBERS.update({
 		}
 	for i in range(1, 31+1)
 	})
+
+MockData.NEWS = {
+		'title' : 'Latest news',
+		'text' : 'Grey Death strikes again!',
+		'credits' : 'Joe Green',
+		'author' : 'joegreen',
+		'publishDate' : '2016-06-20T21:00:00.000Z',
+		'published' : False,
+		}
+MockData.LATEST_NEWS = """<h1>Latest news</h1>
+<p>Grey Death strikes again!</p>
+"""
 
 MockData.CONTENT_DATA = {
 		'potion' : {

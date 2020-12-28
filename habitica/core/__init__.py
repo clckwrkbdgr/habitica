@@ -21,6 +21,38 @@ class Coupon(base.ApiObject):
 class Message(base.ApiObject):
 	pass
 
+class NewsPost(base.ApiObject):
+	@property
+	def title(self):
+		return self._data['title']
+	@property
+	def text(self):
+		return self._data['text']
+	@property
+	def credits(self):
+		return self._data['credits']
+	@property
+	def author(self):
+		return self.child(Member, self.api.get('members', self._data['author']).data)
+	@property
+	def publishDate(self):
+		return self._data['publishDate'] # FIXME parse date
+	@property
+	def published(self):
+		return self._data['published']
+
+class News(base.ApiObject):
+	# TODO create a new news post (POST /news/)
+	# TODO delete a news post (DELETE /news/)
+	# TODO update a news post (PUT /news/)
+	@property
+	def html_text(self):
+		return self._data
+	def mark_as_read(self):
+		self.api.post('news', 'read')
+	def tell_me_later(self):
+		self.api.post('news', 'tell-me-later')
+
 class Habitica(base.ApiInterface):
 	""" Main Habitica entry point. """
 	# TODO /hall/{heroes,patrons}
@@ -108,3 +140,8 @@ class Habitica(base.ApiInterface):
 			'toUserId' : member.id,
 			'message' : message,
 			}).data)
+	def news(self, post_id=None):
+		if post_id:
+			return self.child(NewsPost, self.api.get('news', post_id).data)
+		html_data = self.api.get('news').data
+		return self.child(News, html_data)

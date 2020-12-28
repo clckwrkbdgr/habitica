@@ -772,6 +772,40 @@ class TestUser(unittest.TestCase):
 		self.assertEqual(achievements.label, 'Basic')
 		self.assertEqual(len(achievements), 1)
 
+class TestNews(unittest.TestCase):
+	def should_get_latest_news(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockDataRequest('get', ['news'], MockData.LATEST_NEWS),
+			))
+		news = habitica.news()
+		self.assertEqual(news.html_text, '<h1>Latest news</h1>\n<p>Grey Death strikes again!</p>\n')
+	def should_specific_news_post(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockDataRequest('get', ['news', 'greydeath'], MockData.NEWS),
+			MockDataRequest('get', ['members', 'joegreen'], MockData.MEMBERS['joegreen']),
+			))
+		news = habitica.news('greydeath')
+		self.assertEqual(news.title, 'Latest news')
+		self.assertEqual(news.text, 'Grey Death strikes again!')
+		self.assertEqual(news.credits, 'Joe Green')
+		self.assertEqual(news.author.id, 'joegreen')
+		self.assertEqual(news.publishDate, '2016-06-20T21:00:00.000Z')
+		self.assertFalse(news.published)
+	def should_postpone_news(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockDataRequest('get', ['news'], MockData.LATEST_NEWS),
+			MockDataRequest('post', ['news', 'tell-me-later'], {}),
+			))
+		news = habitica.news()
+		news.tell_me_later()
+	def should_mark_news_as_read(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockDataRequest('get', ['news'], MockData.LATEST_NEWS),
+			MockDataRequest('post', ['news', 'read'], {}),
+			))
+		news = habitica.news()
+		news.mark_as_read()
+
 class TestQuest(unittest.TestCase):
 	def should_show_progress_of_collection_quest(self):
 		habitica = core.Habitica(_api=MockAPI(
