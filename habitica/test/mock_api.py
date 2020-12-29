@@ -196,6 +196,18 @@ MockData.USER = {
 			'currentPet' : 'fox',
 			'currentMount' : 'wolf',
 			},
+		'notifications' : [
+				{
+					'id' : 'helios1',
+					'text' : 'We have existed in isolation.',
+					'seen' : False,
+					},
+				{
+					'id' : 'helios2',
+					'text' : 'Pure. Disconnected. Alone. Stagnant.',
+					'seen' : False,
+					},
+				],
 		}
 
 MockData.REWARDS = {

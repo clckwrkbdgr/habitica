@@ -771,6 +771,25 @@ class TestUser(unittest.TestCase):
 		achievements = member.achievements().basic
 		self.assertEqual(achievements.label, 'Basic')
 		self.assertEqual(len(achievements), 1)
+	def should_get_user_notifications(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockDataRequest('get', ['user'], MockData.USER),
+			MockDataRequest('post', ['notifications', 'helios1', 'see'], {}),
+			MockDataRequest('post', ['notifications', 'helios1', 'read'], {}),
+			MockDataRequest('post', ['notifications', 'see'], {}),
+			MockDataRequest('post', ['notifications', 'read'], {}),
+			))
+
+		user = habitica.user()
+		notifications = user.notifications()
+		first = next(iter(notifications))
+		self.assertEqual(first.id, 'helios1')
+		self.assertFalse(first.seen)
+		first.mark_as_seen()
+		self.assertTrue(first.seen)
+		first.mark_as_read()
+		notifications.mark_as_seen()
+		notifications.mark_as_read()
 
 class TestNews(unittest.TestCase):
 	def should_get_latest_news(self):

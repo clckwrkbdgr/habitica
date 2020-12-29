@@ -238,6 +238,24 @@ class Inventory(base.ApiObject):
 	def equipped(self):
 		return self.child(Gear, self._data['gear']['equipped'])
 
+class Notification(base.Entity):
+	@property
+	def seen(self):
+		return self._data['seen']
+	def mark_as_read(self):
+		self.api.post('notifications', self.id, 'read')
+	def mark_as_seen(self):
+		self.api.post('notifications', self.id, 'see')
+		self._data['seen'] = True
+
+class Notifications(base.ApiObject):
+	def __iter__(self):
+		return iter(self.children(Notification, self._data))
+	def mark_as_read(self):
+		self._data = self.api.post('notifications', 'read')
+	def mark_as_seen(self):
+		self._data = self.api.post('notifications', 'see')
+
 class _UserMethods:
 	""" Trait to be used by ApiObject or ApiInterface
 	to access user methods that do not require user data.
@@ -460,6 +478,9 @@ class User(base.Entity, _UserMethods):
 	@property
 	def lastCron(self):
 		return self._data['lastCron'] # FIXME parse date
+	def notifications(self):
+		data = self._data['notifications']
+		return self.child(Notifications, data)
 	def avatar(self):
 		""" Returns pure HTML code to render user avatar.
 		Behavior may change in the future.
