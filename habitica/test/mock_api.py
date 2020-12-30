@@ -443,6 +443,15 @@ MockData.GROUPS = {
 		'id' : 'illuminati',
 		'type' : 'guild',
 		'privacy' : 'private',
+		'quest' : {
+			'active' : True,
+			'key' : 'area51',
+			'leader' : 'jcdenton',
+			'rage' : 1.05,
+			'progress' : {
+				'hp' : 20,
+				},
+			},
 		},
 	}
 MockData.BOSS_QUEST_PROGRESS = {

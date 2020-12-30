@@ -7,9 +7,15 @@ from .content import ContentEntry, MarketableForGems, parse_habitica_event
 
 class Rage(base.ApiObject):
 	# TODO 'desperation' ('stressbeat' world quest)
+	def __init__(self, *args, _rage_progress=None, **kwargs):
+		super().__init__(*args, **kwargs)
+		self._rage_progress = _rage_progress
 	@property
 	def value(self):
-		return self._data['value']
+		return base.ValueBar(
+				self._rage_progress if self._rage_progress is not None else self._data['value'],
+				self._data['value'],
+				)
 	@property
 	def effect(self):
 		return self._data.get('effect')
@@ -48,6 +54,10 @@ class Rage(base.ApiObject):
 		return self._data.get('mpDrain')
 
 class QuestBoss(base.ApiObject):
+	def __init__(self, *args, _rage_progress=None, _hp_progress=None, **kwargs):
+		super().__init__(*args, **kwargs)
+		self._rage_progress = _rage_progress
+		self._hp_progress = _hp_progress
 	@property
 	def name(self):
 		return self._data['name']
@@ -59,15 +69,21 @@ class QuestBoss(base.ApiObject):
 		return self._data['def']
 	@property
 	def hp(self):
-		return self._data['hp']
+		return base.ValueBar(
+				self._hp_progress if self._hp_progress is not None else self._data['hp'],
+				self._data['hp'],
+				)
 	@property
 	def rage(self):
 		data = self._data.get('rage')
-		return self.child(Rage, data) if data else None
+		return self.child(Rage, data, _rage_progress=self._rage_progress) if data else None
 
 QuestCollectItem = namedtuple('QuestCollectItem', 'key text count')
 
 class QuestCollect(base.ApiObject):
+	def __init__(self, *args, _collect_progress=None, **kwargs):
+		super().__init__(*args, **kwargs)
+		self._collect_progress = _collect_progress
 	@property
 	def names(self):
 		return list(self._data.keys())
@@ -76,9 +92,23 @@ class QuestCollect(base.ApiObject):
 		return QuestCollectItem(key, data['text'], data['count'])
 	def items(self):
 		return [
-				QuestCollectItem(key, self._data[key]['text'], self._data[key]['count'])
+				QuestCollectItem(
+					key,
+					self._data[key]['text'],
+					base.ValueBar(
+						self._collect_progress[key] if self._collect_progress is not None else self._data[key]['count'],
+						self._data[key]['count'],
+						),
+					)
 				for key in self._data
 				]
+	@property
+	def current(self):
+		value = sum(_ for _ in self._collect_progress.values()) if self._collect_progress is not None else 0
+		return base.ValueBar(
+				value,
+				self.total,
+				)
 	@property
 	def total(self):
 		return sum(_['count'] for _ in self._data.values())
@@ -124,7 +154,38 @@ class QuestUnlockCondition(base.ApiObject):
 	def incentiveThreshold(self):
 		return self._data['incentiveThreshold']
 
+class LazyQuestData:
+	def __init__(self, quest_key, _content=None):
+		self.content = _content
+		self.key = quest_key
+		self._data = None
+	def _ensure(self):
+		if self._data is None:
+			self._data = self.content['quests'][self.key]
+	def __getitem__(self, key):
+		self._ensure()
+		return self._data[key]
+	def get(self, key, default=None):
+		self._ensure()
+		return self._data.get(key, default)
+
 class Quest(ContentEntry, MarketableForGems):
+	def __init__(self, *args, _content=None, _data=None, _group_progress=None, _user_progress=None, **kwargs):
+		if _data is None:
+			assert _group_progress or _user_progress
+			if _group_progress:
+				quest_key = _group_progress['key']
+			elif _user_progress:
+				quest_key = _user_progress['key']
+			else: # pragma: no cover
+				raise RuntimeError('Expected either quest data, or group progress, or user progress, received nothing at all.')
+			_data = LazyQuestData(quest_key, _content=_content)
+		super().__init__(*args, _content=_content, _data=_data, **kwargs)
+		self._group_progress = _group_progress
+		self._user_progress = _user_progress
+	@property
+	def title(self):
+		return self.text
 	@property
 	def userCanOwn(self):
 		return self.category in self.content.userCanOwnQuestCategories
@@ -157,11 +218,14 @@ class Quest(ContentEntry, MarketableForGems):
 	@property
 	def boss(self):
 		result = self._data.get('boss')
-		return self.child(QuestBoss, result) if result else None
+		rage_progress = self._group_progress.get('rage') if self._group_progress else None
+		hp_progress = self._group_progress['progress']['hp'] if self._group_progress else None
+		return self.child(QuestBoss, result, _rage_progress=rage_progress, _hp_progress=hp_progress) if result else None
 	@property
 	def collect(self):
 		result = self._data.get('collect')
-		return self.child(QuestCollect, result) if result else None
+		collect_progress = self._group_progress['progress']['collect'] if self._group_progress else None
+		return self.child(QuestCollect, result, _collect_progress=collect_progress) if result else None
 	@property
 	def drop(self):
 		return self.child(QuestDrop, self._data['drop'])
@@ -173,38 +237,37 @@ class Quest(ContentEntry, MarketableForGems):
 		if 'event' not in self._data:
 			return None
 		return parse_habitica_event(self._data['event'])
-
-class QuestProgress(base.ApiObject):
-	def __init__(self, *args, **kwargs):
-		super().__init__(*args, **kwargs)
-		self._quest_definition = self.content.quests(self._data['key'])
+	# Group progress (/group/.quest):
 	# TODO .extra
 	# TODO .members
 	@property
-	def quest(self):
-		return self._quest_definition
-	@property
 	def active(self):
-		return bool(self._data['active'])
-	@property
-	def title(self):
-		return self.quest.text
-	@property
-	def rage(self):
-		return self._data.get('rage')
-	@property
-	def progress(self):
-		if self.quest.collect:
-			qp_tmp = self._data['progress']['collect']
-			quest_progress = sum(qp_tmp.values())
-			return base.ValueBar(quest_progress, self.quest.collect.total)
-		else:
-			return base.ValueBar(self._data['progress']['hp'], self.quest.boss.hp)
-	@property
-	def max_progress(self): # pragma: no cover -- FIXME deprecated
-		return self.progress.max_value
+		if not self._group_progress:
+			if not self._user_progress:
+				return False
+			return True # Considering quest active if user has pending progress.
+		return bool(self._group_progress['active'])
 	def leader(self):
+		if not self._group_progress:
+			return None
 		from . import user
-		return self.child(user.Member, self.api.get('members', self._data['leader']).data)
-	def __getattr__(self, attr):
-		return getattr(self.quest, attr)
+		return self.child(user.Member, self.api.get('members', self._group_progress['leader']).data)
+	# User progress (/user/.party.quest):
+	@property
+	def up(self): # TODO is it pending damage to the boss by user?
+		return self._user_progress['progress']['up'] if self._user_progress else 0
+	@property
+	def down(self): # TODO is it pending damage to the user?
+		return self._user_progress['progress']['down'] if self._user_progress else 0
+	@property
+	def collected(self): # FIXME is it dict of pending items to be collected?
+		return self._user_progress['progress']['collect'] if self._user_progress else None
+	@property
+	def collectedItems(self): # TODO what is it?
+		return self._user_progress['progress']['collectedItems'] if self._user_progress else None
+	@property
+	def completed(self): # FIXME is it an ID?
+		return self._user_progress['completed'] if self._user_progress else None
+	@property
+	def RSVPNeeded(self):
+		return self._user_progress['RSVPNeeded'] if self._user_progress else False

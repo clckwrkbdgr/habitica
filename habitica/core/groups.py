@@ -283,4 +283,4 @@ class Group(base.Entity):
 class Party(Group):
 	@property
 	def quest(self):
-		return self.child(quests.QuestProgress, self._data['quest'])
+		return self.child(quests.Quest, None, _group_progress=self._data['quest'])

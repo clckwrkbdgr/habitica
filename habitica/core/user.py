@@ -379,29 +379,6 @@ class Member(base.Entity):
 	def tasks(self):
 		return self.children(tasks.Task, self._data.get('tasks', []))
 
-class UserQuestProgress(base.ApiObject):
-	@property
-	def quest(self):
-		return self.content.quests(self._data['key'])
-	@property
-	def up(self):
-		return self._data['progress']['up']
-	@property
-	def down(self):
-		return self._data['progress']['down']
-	@property
-	def collect(self):
-		return self._data['progress']['collect'] # FIXME is it a dict?
-	@property
-	def collectedItems(self):
-		return self._data['progress']['collectedItems']
-	@property
-	def completed(self):
-		return self._data['completed'] # FIXME is it an ID?
-	@property
-	def RSVPNeeded(self):
-		return self._data['RSVPNeeded']
-
 class User(base.Entity, _UserMethods):
 	# TODO auth -- see model
 	# TODO achievements -- see model
@@ -430,8 +407,9 @@ class User(base.Entity, _UserMethods):
 	def blurb(self):
 		return self._data['profile']['blurb']
 	@property
-	def quest_progress(self):
-		return self.child(UserQuestProgress, self._data['party']['quest'])
+	def quest(self):
+		from . import quests
+		return self.child(quests.Quest, None, _user_progress=self._data['party']['quest'])
 	@property
 	def stats(self):
 		return UserStats(_data=self._data['stats'])

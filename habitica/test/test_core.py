@@ -737,14 +737,15 @@ class TestUser(unittest.TestCase):
 			))
 
 		user = habitica.user()
-		progress = user.quest_progress
-		self.assertEqual(progress.quest.key, 'laguardia1')
+		progress = user.quest
+		self.assertEqual(progress.key, 'laguardia1')
 		self.assertEqual(progress.up, 'not-explained')
 		self.assertEqual(progress.down, 'not-explained')
-		self.assertEqual(progress.collect, 'not-explained')
+		self.assertEqual(progress.collected, 'not-explained')
 		self.assertEqual(progress.collectedItems, 'not-explained')
 		self.assertEqual(progress.completed, 'not-explained')
 		self.assertFalse(progress.RSVPNeeded)
+		self.assertTrue(progress.active)
 	def should_get_member_achievements(self):
 		habitica = core.Habitica(_api=MockAPI(
 			MockDataRequest('get', ['members', 'pauldenton'], MockData.MEMBERS['pauldenton']),
@@ -836,8 +837,8 @@ class TestQuest(unittest.TestCase):
 		self.assertTrue(quest.active)
 		self.assertEqual(quest.key, 'laguardia1')
 		self.assertEqual(quest.title, 'Find 3 more barrels of Ambrosia')
-		self.assertEqual(quest.progress, 6)
-		self.assertEqual(quest.max_progress, 8)
+		self.assertEqual(quest.collect.current, 6)
+		self.assertEqual(quest.collect.total, 8)
 	def should_show_progress_of_boss_quest(self):
 		habitica = core.Habitica(_api=MockAPI(
 			MockDataRequest('get', ['user'], MockData.USER),
@@ -850,9 +851,19 @@ class TestQuest(unittest.TestCase):
 		self.assertEqual(quest.key, '747')
 		self.assertEqual(quest.title, 'Kill Anna Navarre')
 		self.assertEqual(quest.leader().id, 'jcdenton')
-		self.assertAlmostEqual(quest.rage, 1.05)
-		self.assertEqual(quest.progress, 20)
-		self.assertEqual(quest.max_progress, 500)
+		self.assertEqual(quest.boss.hp, 20)
+		self.assertEqual(quest.boss.hp.max_value, 500)
+	def should_show_progress_of_boss_rage(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockDataRequest('get', ['user'], MockData.USER),
+			MockDataRequest('get', ['groups', 'party'], MockData.GROUPS['illuminati']),
+			))
+		myguild = habitica.user.party()
+		quest = myguild.quest
+		self.assertTrue(quest.active)
+		self.assertEqual(quest.key, 'area51')
+		self.assertAlmostEqual(quest.boss.rage.value, 1.05)
+		self.assertAlmostEqual(quest.boss.rage.value.max_value, 500)
 
 class TestRewards(unittest.TestCase):
 	def should_get_user_rewards(self):
@@ -1482,6 +1493,9 @@ class TestContent(unittest.TestCase):
 		self.assertTrue(quest.userCanOwn)
 		self.assertEqual(quest.category, 'pet')
 		self.assertIsNone(quest.unlockCondition)
+
+		self.assertFalse(quest.active)
+		self.assertIsNone(quest.leader())
 
 		self.assertEqual(quest.level, 33)
 		self.assertIsNone(quest.goldValue)
