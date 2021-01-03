@@ -864,6 +864,86 @@ class TestQuest(unittest.TestCase):
 		self.assertEqual(quest.key, 'area51')
 		self.assertAlmostEqual(quest.boss.rage.value, 1.05)
 		self.assertAlmostEqual(quest.boss.rage.value.max_value, 500)
+	def should_abort_quest(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockDataRequest('get', ['user'], MockData.USER),
+			MockDataRequest('get', ['groups', 'party'], MockData.GROUPS['party']),
+			MockDataRequest('post', ['groups', 'party', 'quests', 'abort'], MockData.GROUPS['party']),
+			))
+		quest = habitica.content.get_quest('747')
+		with self.assertRaises(RuntimeError):
+			quest.abort()
+		party = habitica.user().party()
+		quest = party.quest
+		quest.abort()
+	def should_accept_quest(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockDataRequest('get', ['user'], MockData.USER),
+			MockDataRequest('get', ['groups', 'party'], MockData.GROUPS['party']),
+			MockDataRequest('post', ['groups', 'party', 'quests', 'accept'], MockData.GROUPS['party']),
+			))
+		quest = habitica.content.get_quest('747')
+		with self.assertRaises(RuntimeError):
+			quest.accept()
+		party = habitica.user().party()
+		quest = party.quest
+		quest.accept()
+	def should_cancel_quest(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockDataRequest('get', ['user'], MockData.USER),
+			MockDataRequest('get', ['groups', 'party'], MockData.GROUPS['party']),
+			MockDataRequest('post', ['groups', 'party', 'quests', 'cancel'], MockData.GROUPS['party']),
+			))
+		quest = habitica.content.get_quest('747')
+		with self.assertRaises(RuntimeError):
+			quest.cancel()
+		party = habitica.user().party()
+		quest = party.quest
+		quest.cancel()
+	def should_force_start_quest(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockDataRequest('get', ['user'], MockData.USER),
+			MockDataRequest('get', ['groups', 'party'], MockData.GROUPS['party']),
+			MockDataRequest('post', ['groups', 'party', 'quests', 'force-start'], MockData.GROUPS['party']),
+			))
+		quest = habitica.content.get_quest('747')
+		with self.assertRaises(RuntimeError):
+			quest.force_start()
+		party = habitica.user().party()
+		quest = party.quest
+		quest.force_start()
+	def should_invite_group_members_to_quest(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockDataRequest('get', ['user'], MockData.USER),
+			MockDataRequest('get', ['groups', 'party'], MockData.GROUPS['party']),
+			MockDataRequest('post', ['groups', 'party', 'quests', 'invite', '747'], MockData.GROUPS['party']),
+			))
+		party = habitica.user().party()
+		party.invite_to_quest(habitica.content.get_quest('747'))
+	def should_leave_quest(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockDataRequest('get', ['user'], MockData.USER),
+			MockDataRequest('get', ['groups', 'party'], MockData.GROUPS['party']),
+			MockDataRequest('post', ['groups', 'party', 'quests', 'leave'], MockData.GROUPS['party']),
+			))
+		quest = habitica.content.get_quest('747')
+		with self.assertRaises(RuntimeError):
+			quest.leave()
+		party = habitica.user().party()
+		quest = party.quest
+		quest.leave()
+	def should_reject_quest(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockDataRequest('get', ['user'], MockData.USER),
+			MockDataRequest('get', ['groups', 'party'], MockData.GROUPS['party']),
+			MockDataRequest('post', ['groups', 'party', 'quests', 'reject'], MockData.GROUPS['party']),
+			))
+		quest = habitica.content.get_quest('747')
+		with self.assertRaises(RuntimeError):
+			quest.reject()
+		party = habitica.user().party()
+		quest = party.quest
+		quest.reject()
 
 class TestRewards(unittest.TestCase):
 	def should_get_user_rewards(self):

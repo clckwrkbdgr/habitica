@@ -240,6 +240,11 @@ class Quest(ContentEntry, MarketableForGems):
 	# Group progress (/group/.quest):
 	# TODO .extra
 	# TODO .members
+	def _get_group(self):
+		from . import groups
+		if not self._group_progress or not isinstance(self._parent, groups.Group):
+			raise RuntimeError('Quest is not linked to a group!')
+		return self._parent
 	@property
 	def active(self):
 		if not self._group_progress:
@@ -252,6 +257,24 @@ class Quest(ContentEntry, MarketableForGems):
 			return None
 		from . import user
 		return self.child(user.Member, self.api.get('members', self._group_progress['leader']).data)
+	def abort(self):
+		data = self.api.post('groups', self._get_group().id, 'quests', 'abort').data
+		self._group_progress.update(data)
+	def accept(self):
+		data = self.api.post('groups', self._get_group().id, 'quests', 'accept').data
+		self._group_progress.update(data)
+	def cancel(self):
+		data = self.api.post('groups', self._get_group().id, 'quests', 'cancel').data
+		self._group_progress.update(data)
+	def force_start(self):
+		data = self.api.post('groups', self._get_group().id, 'quests', 'force-start').data
+		self._group_progress.update(data)
+	def leave(self):
+		data = self.api.post('groups', self._get_group().id, 'quests', 'leave').data
+		self._group_progress.update(data)
+	def reject(self):
+		data = self.api.post('groups', self._get_group().id, 'quests', 'reject').data
+		self._group_progress.update(data)
 	# User progress (/user/.party.quest):
 	@property
 	def up(self): # TODO is it pending damage to the boss by user?
