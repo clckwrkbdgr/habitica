@@ -548,6 +548,25 @@ MockData.CHALLENGES = {
 			},
 		}
 
+MockData.TAGS = {
+		'unatco' : {
+			'id' : 'unatco',
+			'name' : 'UNATCO',
+			'challenge' : True,
+			'group' : 'unatco',
+			},
+		'nsf' : {
+			'id' : 'nsf',
+			'name' : 'NSF',
+			'challenge' : False,
+			'group' : 'nsf',
+			},
+		'side' : {
+			'id' : 'side',
+			'name' : 'Side Quest',
+			},
+		}
+
 MockData.ACHIEVEMENTS = {
 		'basic' : {
 			'label' : 'Basic',

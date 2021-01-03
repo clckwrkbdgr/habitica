@@ -1,6 +1,6 @@
 """ User and user-related functionality: inventory, spells etc.
 """
-from . import base, content, tasks, groups
+from . import base, content, tasks, groups, tags
 from ..api import dotdict
 
 class UserAppearance(base.ApiObject):
@@ -284,6 +284,8 @@ class _UserMethods:
 		return self.children(tasks.Reward, self.api.get('tasks', 'user', type='rewards').data)
 	def challenges(self):
 		return self.children(groups.Challenge, self.api.get('challenges', 'user').data)
+	def tags(self):
+		return self.children(tags.Tag, self.api.get('tags').data)
 
 class UserProxy(base.ApiInterface, _UserMethods):
 	""" Lazy class to proxy call methods that do not require immediate user data,

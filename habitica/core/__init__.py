@@ -1,9 +1,11 @@
 from .. import api
-from . import base, content, tasks, groups, user
+from . import base, content, tasks, groups, user, quests, tags
 from .content import *
 from .groups import *
 from .tasks import *
 from .user import *
+from .tags import *
+from .quests import *
 from .user import UserProxy
 
 # TODO the whole /debug/ route for development
@@ -145,3 +147,9 @@ class Habitica(base.ApiInterface):
 			return self.child(NewsPost, self.api.get('news', post_id).data)
 		html_data = self.api.get('news').data
 		return self.child(News, html_data)
+	def create_tag(self, name):
+		return self.child(Tag, self.api.post('tags', _body={
+			'name' : name,
+			}).data)
+	def _get_tag(self, tag_id):
+		return self.child(Tag, self.api.get('tags', tag_id).data)

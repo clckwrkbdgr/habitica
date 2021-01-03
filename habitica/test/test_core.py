@@ -1272,6 +1272,56 @@ class TestSpells(unittest.TestCase):
 		spell = user.get_spell('backStab')
 		user.cast(spell, target)
 
+class TestTags(unittest.TestCase):
+	def should_create_new_tag(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockDataRequest('post', ['tags'], MockData.ORDERED.TAGS[1]),
+			))
+		tag = habitica.create_tag('Side Quest')
+		self.assertEqual(tag.id, 'side')
+		self.assertEqual(tag.name, 'Side Quest')
+		self.assertIsNone(tag.group())
+		self.assertFalse(tag.is_challenge)
+	def should_get_tags(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockDataRequest('get', ['tags', 'nsf'], MockData.ORDERED.TAGS[0]),
+			MockDataRequest('get', ['groups', 'nsf'], MockData.GROUPS['nsf']),
+			))
+		tag = habitica._get_tag('nsf')
+		self.assertEqual(tag.id, 'nsf')
+		self.assertEqual(tag.name, 'NSF')
+		self.assertEqual(tag.group().id, 'nsf')
+		self.assertFalse(tag.is_challenge)
+	def should_get_tag(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockDataRequest('get', ['tags'], MockData.ORDERED.TAGS),
+			))
+		tags = habitica.user.tags()
+		self.assertEqual(tags[0].id, 'nsf')
+		self.assertEqual(tags[2].id, 'unatco')
+	def should_delete_tag(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockDataRequest('get', ['tags', 'unatco'], MockData.ORDERED.TAGS[2]),
+			MockDataRequest('delete', ['tags', 'unatco'], {}),
+			))
+		tag = habitica._get_tag('unatco')
+		tag.delete()
+	def should_reorder_tags(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockDataRequest('get', ['tags', 'unatco'], MockData.ORDERED.TAGS[2]),
+			MockDataRequest('post', ['reorder-tags'], {}),
+			))
+		tag = habitica._get_tag('unatco')
+		tag.move_to(0)
+	def should_rename_tag(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockDataRequest('get', ['tags', 'unatco'], MockData.ORDERED.TAGS[2]),
+			MockDataRequest('put', ['tags', 'unatco'], dict(MockData.ORDERED.TAGS[2], name='Ex-UNATCO')),
+			))
+		tag = habitica._get_tag('unatco')
+		tag.rename('Ex-UNATCO')
+		self.assertEqual(tag.name, 'Ex-UNATCO')
+
 class TestContent(unittest.TestCase):
 	def should_retrieve_health_potion(self):
 		habitica = core.Habitica(_api=MockAPI())
