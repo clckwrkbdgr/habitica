@@ -1153,6 +1153,16 @@ class TestDailies(unittest.TestCase):
 		self.assertFalse(daily[1].is_completed)
 		daily[1].complete()
 		self.assertTrue(daily[1].is_completed)
+	def should_add_item_to_checklist(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockDataRequest('get', ['user'], MockData.USER),
+			MockDataRequest('get', ['tasks', 'user'], MockData.ORDERED.DAILIES),
+			MockDataRequest('post', ['tasks', 'armory', 'checklist'], MockData.DAILIES['armory']),
+			))
+		user = habitica.user()
+		tasks = user.dailies()
+		task = tasks[0]
+		task.append('Get medkits')
 
 class TestTodos(unittest.TestCase):
 	def should_get_list_of_user_todos(self):

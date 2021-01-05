@@ -229,6 +229,10 @@ class Checklist:
 			return object.__getitem__(self, key)
 		except AttributeError:
 			return self.child(SubItem, self._data['checklist'][key])
+	def append(self, text):
+		self._data = self.api.post('tasks', self.id, 'checklist', _body={
+			'text' : text,
+			}).data
 
 class DailyTrigger(base.ApiObject):
 	@property
