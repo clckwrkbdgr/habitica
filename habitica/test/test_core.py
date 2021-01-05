@@ -945,6 +945,22 @@ class TestQuest(unittest.TestCase):
 		quest = party.quest
 		quest.reject()
 
+class TestTasks(unittest.TestCase):
+	def should_add_tag_to_a_task(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockDataRequest('get', ['user'], MockData.USER),
+			MockDataRequest('get', ['tasks', 'user'], MockData.ORDERED.DAILIES),
+			MockDataRequest('get', ['tags'], MockData.ORDERED.TAGS),
+			MockDataRequest('post', ['tasks', 'armory', 'tags', 'unatco'], dict(MockData.DAILIES['armory'], tags=[MockData.TAGS['unatco']])),
+			))
+		user = habitica.user()
+		tasks = user.dailies()
+		task = tasks[0]
+		tags = user.tags()
+		tag = tags[2]
+		task.add_tag(tag)
+		self.assertEqual(task.tags[0].id, 'unatco')
+
 class TestRewards(unittest.TestCase):
 	def should_get_user_rewards(self):
 		habitica = core.Habitica(_api=MockAPI(
@@ -1282,7 +1298,7 @@ class TestTags(unittest.TestCase):
 		self.assertEqual(tag.name, 'Side Quest')
 		self.assertIsNone(tag.group())
 		self.assertFalse(tag.is_challenge)
-	def should_get_tags(self):
+	def should_get_tag(self):
 		habitica = core.Habitica(_api=MockAPI(
 			MockDataRequest('get', ['tags', 'nsf'], MockData.ORDERED.TAGS[0]),
 			MockDataRequest('get', ['groups', 'nsf'], MockData.GROUPS['nsf']),
@@ -1292,7 +1308,7 @@ class TestTags(unittest.TestCase):
 		self.assertEqual(tag.name, 'NSF')
 		self.assertEqual(tag.group().id, 'nsf')
 		self.assertFalse(tag.is_challenge)
-	def should_get_tag(self):
+	def should_get_tags(self):
 		habitica = core.Habitica(_api=MockAPI(
 			MockDataRequest('get', ['tags'], MockData.ORDERED.TAGS),
 			))

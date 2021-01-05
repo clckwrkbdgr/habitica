@@ -3,7 +3,7 @@ Also rewards.
 """
 from bisect import bisect
 from .. import timeutils
-from . import base
+from . import base, tags
 
 class Approval(base.ApiObject):
 	@property
@@ -97,7 +97,7 @@ class Task(base.Entity):
 		return self._data['alias']
 	@property
 	def tags(self): # pragma: no cover -- FIXME produce Tag children.
-		return self._data['tags']
+		return self.children(tags.Tag, self._data['tags'])
 	@property
 	def priority(self):
 		return self._data['priority']
@@ -116,6 +116,8 @@ class Task(base.Entity):
 	@property
 	def challenge(self):
 		return self.child(ChallengeInfo, self._data['challenge'])
+	def add_tag(self, tag):
+		self._data = self.api.post('tasks', self.id, 'tags', tag.id).data
 
 class Reward(Task):
 	@property
