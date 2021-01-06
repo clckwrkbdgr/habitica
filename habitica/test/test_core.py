@@ -960,6 +960,28 @@ class TestTasks(unittest.TestCase):
 		tag = tags[2]
 		task.add_tag(tag)
 		self.assertEqual(task.tags[0].id, 'unatco')
+	def should_approve_task_for_user(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockDataRequest('get', ['user'], MockData.USER),
+			MockDataRequest('get', ['tasks', 'user'], MockData.ORDERED.DAILIES),
+			MockDataRequest('get', ['members', 'pauldenton'], MockData.MEMBERS['pauldenton']),
+			MockDataRequest('post', ['tasks', 'armory', 'approve', 'pauldenton'], MockData.DAILIES['armory']),
+			))
+		user = habitica.user()
+		tasks = user.dailies()
+		task = tasks[0]
+		task.approve_for(habitica.member('pauldenton'))
+	def should_assign_task_to_user(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockDataRequest('get', ['user'], MockData.USER),
+			MockDataRequest('get', ['tasks', 'user'], MockData.ORDERED.DAILIES),
+			MockDataRequest('get', ['members', 'pauldenton'], MockData.MEMBERS['pauldenton']),
+			MockDataRequest('post', ['tasks', 'armory', 'assign', 'pauldenton'], MockData.DAILIES['armory']),
+			))
+		user = habitica.user()
+		tasks = user.dailies()
+		task = tasks[0]
+		task.assign_to(habitica.member('pauldenton'))
 
 class TestRewards(unittest.TestCase):
 	def should_get_user_rewards(self):

@@ -118,6 +118,10 @@ class Task(base.Entity):
 		return self.child(ChallengeInfo, self._data['challenge'])
 	def add_tag(self, tag):
 		self._data = self.api.post('tasks', self.id, 'tags', tag.id).data
+	def approve_for(self, member):
+		self._data = self.api.post('tasks', self.id, 'approve', member.id).data
+	def assign_to(self, member):
+		self._data = self.api.post('tasks', self.id, 'assign', member.id).data
 
 class Reward(Task):
 	@property
