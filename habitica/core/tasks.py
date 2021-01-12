@@ -68,12 +68,79 @@ class ChallengeInfo(base.Entity):
 	def winner(self):
 		return self._data['winner']
 
+class Reminder(base.Entity): # pragma: no cover -- TODO no way to create yet.
+	@property
+	def startDate(self):
+		return self._data['startDate']
+	@property
+	def time(self):
+		return self._data['time']
+
 class Task(base.Entity):
 	""" Parent class for any task (habit, daily, todo, reward). """
 	DARK_RED, RED, ORANGE = -20, -10, -1
 	YELLOW = 0
 	GREEN, LIGHT_BLUE, BRIGHT_BLUE = 1, 5, 10
 
+	class Priority:
+		TRIVIAL = 0.1
+		EASY = 1
+		MEDIUM = 1.5
+		HARD = 2.0
+
+	def __init__(self, text=None,
+			alias=None,
+			attribute=None,
+			collapseChecklist=None,
+			notes=None,
+			priority=None,
+			reminders=None,
+			tags=None,
+			# API args:
+			**kwargs
+			):
+		if text is None:
+			super().__init__(**kwargs)
+			return
+		self._data = {
+				'text' : text,
+				'type' : self.task_type,
+				}
+		if alias is not None:
+			self._data['alias'] = alias
+		if attribute is not None:
+			self._data['attribute'] = attribute
+		if collapseChecklist is not None:
+			self._data['collapseChecklist'] = collapseChecklist
+		if notes is not None:
+			self._data['notes'] = notes
+		if priority is not None:
+			self._data['priority'] = priority
+		if reminders is not None:
+			self._data['reminders'] = reminders
+		if tags is not None:
+			self._data['tags'] = tags
+
+	@property
+	def task_type(self):
+		""" Returns string value of task type. """
+		allowed_task_types = {
+				Reward : 'reward',
+				Habit : 'habit',
+				Daily : 'daily',
+				Todo : 'todo',
+				}
+		return allowed_task_types[type(self)]
+	@staticmethod
+	def type_from_str(strtype):
+		""" Returns task type by its string value. """
+		allowed_task_types = {
+				'reward' : Reward,
+				'habit' : Habit,
+				'daily' : Daily,
+				'todo' : Todo,
+				}
+		return allowed_task_types[strtype]
 	@property
 	def text(self):
 		return self._data['text']
@@ -124,6 +191,27 @@ class Task(base.Entity):
 		self._data = self.api.post('tasks', self.id, 'assign', member.id).data
 
 class Reward(Task):
+	def __init__(self, text=None, alias=None, attribute=None, collapseChecklist=None,
+			notes=None, priority=None, reminders=None, tags=None,
+			# Reward-only fields:
+			value=None,
+			# API args:
+			**kwargs
+			):
+		super().__init__(
+				text=text,
+				alias=alias,
+				attribute=attribute,
+				collapseChecklist=collapseChecklist,
+				notes=notes,
+				priority=priority,
+				reminders=reminders,
+				tags=tags,
+				**kwargs,
+				)
+		if text is not None:
+			if value is not None:
+				self._data['value'] = value
 	@property
 	def value(self):
 		return base.Price(self._data['value'], 'gold')
@@ -158,6 +246,30 @@ class CannotScoreDown(Exception):
 
 class Habit(Task, TaskValue):
 	# TODO history
+	def __init__(self, text=None, alias=None, attribute=None, collapseChecklist=None,
+			notes=None, priority=None, reminders=None, tags=None,
+			# Habit-only fields:
+			up=None,
+			down=None,
+			# API args:
+			**kwargs
+			):
+		super().__init__(
+				text=text,
+				alias=alias,
+				attribute=attribute,
+				collapseChecklist=collapseChecklist,
+				notes=notes,
+				priority=priority,
+				reminders=reminders,
+				tags=tags,
+				**kwargs,
+				)
+		if text is not None:
+			if up is not None:
+				self._data['up'] = up
+			if down is not None:
+				self._data['down'] = down
 	@property
 	def can_score_up(self):
 		return self._data['up']
@@ -238,7 +350,21 @@ class Checklist:
 			'text' : text,
 			}).data
 
-class DailyTrigger(base.ApiObject):
+class DailyFrequency(base.ApiObject):
+	def __init__(self,
+			startDate=None,
+			everyX=None,
+			# API args:
+			**kwargs
+			):
+		self._data = {}
+		if startDate is not None:
+			self._data['startDate'] = startDate
+		if everyX is not None:
+			self._data['everyX'] = everyX
+		if not self._data:
+			super().__init__(**kwargs)
+			return
 	@property
 	def startDate(self):
 		return self._data['startDate']
@@ -252,10 +378,32 @@ class DailyTrigger(base.ApiObject):
 	def weeksOfMonth(self):
 		return self._data['weeksOfMonth']
 
-class WeeklyTrigger(base.ApiObject):
+class WeeklyFrequency(base.ApiObject):
 	# Weekday abbreviations used in task frequencies.
 	ABBR = ["m", "t", "w", "th", "f", "s", "su"]
 
+	def __init__(self,
+			monday=None,
+			tuesday=None,
+			wednesday=None,
+			thursday=None,
+			friday=None,
+			saturday=None,
+			sunday=None,
+			# API args:
+			**kwargs
+			):
+		values = [
+			monday, tuesday, wednesday, thursday, friday, saturday, sunday,
+			]
+		repeat = {}
+		for name, value in zip(self.ABBR, values):
+			if value is not None:
+				repeat[name] = bool(value)
+		if not repeat:
+			super().__init__(**kwargs)
+			return
+		self._data = {'repeat': repeat}
 	@property
 	def weekdays(self):
 		""" Returns list of weekday numbers (starts with Mon=0). """
@@ -283,7 +431,50 @@ class WeeklyTrigger(base.ApiObject):
 		return self._data['repeat'][self.ABBR[6]]
 
 class Daily(Task, TaskValue, Checkable, Checklist):
+	class Frequency:
+		DAILY = 'daily'
+		WEEKLY = 'weekly'
+		MONTHLY = 'monthly'
+		YEARLY = 'yearly'
+
 	# TODO history
+	def __init__(self, text=None, alias=None, attribute=None, collapseChecklist=None,
+			notes=None, priority=None, reminders=None, tags=None,
+			# Todo-only fields:
+			frequency=None, # DailyFrequency or WeeklyFrequency
+			streak=None,
+			# API args:
+			**kwargs
+			):
+		super().__init__(
+				text=text,
+				alias=alias,
+				attribute=attribute,
+				collapseChecklist=collapseChecklist,
+				notes=notes,
+				priority=priority,
+				reminders=reminders,
+				tags=tags,
+				**kwargs,
+				)
+		if text is not None:
+			if frequency is not None:
+				assert type(frequency) in (DailyFrequency, WeeklyFrequency)
+				frequency_type = {
+						DailyFrequency : self.Frequency.DAILY,
+						WeeklyFrequency : self.Frequency.WEEKLY,
+						}
+				self._data['frequency'] = frequency_type[type(frequency)]
+				if self._data['frequency'] == self.Frequency.WEEKLY:
+					self._data.update(frequency._data)
+				elif self._data['frequency'] == self.Frequency.DAILY:
+					self._data.update(frequency._data)
+				else: # pragma: no cover
+					# TODO daysOfMonth for Daily (monthly?)
+					# TODO weeksOfMonth for Daily (monthly?)
+					raise RuntimeError('Frequencies other than daily or weekly are not supported (yet).')
+			if streak is not None:
+				self._data['streak'] = streak
 	@property
 	def streak(self):
 		return self._data['streak']
@@ -295,10 +486,10 @@ class Daily(Task, TaskValue, Checkable, Checklist):
 		return self._data['frequency']
 	@property
 	def trigger(self):
-		if self.frequency == 'daily':
-			return self.child(DailyTrigger, self._data)
-		elif self.frequency == 'weekly':
-			return self.child(WeeklyTrigger, self._data)
+		if self.frequency == Daily.Frequency.DAILY:
+			return self.child(DailyFrequency, self._data)
+		elif self.frequency == Daily.Frequency.WEEKLY:
+			return self.child(WeeklyFrequency, self._data)
 		else: # pragma: no cover
 			raise ValueError("Unknown daily frequency: {0}".format(self._data['frequency']))
 	@property
@@ -311,11 +502,11 @@ class Daily(Task, TaskValue, Checkable, Checklist):
 		""" Should return True is task is available for given day
 		considering its repeat pattern and start date.
 		"""
-		if self._data['frequency'] == 'daily':
+		if self._data['frequency'] == Daily.Frequency.DAILY:
 			if timeutils.days_passed(self._data['startDate'], today, timezoneOffset=timezoneOffset) % self._data['everyX'] != 0:
 				return False
-		elif self._data['frequency'] == 'weekly':
-			if not self._data['repeat'][WeeklyTrigger.ABBR[today.weekday()]]:
+		elif self._data['frequency'] == Daily.Frequency.WEEKLY:
+			if not self._data['repeat'][WeeklyFrequency.ABBR[today.weekday()]]:
 				return False
 		else: # pragma: no cover
 			raise ValueError("Unknown daily frequency: {0}".format(self._data['frequency']))
@@ -331,6 +522,27 @@ class Daily(Task, TaskValue, Checkable, Checklist):
 		super().undo()
 
 class Todo(Task, TaskValue, Checkable, Checklist):
+	def __init__(self, text=None, alias=None, attribute=None, collapseChecklist=None,
+			notes=None, priority=None, reminders=None, tags=None,
+			# Todo-only fields:
+			date=None,
+			# API args:
+			**kwargs
+			):
+		super().__init__(
+				text=text,
+				alias=alias,
+				attribute=attribute,
+				collapseChecklist=collapseChecklist,
+				notes=notes,
+				priority=priority,
+				reminders=reminders,
+				tags=tags,
+				**kwargs,
+				)
+		if text is not None:
+			if date is not None:
+				self._data['date'] = date.strftime('%Y-%m-%d')
 	@property
 	def date(self):
 		return self._data['date']

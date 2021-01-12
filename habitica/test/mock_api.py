@@ -213,6 +213,7 @@ MockData.USER = {
 MockData.REWARDS = {
 		'augments' : {
 			'id':'augments',
+			'type':'reward',
 			'text':'Use augmentation canister',
 			'value' : 100,
 			},
@@ -252,8 +253,10 @@ MockData.TODOS = {
 			},
 		'liberty' : {
 			'id': 'liberty',
+			'type' : 'todo',
 			'text': 'Free Liberty statue and resque agent.',
-			'date' : 'not-explained',
+			'alias' : 'liberty statue',
+			'date' : '2016-06-20',
 			'dateCompleted' : 'not-explained',
 			'group' : {
 				'id' : 'unatco',
@@ -285,6 +288,7 @@ MockData.TODOS = {
 MockData.DAILIES = {
 		'armory' : {
 			'id':'armory',
+			'type' : 'daily',
 			'text':'Restock at armory',
 			'notes':'See Sam Carter for equipment',
 			'completed':False,
@@ -308,7 +312,9 @@ MockData.DAILIES = {
 			},
 		'manderley' : {
 			'id':'manderley',
-			'text':'Visit Manderley for new missions',
+			'type' : 'daily',
+			'text':'Manderley',
+			'notes':'Visit Manderley for new missions',
 			'frequency':'daily',
 			'startDate':'2016-06-20T21:00:00.000Z',
 			'everyX':12,
@@ -317,6 +323,7 @@ MockData.DAILIES = {
 			},
 		'medbay' : {
 			'id':'medbay',
+			'type' : 'daily',
 			'text':'Visit medbay on Monday',
 			'frequency':'weekly',
 			'repeat':{
@@ -362,6 +369,7 @@ MockData.HABITS = {
 			},
 		'stealth' : {
 			'id' : 'stealth',
+			'type' : 'habit',
 			'text' : 'Be quiet as possible',
 			'value':5.1,
 			'up' : True,

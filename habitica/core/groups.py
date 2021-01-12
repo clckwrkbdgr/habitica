@@ -58,6 +58,9 @@ class Challenge(base.Entity):
 		return [self.child(tasks.Daily, self.api.get('tasks', task_id).data) for task_id in self._data['tasksOrder']['dailys']]
 	def habits(self):
 		return [self.child(tasks.Habit, self.api.get('tasks', task_id).data) for task_id in self._data['tasksOrder']['habits']]
+	def create_task(self, task_obj):
+		data = self.api.post('tasks', 'challenge', self.id, _body=task_obj._data).data
+		return self.child(tasks.Task.type_from_str(data['type']), data)
 	def leader(self):
 		return self.child(user.Member, self.api.get('members', self._data['leader']).data)
 	def member(self, id):
@@ -209,6 +212,9 @@ class Group(base.Entity):
 		return [self.child(tasks.Daily, self.api.get('tasks', task_id).data) for task_id in self._data['tasksOrder']['dailys']]
 	def habits(self):
 		return [self.child(tasks.Habit, self.api.get('tasks', task_id).data) for task_id in self._data['tasksOrder']['habits']]
+	def create_task(self, task_obj):
+		data = self.api.post('tasks', 'group', self.id, _body=task_obj._data).data
+		return self.child(tasks.Task.type_from_str(data['type']), data)
 	def challenges(self):
 		return self.children(Challenge, self.api.get('challenges', 'groups', self.id).data)
 	@property

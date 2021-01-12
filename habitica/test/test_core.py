@@ -277,7 +277,8 @@ class TestChallenges(unittest.TestCase):
 		self.assertEqual(member.name, 'Paul Denton')
 		tasks = member.tasks()
 		self.assertEqual(tasks[0].id, 'manderley')
-		self.assertEqual(tasks[0].text, 'Visit Manderley for new missions')
+		self.assertEqual(tasks[0].text, 'Manderley')
+		self.assertEqual(tasks[0].notes, 'Visit Manderley for new missions')
 	def should_get_members_for_challenge(self):
 		habitica = core.Habitica(_api=MockAPI(
 			MockDataRequest('get', ['groups'], MockData.ORDERED.GROUPS),
@@ -294,6 +295,26 @@ class TestChallenges(unittest.TestCase):
 		members = list(challenge.members())
 		self.assertEqual(members[0].id, 'mj12trooper1')
 		self.assertEqual(members[30].id, 'mj12trooper31')
+	def should_create_task_for_challenge(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockDataRequest('get', ['groups'], MockData.ORDERED.GROUPS),
+			self._challenge(),
+			MockDataRequest('post', ['tasks', 'challenge', 'unatco'], MockData.TODOS['liberty']),
+			))
+		party = next(_ for _ in habitica.groups(core.Group.GUILDS) if _.id == 'unatco')
+		challenge = party.challenges()[2]
+		task = core.tasks.Todo(
+				text='Free Liberty statue and resque agent.',
+				alias='liberty statue',
+				attribute='per',
+				collapseChecklist=True,
+				priority=core.tasks.Task.Priority.MEDIUM,
+				reminders={'not':'explained'},
+				tags=[],
+				date=datetime.date(2016, 6, 20),
+				)
+		task = challenge.create_task(task)
+		self.assertEqual(task.id, 'liberty')
 
 class TestChat(unittest.TestCase):
 	def should_fetch_messages(self):
@@ -526,6 +547,41 @@ class TestGroup(unittest.TestCase):
 		members = list(group.members())
 		self.assertEqual(members[0].id, 'mj12trooper1')
 		self.assertEqual(members[30].id, 'mj12trooper31')
+	def should_create_task_for_group(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockDataRequest('get', ['groups'], MockData.ORDERED.GROUPS),
+			MockDataRequest('post', ['tasks', 'group', 'unatco'], MockData.DAILIES['manderley']),
+			MockDataRequest('post', ['tasks', 'group', 'unatco'], MockData.DAILIES['medbay']),
+			))
+		party = next(_ for _ in habitica.groups(core.Group.GUILDS) if _.id == 'unatco')
+
+		task = core.tasks.Daily(
+				text='Manderley',
+				notes='Visit Manderley for new missions',
+				streak=0,
+				frequency=core.tasks.DailyFrequency(
+					startDate='2016-06-20T21:00:00.000Z',
+					everyX=12,
+					),
+				)
+		task = party.create_task(task)
+		self.assertEqual(task.id, 'manderley')
+
+		task = core.tasks.Daily(
+				text='Visit medbay on Monday',
+				streak=0,
+				frequency=core.tasks.WeeklyFrequency(
+					monday=True,
+					tuesday=False,
+					wednesday=False,
+					thursday=False,
+					friday=False,
+					saturday=False,
+					sunday=False,
+					),
+				)
+		task = party.create_task(task)
+		self.assertEqual(task.id, 'medbay')
 
 class TestUser(unittest.TestCase):
 	def _user_data(self, stats=None, **kwargs):
@@ -791,6 +847,28 @@ class TestUser(unittest.TestCase):
 		first.mark_as_read()
 		notifications.mark_as_seen()
 		notifications.mark_as_read()
+	def should_create_task_for_user(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockDataRequest('get', ['user'], MockData.USER),
+			MockDataRequest('post', ['tasks', 'user'], MockData.REWARDS['augments']),
+			MockDataRequest('post', ['tasks', 'user'], MockData.HABITS['stealth']),
+			))
+		user = habitica.user()
+
+		task = core.tasks.Reward(
+				text='Use augmentation canister',
+				value=100,
+				)
+		task = user.create_task(task)
+		self.assertEqual(task.id, 'augments')
+
+		task = core.tasks.Habit(
+				text='Be quiet as possible',
+				up=True,
+				down=True,
+				)
+		task = user.create_task(task)
+		self.assertEqual(task.id, 'stealth')
 
 class TestNews(unittest.TestCase):
 	def should_get_latest_news(self):
@@ -1223,7 +1301,7 @@ class TestTodos(unittest.TestCase):
 		self.assertFalse(todo[1].is_completed)
 
 		todo = todos[0]
-		self.assertEqual(todo.date, 'not-explained')
+		self.assertEqual(todo.date, '2016-06-20')
 		self.assertEqual(todo.dateCompleted, 'not-explained')
 
 		group = todo.group

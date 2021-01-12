@@ -282,6 +282,9 @@ class _UserMethods:
 		return self.children(tasks.Todo, self.api.get('tasks', 'user', type='todos').data)
 	def rewards(self):
 		return self.children(tasks.Reward, self.api.get('tasks', 'user', type='rewards').data)
+	def create_task(self, task_obj):
+		data = self.api.post('tasks', 'user', _body=task_obj._data).data
+		return self.child(tasks.Task.type_from_str(data['type']), data)
 	def challenges(self):
 		return self.children(groups.Challenge, self.api.get('challenges', 'user').data)
 	def tags(self):
