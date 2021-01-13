@@ -869,6 +869,11 @@ class TestUser(unittest.TestCase):
 				)
 		task = user.create_task(task)
 		self.assertEqual(task.id, 'stealth')
+	def should_clear_completed_todos(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockDataRequest('post', ['tasks', 'clearCompletedTodos'], {}),
+			))
+		habitica.user.clearCompletedTodos()
 
 class TestNews(unittest.TestCase):
 	def should_get_latest_news(self):
@@ -1024,12 +1029,14 @@ class TestQuest(unittest.TestCase):
 		quest.reject()
 
 class TestTasks(unittest.TestCase):
-	def should_add_tag_to_a_task(self):
+	def should_operate_on_tags_in_task(self):
 		habitica = core.Habitica(_api=MockAPI(
 			MockDataRequest('get', ['user'], MockData.USER),
 			MockDataRequest('get', ['tasks', 'user'], MockData.ORDERED.DAILIES),
 			MockDataRequest('get', ['tags'], MockData.ORDERED.TAGS),
 			MockDataRequest('post', ['tasks', 'armory', 'tags', 'unatco'], dict(MockData.DAILIES['armory'], tags=[MockData.TAGS['unatco']])),
+			MockDataRequest('get', ['tags'], MockData.ORDERED.TAGS),
+			MockDataRequest('delete', ['tasks', 'armory', 'tags', 'unatco'], MockData.DAILIES['armory']),
 			))
 		user = habitica.user()
 		tasks = user.dailies()
@@ -1038,6 +1045,8 @@ class TestTasks(unittest.TestCase):
 		tag = tags[2]
 		task.add_tag(tag)
 		self.assertEqual(task.tags[0].id, 'unatco')
+		task.delete_tag(tag)
+		self.assertEqual(len(user.tags()), 3)
 	def should_approve_task_for_user(self):
 		habitica = core.Habitica(_api=MockAPI(
 			MockDataRequest('get', ['user'], MockData.USER),
@@ -1060,6 +1069,17 @@ class TestTasks(unittest.TestCase):
 		tasks = user.dailies()
 		task = tasks[0]
 		task.assign_to(habitica.member('pauldenton'))
+	def should_delete_task(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockDataRequest('get', ['user'], MockData.USER),
+			MockDataRequest('get', ['tasks', 'user'], MockData.ORDERED.DAILIES),
+			MockDataRequest('delete', ['tasks', 'armory'], {}),
+			))
+		user = habitica.user()
+		tasks = user.dailies()
+		task = tasks[0]
+		task.delete_task()
+		self.assertIsNone(task.id)
 
 class TestRewards(unittest.TestCase):
 	def should_get_user_rewards(self):
@@ -1253,16 +1273,18 @@ class TestDailies(unittest.TestCase):
 		self.assertFalse(daily[1].is_completed)
 		daily[1].complete()
 		self.assertTrue(daily[1].is_completed)
-	def should_add_item_to_checklist(self):
+	def should_operate_on_items_in_checklist(self):
 		habitica = core.Habitica(_api=MockAPI(
 			MockDataRequest('get', ['user'], MockData.USER),
 			MockDataRequest('get', ['tasks', 'user'], MockData.ORDERED.DAILIES),
 			MockDataRequest('post', ['tasks', 'armory', 'checklist'], MockData.DAILIES['armory']),
+			MockDataRequest('delete', ['tasks', 'armory', 'checklist', 'lockpick'], MockData.DAILIES['armory']),
 			))
 		user = habitica.user()
 		tasks = user.dailies()
 		task = tasks[0]
 		task.append('Get medkits')
+		task.delete(task[1])
 
 class TestTodos(unittest.TestCase):
 	def should_get_list_of_user_todos(self):

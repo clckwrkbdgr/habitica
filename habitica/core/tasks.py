@@ -88,6 +88,7 @@ class Task(base.Entity):
 		MEDIUM = 1.5
 		HARD = 2.0
 
+	# TODO GET /tasks/:id
 	def __init__(self, text=None,
 			alias=None,
 			attribute=None,
@@ -185,10 +186,15 @@ class Task(base.Entity):
 		return self.child(ChallengeInfo, self._data['challenge'])
 	def add_tag(self, tag):
 		self._data = self.api.post('tasks', self.id, 'tags', tag.id).data
+	def delete_tag(self, tag):
+		self._data = self.api.delete('tasks', self.id, 'tags', tag.id).data
 	def approve_for(self, member):
 		self._data = self.api.post('tasks', self.id, 'approve', member.id).data
 	def assign_to(self, member):
 		self._data = self.api.post('tasks', self.id, 'assign', member.id).data
+	def delete_task(self):
+		""" Deletes task from server and resets internal data of this object. """
+		self._data = self.api.delete('tasks', self.id).data
 
 class Reward(Task):
 	def __init__(self, text=None, alias=None, attribute=None, collapseChecklist=None,
@@ -349,6 +355,8 @@ class Checklist:
 		self._data = self.api.post('tasks', self.id, 'checklist', _body={
 			'text' : text,
 			}).data
+	def delete(self, item):
+		self._data = self.api.delete('tasks', self.id, 'checklist', item.id).data
 
 class DailyFrequency(base.ApiObject):
 	def __init__(self,

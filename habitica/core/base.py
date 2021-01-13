@@ -56,7 +56,7 @@ class Entity(ApiObject):
 		result = self._data.get('_id')
 		if result:
 			return result
-		return self._data['id']
+		return self._data.get('id', None)
 
 @functools.total_ordering
 class ValueBar:

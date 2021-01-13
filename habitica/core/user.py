@@ -276,8 +276,13 @@ class _UserMethods:
 
 	def habits(self):
 		return self.children(tasks.Habit, self.api.get('tasks', 'user', type='habits').data)
-	def dailies(self):
-		return self.children(tasks.Daily, self.api.get('tasks', 'user', type='dailys').data)
+	def dailies(self, dueDate=None):
+		query = {
+				'type' : 'dailys',
+				}
+		if dueDate: # pragma: no cover -- TODO requires real testing first.
+			query['dueDate'] = dueDate # FIXME convert to what format?
+		return self.children(tasks.Daily, self.api.get('tasks', 'user', **query).data)
 	def todos(self):
 		return self.children(tasks.Todo, self.api.get('tasks', 'user', type='todos').data)
 	def rewards(self):
@@ -289,6 +294,8 @@ class _UserMethods:
 		return self.children(groups.Challenge, self.api.get('challenges', 'user').data)
 	def tags(self):
 		return self.children(tags.Tag, self.api.get('tags').data)
+	def clearCompletedTodos(self):
+		self.api.post('tasks', 'clearCompletedTodos')
 
 class UserProxy(base.ApiInterface, _UserMethods):
 	""" Lazy class to proxy call methods that do not require immediate user data,

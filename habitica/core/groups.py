@@ -50,6 +50,7 @@ class Challenge(base.Entity):
 	@property
 	def official(self):
 		return self._data['official']
+	# TODO GET /tasks/challenge/:id ? type=[daily,...]
 	def rewards(self):
 		return [self.child(tasks.Reward, self.api.get('tasks', task_id).data) for task_id in self._data['tasksOrder']['rewards']]
 	def todos(self):
@@ -204,6 +205,7 @@ class Group(base.Entity):
 	@property
 	def leaderMessage(self):
 		return self._data['leaderMessage']
+	# TODO GET /tasks/group/:id ? type=[daily,...]
 	def rewards(self):
 		return [self.child(tasks.Reward, self.api.get('tasks', task_id).data) for task_id in self._data['tasksOrder']['rewards']]
 	def todos(self):
@@ -278,6 +280,12 @@ class Group(base.Entity):
 		""" Yields all current invites for the group. """
 		for member in iterate_pages(self, user.Member, 'groups', self.id, 'invites', includeAllPublicFields=includeAllPublicFields):
 			yield member
+	def approvals(self): # pragma: no cover -- TODO no scenario
+		return [
+				self.child(tasks.Task.type_from_str(data['type']), data)
+				for data in
+				self.api.get('approvals', 'group', self.id).data
+				]
 	def members(self, includeAllPublicFields=False, includeTasks=False):
 		""" Yields all current invites for the group. """
 		for member in iterate_pages(self, user.Member, 'groups', self.id, 'members', includeAllPublicFields=includeAllPublicFields, includeTasks=includeTasks):
