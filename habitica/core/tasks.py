@@ -192,9 +192,21 @@ class Task(base.Entity):
 		self._data = self.api.post('tasks', self.id, 'approve', member.id).data
 	def assign_to(self, member):
 		self._data = self.api.post('tasks', self.id, 'assign', member.id).data
+	def unassign_from(self, member):
+		self._data = self.api.post('tasks', self.id, 'unassign', member.id).data
 	def delete_task(self):
 		""" Deletes task from server and resets internal data of this object. """
 		self._data = self.api.delete('tasks', self.id).data
+	def move_to(self, new_pos):
+		""" Move task to a new position in corresponding list.
+		0 is the top, -1 is the bottom.
+		Returns list of Task IDs in new order.
+		"""
+		return self.api.post('tasks', self.id, 'move', 'to', str(new_pos)).data
+	def needs_work(self, assigned_user):
+		self.data = self.api.post('tasks', self.id, 'needs-work', assigned_user.id).data
+	def unlink_from_challenge(self, keep=False):
+		self.api.post('tasks', 'unlink-one', self.id, keep='keep' if keep else 'remove')
 
 class Reward(Task):
 	def __init__(self, text=None, alias=None, attribute=None, collapseChecklist=None,
@@ -222,6 +234,7 @@ class Reward(Task):
 	def value(self):
 		return base.Price(self._data['value'], 'gold')
 	def _buy(self, user):
+		# TODO data also stores updated user stats, needs to calculate diff and notify.
 		self.api.post('tasks', self.id, 'score', 'up')
 
 class TaskValue:
@@ -294,11 +307,15 @@ class Habit(Task, TaskValue):
 	def up(self):
 		if not self._data['up']:
 			raise CannotScoreUp(self)
+		# TODO data also stores updated user stats, needs to calculate diff and notify.
+		# TODO also data._tmp is a Drop, need to display notification.
 		result = self.api.post('tasks', self.id, 'score', 'up').data
 		self._data['value'] += result['delta']
 	def down(self):
 		if not self._data['down']:
 			raise CannotScoreDown(self)
+		# TODO data also stores updated user stats, needs to calculate diff and notify.
+		# TODO also data._tmp is a Drop, need to display notification.
 		result = self.api.post('tasks', self.id, 'score', 'down').data
 		self._data['value'] += result['delta']
 
@@ -323,12 +340,16 @@ class SubItem(Task, Checkable):
 		""" Marks subitem as completed. """
 		if self.is_completed:
 			return
+		# TODO data also stores updated user stats, needs to calculate diff and notify.
+		# TODO also data._tmp is a Drop, need to display notification.
 		self.api.post('tasks', self._parent.id, 'checklist', self.id, 'score')
 		super().complete()
 	def undo(self):
 		""" Marks subitem as not completed. """
 		if not self.is_completed:
 			return
+		# TODO data also stores updated user stats, needs to calculate diff and notify.
+		# TODO also data._tmp is a Drop, need to display notification.
 		self.api.post('tasks', self._parent.id, 'checklist', self.id, 'score')
 		super().undo()
 
@@ -522,11 +543,17 @@ class Daily(Task, TaskValue, Checkable, Checklist):
 
 	def complete(self):
 		""" Marks daily as completed. """
-		self.api.post('tasks', self.id, 'score', 'up')
+		# TODO data also stores updated user stats, needs to calculate diff and notify.
+		# TODO also data._tmp is a Drop, need to display notification.
+		result = self.api.post('tasks', self.id, 'score', 'up').data
+		self._data['value'] += result['delta']
 		super().complete()
 	def undo(self):
 		""" Marks daily as not completed. """
-		self.api.post('tasks', self.id, 'score', 'down')
+		# TODO data also stores updated user stats, needs to calculate diff and notify.
+		# TODO also data._tmp is a Drop, need to display notification.
+		result = self.api.post('tasks', self.id, 'score', 'down').data
+		self._data['value'] += result['delta']
 		super().undo()
 
 class Todo(Task, TaskValue, Checkable, Checklist):
@@ -559,9 +586,15 @@ class Todo(Task, TaskValue, Checkable, Checklist):
 		return self._data['dateCompleted'] # FIXME parse date
 	def complete(self):
 		""" Marks todo as completed. """
-		self.api.post('tasks', self.id, 'score', 'up')
+		# TODO data also stores updated user stats, needs to calculate diff and notify.
+		# TODO also data._tmp is a Drop, need to display notification.
+		result = self.api.post('tasks', self.id, 'score', 'up').data
+		self._data['value'] += result['delta']
 		super().complete()
 	def undo(self):
 		""" Marks todo as not completed. """
-		self.api.post('tasks', self.id, 'score', 'down')
+		# TODO data also stores updated user stats, needs to calculate diff and notify.
+		# TODO also data._tmp is a Drop, need to display notification.
+		result = self.api.post('tasks', self.id, 'score', 'down').data
+		self._data['value'] += result['delta']
 		super().undo()

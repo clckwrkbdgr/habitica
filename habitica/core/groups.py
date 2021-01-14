@@ -96,6 +96,8 @@ class Challenge(base.Entity):
 		self.api.post('challenges', self.id, 'selectWinner', person.id)
 	def delete(self):
 		self.api.delete('challenges', self.id)
+	def unlink_tasks(self, keep=False):
+		self.api.post('tasks', 'unlink-all', self.id, keep='keep-all' if keep else 'emove-all')
 
 class ChatMessage(base.Entity):
 	@property

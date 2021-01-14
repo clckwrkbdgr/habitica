@@ -315,6 +315,15 @@ class TestChallenges(unittest.TestCase):
 				)
 		task = challenge.create_task(task)
 		self.assertEqual(task.id, 'liberty')
+	def should_unlink_all_tasks_from_challenge(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockDataRequest('get', ['groups'], MockData.ORDERED.GROUPS),
+			self._challenge(),
+			MockDataRequest('post', ['tasks', 'unlink-all', 'unatco'], {}),
+			))
+		party = next(_ for _ in habitica.groups(core.Group.GUILDS) if _.id == 'unatco')
+		challenge = party.challenges()[2]
+		challenge.unlink_tasks(keep=False)
 
 class TestChat(unittest.TestCase):
 	def should_fetch_messages(self):
@@ -1064,11 +1073,14 @@ class TestTasks(unittest.TestCase):
 			MockDataRequest('get', ['tasks', 'user'], MockData.ORDERED.DAILIES),
 			MockDataRequest('get', ['members', 'pauldenton'], MockData.MEMBERS['pauldenton']),
 			MockDataRequest('post', ['tasks', 'armory', 'assign', 'pauldenton'], MockData.DAILIES['armory']),
+			MockDataRequest('post', ['tasks', 'armory', 'unassign', 'pauldenton'], MockData.DAILIES['armory']),
 			))
 		user = habitica.user()
 		tasks = user.dailies()
 		task = tasks[0]
-		task.assign_to(habitica.member('pauldenton'))
+		paul = habitica.member('pauldenton')
+		task.assign_to(paul)
+		task.unassign_from(paul)
 	def should_delete_task(self):
 		habitica = core.Habitica(_api=MockAPI(
 			MockDataRequest('get', ['user'], MockData.USER),
@@ -1080,6 +1092,33 @@ class TestTasks(unittest.TestCase):
 		task = tasks[0]
 		task.delete_task()
 		self.assertIsNone(task.id)
+	def should_rearrange_tasks(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockDataRequest('get', ['user'], MockData.USER),
+			MockDataRequest('get', ['tasks', 'user'], MockData.ORDERED.DAILIES),
+			MockDataRequest('post', ['tasks', 'armory', 'move', 'to', '-1'], MockData.ORDERED.DAILIES),
+			))
+		user = habitica.user()
+		tasks = user.dailies()
+		tasks[0].move_to(-1)
+	def should_require_more_work_for_group_tasks(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockDataRequest('get', ['user'], MockData.USER),
+			MockDataRequest('get', ['tasks', 'user'], MockData.ORDERED.DAILIES),
+			MockDataRequest('post', ['tasks', 'armory', 'needs-work', 'jcdenton'], MockData.DAILIES['armory']),
+			))
+		user = habitica.user()
+		tasks = user.dailies()
+		tasks[0].needs_work(user)
+	def should_unlink_from_challenge(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockDataRequest('get', ['user'], MockData.USER),
+			MockDataRequest('get', ['tasks', 'user'], MockData.ORDERED.DAILIES),
+			MockDataRequest('post', ['tasks', 'unlink-one', 'armory'], {}),
+			))
+		user = habitica.user()
+		tasks = user.dailies()
+		tasks[0].unlink_from_challenge()
 
 class TestRewards(unittest.TestCase):
 	def should_get_user_rewards(self):
@@ -1239,8 +1278,8 @@ class TestDailies(unittest.TestCase):
 		habitica = core.Habitica(_api=MockAPI(
 			MockDataRequest('get', ['user'], MockData.USER),
 			MockDataRequest('get', ['tasks', 'user'], MockData.ORDERED.DAILIES),
-			MockDataRequest('post', ['tasks', 'armory', 'score', 'up'], {}),
-			MockDataRequest('post', ['tasks', 'armory', 'score', 'down'], {}),
+			MockDataRequest('post', ['tasks', 'armory', 'score', 'up'], {'delta':1}),
+			MockDataRequest('post', ['tasks', 'armory', 'score', 'down'], {'delta':-1}),
 			))
 		user = habitica.user()
 		dailies = user.dailies()
@@ -1352,8 +1391,8 @@ class TestTodos(unittest.TestCase):
 		habitica = core.Habitica(_api=MockAPI(
 			MockDataRequest('get', ['user'], MockData.USER),
 			MockDataRequest('get', ['tasks', 'user'], MockData.ORDERED.TODOS),
-			MockDataRequest('post', ['tasks', 'majestic12', 'score', 'up'], {}),
-			MockDataRequest('post', ['tasks', 'majestic12', 'score', 'down'], {}),
+			MockDataRequest('post', ['tasks', 'majestic12', 'score', 'up'], {'delta':1}),
+			MockDataRequest('post', ['tasks', 'majestic12', 'score', 'down'], {'delta':-1}),
 			))
 		user = habitica.user()
 		todos = user.todos()
