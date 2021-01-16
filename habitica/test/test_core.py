@@ -1142,6 +1142,26 @@ class TestRewards(unittest.TestCase):
 		user = habitica.user()
 		rewards = user.rewards()
 		user.buy(rewards[0])
+	def should_update_reward(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockDataRequest('get', ['user'], MockData.USER),
+			MockDataRequest('get', ['tasks', 'user'], MockData.ORDERED.REWARDS),
+			MockDataRequest('put', ['tasks', 'augments'], MockData.REWARDS['augments']),
+			))
+		user = habitica.user()
+		rewards = user.rewards()
+		rewards[0].update(
+				text='Use augmentation canisters and upgrades',
+				notes='Create a strong build.',
+				tags=[],
+				value=400,
+				)
+		self.assertEqual(habitica.api.responses[-1].body, {
+			'notes': 'Create a strong build.',
+			'tags': [],
+			'text': 'Use augmentation canisters and upgrades',
+			'value': 400,
+			})
 
 class TestHabits(unittest.TestCase):
 	def should_get_list_of_user_habits(self):
@@ -1206,6 +1226,37 @@ class TestHabits(unittest.TestCase):
 		with self.assertRaises(core.CannotScoreDown) as e:
 			habits[1].down()
 		self.assertEqual(str(e.exception), "Habit 'Carry on, agent' cannot be decremented")
+	def should_update_habit(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockDataRequest('get', ['user'], MockData.USER),
+			MockDataRequest('get', ['tasks', 'user'], MockData.ORDERED.HABITS),
+			MockDataRequest('put', ['tasks', 'stealth'], {}),
+			))
+		user = habitica.user()
+		habits = user.habits()
+		habit = habits[5]
+		habit.update(
+				text='Use Stealth ability',
+				notes='Upgrade as much as possible',
+				attribute="dex",
+				collapseChecklist=True,
+				priority=core.tasks.Task.Priority.MEDIUM,
+				reminders=['not-explained'],
+				tags=[],
+				up=False,
+				down=True,
+				)
+		self.assertEqual(habitica.api.responses[-1].body, {
+			'text' : 'Use Stealth ability',
+			'notes' : 'Upgrade as much as possible',
+			'attribute' : "dex",
+			'collapseChecklist' : True,
+			'priority' : core.tasks.Task.Priority.MEDIUM,
+			'reminders' : ['not-explained'],
+			'tags' : [],
+			'up' : False,
+			'down' : True,
+			})
 
 class TestDailies(unittest.TestCase):
 	def should_get_list_of_user_dailies(self):
@@ -1317,13 +1368,87 @@ class TestDailies(unittest.TestCase):
 			MockDataRequest('get', ['user'], MockData.USER),
 			MockDataRequest('get', ['tasks', 'user'], MockData.ORDERED.DAILIES),
 			MockDataRequest('post', ['tasks', 'armory', 'checklist'], MockData.DAILIES['armory']),
+			MockDataRequest('put', ['tasks', 'armory', 'checklist', 'lockpick'], MockData.DAILIES['armory']),
 			MockDataRequest('delete', ['tasks', 'armory', 'checklist', 'lockpick'], MockData.DAILIES['armory']),
 			))
 		user = habitica.user()
 		tasks = user.dailies()
 		task = tasks[0]
 		task.append('Get medkits')
+		task[1].update('Get medkits from medbay')
 		task.delete(task[1])
+	def should_update_daily(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockDataRequest('get', ['user'], MockData.USER),
+			MockDataRequest('get', ['tasks', 'user'], MockData.ORDERED.DAILIES),
+			MockDataRequest('put', ['tasks', 'armory'], MockData.DAILIES['armory']),
+			MockDataRequest('put', ['tasks', 'manderley'], MockData.DAILIES['manderley']),
+			MockDataRequest('put', ['tasks', 'manderley'], MockData.DAILIES['manderley']),
+			MockDataRequest('put', ['tasks', 'medbay'], MockData.DAILIES['medbay']),
+			))
+		user = habitica.user()
+		tasks = user.dailies()
+
+		task = tasks[0]
+		task.update(
+				streak=12,
+				frequency=core.tasks.WeeklyFrequency(
+					monday=True,
+					tuesday=False,
+					wednesday=False,
+					thursday=False,
+					friday=False,
+					saturday=False,
+					sunday=False,
+					),
+				)
+		self.assertEqual(habitica.api.responses[-1].body, {
+			'streak' : 12,
+			'frequency' : 'weekly',
+			'repeat':{
+				"m":True,
+				"t":False,
+				"w":False,
+				"th":False,
+				"f":False,
+				"s":False,
+				"su":False,
+				},
+			})
+
+		task = tasks[1]
+		task.update(
+				frequency=core.tasks.DailyFrequency(
+					startDate='today',
+					),
+				)
+		self.assertEqual(habitica.api.responses[-1].body, {
+			'startDate' : 'today',
+			})
+
+		task = tasks[1]
+		task.update(
+				frequency=core.tasks.DailyFrequency(
+					everyX=7,
+					),
+				)
+		self.assertEqual(habitica.api.responses[-1].body, {
+			'everyX' : 7,
+			})
+
+		task = tasks[2]
+		print(task._data)
+		task.update(
+				frequency=core.tasks.DailyFrequency(
+					startDate='today',
+					everyX=7,
+					),
+				)
+		self.assertEqual(habitica.api.responses[-1].body, {
+			'frequency' : 'daily',
+			'startDate' : 'today',
+			'everyX' : 7,
+			})
 
 class TestTodos(unittest.TestCase):
 	def should_get_list_of_user_todos(self):
@@ -1427,6 +1552,29 @@ class TestTodos(unittest.TestCase):
 		self.assertFalse(todo[1].is_completed)
 		todo[1].complete()
 		self.assertTrue(todo[1].is_completed)
+	def should_update_todo(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockDataRequest('get', ['user'], MockData.USER),
+			MockDataRequest('get', ['tasks', 'user'], MockData.ORDERED.TODOS),
+			MockDataRequest('put', ['tasks', 'liberty'], {}),
+			))
+		user = habitica.user()
+		todos = user.todos()
+		todo = todos[0]
+		todo.update(
+				text='Liberate Liberty statue',
+				notes='and resque agents',
+				collapseChecklist=False,
+				priority=core.tasks.Task.Priority.HARD,
+				date='today',
+				)
+		self.assertEqual(habitica.api.responses[-1].body, {
+			'text' : 'Liberate Liberty statue',
+			'notes' : 'and resque agents',
+			'collapseChecklist' : False,
+			'priority' : core.tasks.Task.Priority.HARD,
+			'date' : 'today',
+			})
 
 class TestSpells(unittest.TestCase):
 	def should_get_full_list_of_spells_for_user(self):

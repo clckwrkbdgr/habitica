@@ -121,6 +121,31 @@ class Task(base.Entity):
 			self._data['reminders'] = reminders
 		if tags is not None:
 			self._data['tags'] = tags
+	def update(self, text=None,
+			attribute=None,
+			collapseChecklist=None,
+			notes=None,
+			priority=None,
+			reminders=None,
+			tags=None,
+			**specific_args
+			):
+		_body = specific_args
+		if text is not None:
+			_body['text'] = text
+		if attribute is not None:
+			_body['attribute'] = attribute
+		if collapseChecklist is not None:
+			_body['collapseChecklist'] = collapseChecklist
+		if notes is not None:
+			_body['notes'] = notes
+		if priority is not None:
+			_body['priority'] = priority
+		if reminders is not None:
+			_body['reminders'] = reminders
+		if tags is not None:
+			_body['tags'] = tags
+		self._data = self.api.put('tasks', self.id, _body=_body).data
 
 	@property
 	def task_type(self):
@@ -230,6 +255,21 @@ class Reward(Task):
 		if text is not None:
 			if value is not None:
 				self._data['value'] = value
+	def update(self, text=None,
+			notes=None,
+			tags=None,
+			# Reward-specific args:
+			value=None,
+			):
+		specific_args = {}
+		if value is not None:
+			specific_args['value'] = value
+		super().update(
+				text=text,
+				notes=notes,
+				tags=tags,
+				**specific_args
+				)
 	@property
 	def value(self):
 		return base.Price(self._data['value'], 'gold')
@@ -289,6 +329,32 @@ class Habit(Task, TaskValue):
 				self._data['up'] = up
 			if down is not None:
 				self._data['down'] = down
+	def update(self, text=None,
+			attribute=None,
+			collapseChecklist=None,
+			notes=None,
+			priority=None,
+			reminders=None,
+			tags=None,
+			# Habit-specific args:
+			up=None,
+			down=None,
+			):
+		specific_args = {}
+		if up is not None:
+			specific_args['up'] = up
+		if down is not None:
+			specific_args['down'] = down
+		super().update(
+				text=text,
+				attribute=attribute,
+				collapseChecklist=collapseChecklist,
+				notes=notes,
+				priority=priority,
+				reminders=reminders,
+				tags=tags,
+				**specific_args
+				)
 	@property
 	def can_score_up(self):
 		return self._data['up']
@@ -352,6 +418,8 @@ class SubItem(Task, Checkable):
 		# TODO also data._tmp is a Drop, need to display notification.
 		self.api.post('tasks', self._parent.id, 'checklist', self.id, 'score')
 		super().undo()
+	def update(self, text):
+		self._parent._data = self.api.put('tasks', self._parent.id, 'checklist', self.id, _body={'text':text}).data
 
 class Checklist:
 	""" Base class for task that provides list of checkable sub-items. """
@@ -504,6 +572,53 @@ class Daily(Task, TaskValue, Checkable, Checklist):
 					raise RuntimeError('Frequencies other than daily or weekly are not supported (yet).')
 			if streak is not None:
 				self._data['streak'] = streak
+	def update(self, text=None,
+			attribute=None,
+			collapseChecklist=None,
+			notes=None,
+			priority=None,
+			reminders=None,
+			tags=None,
+			# Daily-specific args:
+			frequency=None,
+			# TODO frequency, repeat, everyX, streak, daysOfMonth, weeksOfMonth, startDate (daily)
+			streak=None,
+			):
+		specific_args = {}
+		if frequency is not None:
+			assert type(frequency) in (DailyFrequency, WeeklyFrequency)
+			frequency_type = {
+					DailyFrequency : self.Frequency.DAILY,
+					WeeklyFrequency : self.Frequency.WEEKLY,
+					}[type(frequency)]
+			if self._data['frequency'] != frequency_type:
+				specific_args['frequency'] = frequency_type
+			if frequency_type == self.Frequency.WEEKLY:
+				specific_args['repeat'] = frequency._data['repeat']
+			elif frequency_type == self.Frequency.DAILY:
+				if self._data['frequency'] != frequency_type:
+					specific_args.update(frequency._data)
+				else:
+					if 'everyX' in frequency._data and self._data['everyX'] != frequency._data['everyX']:
+						specific_args['everyX'] = frequency._data['everyX']
+					if 'startDate' in frequency._data and self._data['startDate'] != frequency._data['startDate']:
+						specific_args['startDate'] = frequency._data['startDate']
+			else: # pragma: no cover
+				# TODO daysOfMonth for Daily (monthly?)
+				# TODO weeksOfMonth for Daily (monthly?)
+				raise RuntimeError('Frequencies other than daily or weekly are not supported (yet).')
+		if streak is not None:
+			specific_args['streak'] = streak
+		super().update(
+				text=text,
+				attribute=attribute,
+				collapseChecklist=collapseChecklist,
+				notes=notes,
+				priority=priority,
+				reminders=reminders,
+				tags=tags,
+				**specific_args
+				)
 	@property
 	def streak(self):
 		return self._data['streak']
@@ -578,6 +693,29 @@ class Todo(Task, TaskValue, Checkable, Checklist):
 		if text is not None:
 			if date is not None:
 				self._data['date'] = date.strftime('%Y-%m-%d')
+	def update(self, text=None,
+			attribute=None,
+			collapseChecklist=None,
+			notes=None,
+			priority=None,
+			reminders=None,
+			tags=None,
+			# Todo-specific args:
+			date=None,
+			):
+		specific_args = {}
+		if date is not None:
+			specific_args['date'] = date
+		super().update(
+				text=text,
+				attribute=attribute,
+				collapseChecklist=collapseChecklist,
+				notes=notes,
+				priority=priority,
+				reminders=reminders,
+				tags=tags,
+				**specific_args
+				)
 	@property
 	def date(self):
 		return self._data['date']

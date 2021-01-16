@@ -297,6 +297,7 @@ MockData.DAILIES = {
 			'value' : 10,
 			'streak' : 3,
 			'yesterDaily' : False,
+			'frequency' : 'daily',
 			'isDue' : True,
 			'nextDue' : '2016-06-20T21:00:00.000Z',
 			'checklist': [
