@@ -171,6 +171,25 @@ class UserStats(base.ApiObject, content.BaseStats):
 	@property
 	def training(self):
 		return self.child(Training, self._data['training'])
+	def allocate(self, strength=None, intelligence=None, perception=None, constitution=None):
+		stats = {}
+		if strength:
+			stats['str'] = strength
+		if intelligence:
+			stats['int'] = intelligence
+		if perception:
+			stats['per'] = perception
+		if constitution:
+			stats['con'] = constitution
+		assert stats, "No stat was specified to allocate"
+		if len(stats) == 1 and next(iter(stats.values())) == 1:
+			data = self.api.post('user', 'allocate', stat=next(iter(stats.keys()))).data
+		else:
+			data = self.api.post('user', 'allocate-bulk', _body={'stats':stats}).data
+		self._data.update(data)
+	def autoallocate_all(self):
+		data = self.api.post('user', 'allocate-now').data
+		self._data.update(data)
 
 class Gear(base.ApiObject):
 	@property
@@ -424,7 +443,7 @@ class User(base.Entity, _UserMethods):
 		return self.child(quests.Quest, None, _user_progress=self._data['party']['quest'])
 	@property
 	def stats(self):
-		return UserStats(_data=self._data['stats'])
+		return self.child(UserStats, self._data['stats'])
 	@property
 	def flags(self):
 		# See User model (GET /models/user/paths)

@@ -883,6 +883,17 @@ class TestUser(unittest.TestCase):
 			MockDataRequest('post', ['tasks', 'clearCompletedTodos'], {}),
 			))
 		habitica.user.clearCompletedTodos()
+	def should_allocate_stat_points(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockDataRequest('get', ['user'], MockData.USER),
+			MockDataRequest('post', ['user', 'allocate'], MockData.USER['stats']),
+			MockDataRequest('post', ['user', 'allocate-bulk'], MockData.USER['stats']),
+			MockDataRequest('post', ['user', 'allocate-now'], MockData.USER['stats']),
+			))
+		user = habitica.user()
+		user.stats.allocate(strength=1)
+		user.stats.allocate(strength=2, perception=3, constitution=1, intelligence=5)
+		user.stats.autoallocate_all()
 
 class TestNews(unittest.TestCase):
 	def should_get_latest_news(self):
@@ -1437,7 +1448,6 @@ class TestDailies(unittest.TestCase):
 			})
 
 		task = tasks[2]
-		print(task._data)
 		task.update(
 				frequency=core.tasks.DailyFrequency(
 					startDate='today',
