@@ -160,3 +160,19 @@ class Price:
 	def __eq__(self, other):
 		self._ensure_same_currency(other)
 		return self.value == other
+
+class Purchasable:
+	def buy(self, user):
+		""" Allows User object to buy purchasable items via user.buy(...)
+		May alter User's data upon purchase.
+
+		Each implementation method ._buy(user) should return _full_ response (with .data and .message)
+		or None if no update or notification is needed.
+		"""
+		# TODO gold check?
+		response = self._buy(user)
+		if response:
+			# TODO also returns .message (to display)
+			user._data.update(response.data)
+	def _buy(self, user): # pragma: no cover
+		raise NotImplementedError

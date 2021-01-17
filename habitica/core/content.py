@@ -224,10 +224,13 @@ class BaseStats:
 	def constitution(self):
 		return self.con
 
-class Armoire(ContentEntry, MarketableForGold):
+class Armoire(ContentEntry, MarketableForGold, base.Purchasable):
 	@property
 	def type(self):
 		return self._data['type']
+	def _buy(self, user):
+		# TODO also returns .data.armoire (item that was received).
+		return self.api.post('user', 'buy-armoire')
 
 class Egg(ContentEntry, MarketableForGems):
 	@property
@@ -281,7 +284,7 @@ class HealthOverflowError(Exception):
 	def __str__(self):
 		return 'HP is too high, part of health potion would be wasted.'
 
-class HealthPotion(ContentEntry, MarketableForGold):
+class HealthPotion(ContentEntry, MarketableForGold, base.Purchasable):
 	""" Health potion (+15 hp). """
 	VALUE = 15.0
 	def __init__(self, overflow_check=True, **kwargs):
@@ -297,7 +300,7 @@ class HealthPotion(ContentEntry, MarketableForGold):
 	def _buy(self, user):
 		if self.overflow_check and float(user.stats.hp) + self.VALUE > user.stats.maxHealth:
 			raise HealthOverflowError(user.stats.hp, user.stats.maxHealth)
-		user._data = self.api.post('user', 'buy-health-potion').data
+		return self.api.post('user', 'buy-health-potion')
 
 class StableCreature(ContentEntry):
 	""" Base class for Pets and Mounts. """
@@ -335,7 +338,7 @@ class Castable:
 		""" 'self', 'user', 'party', 'task' """
 		return self._data['target']
 
-class SpecialItem(ContentEntry, MarketableForGold, Castable):
+class SpecialItem(ContentEntry, MarketableForGold, Castable, base.Purchasable):
 	""" Cards, seeds, sparkles, debuff potions etc. """
 	@property
 	def purchaseType(self):
@@ -361,6 +364,8 @@ class SpecialItem(ContentEntry, MarketableForGold, Castable):
 		if not card:
 			return None
 		return card['messageOptions']
+	def _buy(self, user):
+		return self.api.post('user', 'buy-special-spell', self.key)
 
 class Spell(ContentEntry, Castable):
 	@property
@@ -375,7 +380,7 @@ class Spell(ContentEntry, Castable):
 	def lvl(self):
 		return self._data['lvl']
 
-class Gear(ContentEntry, BaseStats, MarketableForGold):
+class Gear(ContentEntry, BaseStats, MarketableForGold, base.Purchasable):
 	@property
 	def klass(self):
 		return self._data['klass']
@@ -416,8 +421,10 @@ class Gear(ContentEntry, BaseStats, MarketableForGold):
 	@property
 	def last(self):
 		return self._data.get('last', False)
+	def _buy(self, user):
+		return self.api.post('user', 'buy-gear', self.key)
 
-class MysterySet(ContentEntry):
+class MysterySet(ContentEntry, base.Purchasable):
 	@property
 	def class_name(self):
 		return self._data['class']
@@ -432,3 +439,5 @@ class MysterySet(ContentEntry):
 		return self.event.end
 	def items(self):
 		return self.children(Gear, self._data['items'])
+	def _buy(self, user):
+		return self.api.post('user', 'buy-mystery-set', self.key)

@@ -233,7 +233,7 @@ class Task(base.Entity):
 	def unlink_from_challenge(self, keep=False):
 		self.api.post('tasks', 'unlink-one', self.id, keep='keep' if keep else 'remove')
 
-class Reward(Task):
+class Reward(Task, base.Purchasable):
 	def __init__(self, text=None, alias=None, attribute=None, collapseChecklist=None,
 			notes=None, priority=None, reminders=None, tags=None,
 			# Reward-only fields:

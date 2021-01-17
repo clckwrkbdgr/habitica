@@ -10,7 +10,7 @@ from .user import UserProxy
 
 # TODO the whole /debug/ route for development
 
-class Coupon(base.ApiObject):
+class Coupon(base.ApiObject, base.Purchasable):
 	# TODO get/ and generate/ - require sudo permissions.
 	@property
 	def code(self):
@@ -18,7 +18,7 @@ class Coupon(base.ApiObject):
 	def validate(self):
 		return self.api.post('coupons', 'validate', self._data).valid
 	def _buy(self, user):
-		user._data = self.api.post('coupons', 'enter', self._data).data
+		return self.api.post('coupons', 'enter', self._data)
 
 class Message(base.ApiObject):
 	pass
@@ -58,6 +58,7 @@ class News(base.ApiObject):
 class Habitica(base.ApiInterface):
 	""" Main Habitica entry point. """
 	# TODO /hall/{heroes,patrons}
+	# TODO /user/block
 	def __init__(self, auth=None, _api=None):
 		self.api = _api or api.API(auth['url'], auth['x-api-user'], auth['x-api-key'])
 		self._content = None

@@ -499,8 +499,9 @@ class User(base.Entity, _UserMethods):
 		# TODO Render as image and cache.
 		return self.api.get('export', 'avatar-{0}.html'.format(self.id), _as_json=False)
 	def buy(self, item):
-		# TODO gold check?
-		item._buy(user=self)
+		if not isinstance(item, base.Purchasable):
+			raise RuntimeError("Item is not Purchasable: {0}".format(type(item)))
+		item.buy(user=self)
 	def spells(self):
 		""" Returns list of available spells. """
 		return self.content.spells(self.stats.class_name)
