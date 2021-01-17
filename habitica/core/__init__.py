@@ -21,7 +21,9 @@ class Coupon(base.ApiObject, base.Purchasable):
 		return self.api.post('coupons', 'enter', self._data)
 
 class Message(base.ApiObject):
-	pass
+	def delete(self): # pragma: no cover -- TODO
+		# TODO apparently returns user.inbox.messages
+		return self.api.delete('user', 'messages', self.id).data
 
 class NewsPost(base.ApiObject):
 	@property
@@ -59,6 +61,8 @@ class Habitica(base.ApiInterface):
 	""" Main Habitica entry point. """
 	# TODO /hall/{heroes,patrons}
 	# TODO /user/block
+	# TODO DELETE /user
+	# TODO DELETE /user/auth/social/:network
 	def __init__(self, auth=None, _api=None):
 		self.api = _api or api.API(auth['url'], auth['x-api-user'], auth['x-api-key'])
 		self._content = None
@@ -123,6 +127,9 @@ class Habitica(base.ApiInterface):
 		if conversation: # pragma: no cover -- TODO
 			params['conversation'] = conversation.id
 		return self.children(Message, self.api.get('inbox', 'messages', **params).data)
+	def clear_inbox(self): # pragma: no cover -- TODO
+		""" Deletes all inbox messages. """
+		self.api.delete('user', 'messages')
 	def member(self, id):
 		return self.child(user.Member, self.api.get('members', id).data)
 	def transfer_gems(self, member, gems, message):

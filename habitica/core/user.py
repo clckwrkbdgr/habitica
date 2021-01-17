@@ -509,7 +509,13 @@ class User(base.Entity, _UserMethods):
 		""" Returns spell by its spell key if available to the user, otherwise None. """
 		return self.content.get_spell(self.stats.class_name, spell_key)
 	def cast(self, spell, target=None):
+		if not isinstance(spell, content.Castable):
+			raise RuntimeError("Object cannot is not castable: {0}".format(type(spell)))
 		params = {}
 		if target:
 			params = {'targetId' : target.id}
 		return self.api.post('user', 'class', 'cast', spell.key, **params).data
+	def change_class(self, new_class):
+		self._data.update(self.api.post('user', 'change-class', **({'class':new_class})).data)
+	def disable_classes(self):
+		self._data.update(self.api.post('user', 'disable-classes').data)

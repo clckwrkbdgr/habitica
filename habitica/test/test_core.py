@@ -955,6 +955,20 @@ class TestUser(unittest.TestCase):
 		user.stats.allocate(strength=1)
 		user.stats.allocate(strength=2, perception=3, constitution=1, intelligence=5)
 		user.stats.autoallocate_all()
+	def should_change_class(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockDataRequest('get', ['user'], MockData.USER),
+			MockDataRequest('post', ['user', 'change-class'], MockData.USER),
+			))
+		user = habitica.user()
+		user.change_class('rogue')
+	def should_disable_classes(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockDataRequest('get', ['user'], MockData.USER),
+			MockDataRequest('post', ['user', 'disable-classes'], MockData.USER),
+			))
+		user = habitica.user()
+		user.disable_classes()
 
 class TestNews(unittest.TestCase):
 	def should_get_latest_news(self):
@@ -1672,6 +1686,8 @@ class TestSpells(unittest.TestCase):
 			MockDataRequest('post', ['user', 'class', 'cast', 'backStab'], {}),
 			))
 		user = habitica.user()
+		with self.assertRaises(RuntimeError):
+			user.cast(user.inventory.pet)
 		spell = user.get_spell('stealth')
 		user.cast(spell)
 		target = user.todos()[0]
