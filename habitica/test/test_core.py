@@ -118,6 +118,19 @@ class TestBaseHabitica(unittest.TestCase):
 			habitica.send_private_message(member, 'Incoming message.')
 		message = habitica.send_private_message(member, 'Incoming message.')
 		self.assertEqual(message._data, {'not':'explained'})
+	def should_get_market_items(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockDataRequest('get', ['user', 'inventory', 'buy'], sorted(MockData.CONTENT_DATA['gear']['flat'].values(), key=lambda _:_['key'])),
+			MockDataRequest('get', ['user', 'in-app-rewards'], sorted(MockData.CONTENT_DATA['gear']['flat'].values(), key=lambda _:_['key'])[2:]),
+			))
+		market = habitica.market()
+		gear = market.gear()
+		self.assertEqual(gear[1].key, 'dragonstooth')
+		gear = market.gear()
+		self.assertEqual(gear[1].key, 'dragonstooth')
+
+		gear = market.rewards()
+		self.assertEqual(gear[0].key, 'mysterykatana')
 
 class TestChallenges(unittest.TestCase):
 	def _challenge(self, path=('groups', 'unatco')):
@@ -969,6 +982,58 @@ class TestUser(unittest.TestCase):
 			))
 		user = habitica.user()
 		user.disable_classes()
+	def should_equip_gear(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockDataRequest('get', ['user'], MockData.USER),
+			MockDataRequest('post', ['user', 'equip', 'equipped', 'ninja_katana'], MockData.USER),
+			))
+		user = habitica.user()
+		with self.assertRaises(RuntimeError):
+			user.equip_gear(habitica.content.armoire)
+		user.equip_gear(habitica.content.gear('ninja_katana'))
+	def should_wear_costume(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockDataRequest('get', ['user'], MockData.USER),
+			MockDataRequest('post', ['user', 'equip', 'costume', 'ninja_katana'], MockData.USER),
+			))
+		user = habitica.user()
+		with self.assertRaises(RuntimeError):
+			user.wear_costume(habitica.content.armoire)
+		user.wear_costume(habitica.content.gear('ninja_katana'))
+	def should_select_pet(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockDataRequest('get', ['user'], MockData.USER),
+			MockDataRequest('post', ['user', 'equip', 'pet', 'fox'], MockData.USER),
+			))
+		user = habitica.user()
+		with self.assertRaises(RuntimeError):
+			user.select_pet(habitica.content.armoire)
+		user.select_pet(habitica.content.petInfo('fox'))
+	def should_ride_mount(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockDataRequest('get', ['user'], MockData.USER),
+			MockDataRequest('post', ['user', 'equip', 'mount', 'wolf'], MockData.USER),
+			))
+		user = habitica.user()
+		with self.assertRaises(RuntimeError):
+			user.ride_mount(habitica.content.armoire)
+		user.ride_mount(habitica.content.mountInfo('wolf'))
+	def should_feed_pet(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockDataRequest('get', ['user'], MockData.USER),
+			MockDataRequest('post', ['user', 'feed', 'fox', 'Meat'], 10),
+			MockDataRequest('post', ['user', 'feed', 'fox', 'Meat'], 50),
+			))
+		user = habitica.user()
+		user.inventory.pet.feed(habitica.content.food('Meat'))
+		user.inventory.pet.feed(habitica.content.food('Meat'), 5)
+	def should_hatch_pet(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockDataRequest('get', ['user'], MockData.USER),
+			MockDataRequest('post', ['user', 'hatch', 'fox', 'base'], MockData.USER),
+			))
+		user = habitica.user()
+		user.hatch_pet(habitica.content.dropEggs('fox'), habitica.content.hatchingPotions('base'))
 
 class TestNews(unittest.TestCase):
 	def should_get_latest_news(self):

@@ -57,13 +57,26 @@ class News(base.ApiObject):
 	def tell_me_later(self):
 		self.api.post('news', 'tell-me-later')
 
+class Market(base.ApiObject):
+	def gear(self):
+		if 'gear' not in self._data:
+			self._data['gear'] = self.children(content.Gear, self.api.get('user', 'inventory', 'buy').data)
+		return self._data['gear']
+	def rewards(self):
+		""" Returns in-app rewards (gear etc). """
+		if 'rewards' not in self._data:
+			self._data['rewards'] = self.children(content.Gear, self.api.get('user', 'in-app-rewards').data)
+		return self._data['rewards']
+
 class Habitica(base.ApiInterface):
 	""" Main Habitica entry point. """
 	# TODO /hall/{heroes,patrons}
 	# TODO /user/block
 	# TODO DELETE /user
 	# TODO DELETE /user/auth/social/:network
+	# TODO GET /user/anonymized
 	def __init__(self, auth=None, _api=None):
+		# TODO POST /user/auth/local/login
 		self.api = _api or api.API(auth['url'], auth['x-api-user'], auth['x-api-key'])
 		self._content = None
 	def home_url(self):
@@ -101,6 +114,8 @@ class Habitica(base.ApiInterface):
 			result = self.api.get('groups', type=','.join(group_types)).data
 		# TODO recognize party and return Party object instead.
 		return self.children(groups.Group, result)
+	def market(self):
+		return self.child(Market, {})
 	def tavern(self):
 		return self.child(Group, self.api.get('groups', 'habitrpg').data)
 	def create_plan(self):

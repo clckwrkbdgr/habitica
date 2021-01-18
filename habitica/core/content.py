@@ -324,7 +324,14 @@ class StableCreature(ContentEntry):
 		return self._special
 
 class Pet(StableCreature):
-	pass
+	def feed(self, food, amount=1):
+		""" Returns pet value after feeding. """
+		params = {}
+		if amount > 1:
+			params['amount'] = int(amount)
+		# TODO check: Pet can eat 50 units. Preferred food offers 5 units per food, other food 2 units.
+		# TODO also returns message (to display)
+		return self.api.post('user', 'feed', self.key, food.key, **params).data
 
 class Mount(StableCreature):
 	pass
