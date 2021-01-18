@@ -67,6 +67,9 @@ class Market(base.ApiObject):
 		if 'rewards' not in self._data:
 			self._data['rewards'] = self.children(content.Gear, self.api.get('user', 'in-app-rewards').data)
 		return self._data['rewards']
+	def open_mystery_item(self):
+		# TODO also returns message (to display)
+		return self.child(content.Gear, self.api.post('user', 'open-mystery-item').data)
 
 class Habitica(base.ApiInterface):
 	""" Main Habitica entry point. """

@@ -423,7 +423,8 @@ class User(base.Entity, _UserMethods):
 	# TODO newMessages -- see model
 	# TODO notifications -- see model
 	# TODO tags -- see model
-	# TODO inbox -- see model
+	# TODO inbox -- see model; POST user/mark-pms-read
+	# TODO POST move-pinned-item
 	# TODO extra -- see model
 	# TODO pushDevices -- see model
 	# TODO webhooks -- see model
@@ -539,3 +540,11 @@ class User(base.Entity, _UserMethods):
 	def hatch_pet(self, egg, potion):
 		# TODO also returns message (to display).
 		self._data.update(self.api.post('user', 'hatch', egg.key, potion.key).data)
+	def sleep(self):
+		if self.preferences.sleep:
+			return
+		self._data['preferences']['sleep'] = self.api.post('user', 'sleep').data
+	def wake_up(self):
+		if not self.preferences.sleep:
+			return
+		self._data['preferences']['sleep'] = self.api.post('user', 'sleep').data

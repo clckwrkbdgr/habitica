@@ -122,6 +122,7 @@ class TestBaseHabitica(unittest.TestCase):
 		habitica = core.Habitica(_api=MockAPI(
 			MockDataRequest('get', ['user', 'inventory', 'buy'], sorted(MockData.CONTENT_DATA['gear']['flat'].values(), key=lambda _:_['key'])),
 			MockDataRequest('get', ['user', 'in-app-rewards'], sorted(MockData.CONTENT_DATA['gear']['flat'].values(), key=lambda _:_['key'])[2:]),
+			MockDataRequest('post', ['user', 'open-mystery-item'], MockData.CONTENT_DATA['gear']['flat']['mysterykatana']),
 			))
 		market = habitica.market()
 		gear = market.gear()
@@ -131,6 +132,9 @@ class TestBaseHabitica(unittest.TestCase):
 
 		gear = market.rewards()
 		self.assertEqual(gear[0].key, 'mysterykatana')
+
+		gear = market.open_mystery_item()
+		self.assertEqual(gear.key, 'mysterykatana')
 
 class TestChallenges(unittest.TestCase):
 	def _challenge(self, path=('groups', 'unatco')):
@@ -1034,6 +1038,22 @@ class TestUser(unittest.TestCase):
 			))
 		user = habitica.user()
 		user.hatch_pet(habitica.content.dropEggs('fox'), habitica.content.hatchingPotions('base'))
+	def should_rest_in_inn(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockDataRequest('get', ['user'], MockData.USER),
+			MockDataRequest('post', ['user', 'sleep'], True),
+			MockDataRequest('post', ['user', 'sleep'], False),
+			))
+		user = habitica.user()
+		self.assertFalse(user.preferences.sleep)
+		user.sleep()
+		self.assertTrue(user.preferences.sleep)
+		user.sleep()
+		self.assertTrue(user.preferences.sleep)
+		user.wake_up()
+		self.assertFalse(user.preferences.sleep)
+		user.wake_up()
+		self.assertFalse(user.preferences.sleep)
 
 class TestNews(unittest.TestCase):
 	def should_get_latest_news(self):
