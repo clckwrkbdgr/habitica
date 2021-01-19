@@ -813,10 +813,14 @@ class TestUser(unittest.TestCase):
 			MockDataRequest('post', ['user', 'buy-quest', 'laguardia1'],
 				self._user_data(),
 				),
+			MockDataRequest('post', ['user', 'purchase', 'quests', 'area51'],
+				self._user_data(),
+				),
 			))
 
 		user = habitica.user()
 		user.buy(habitica.content.quests('laguardia1'))
+		user.buy(habitica.content.quests('area51'))
 	def should_buy_armoire_item(self):
 		habitica = core.Habitica(_api=MockAPI(
 			MockDataRequest('get', ['user'], self._user_data()),
@@ -837,16 +841,58 @@ class TestUser(unittest.TestCase):
 
 		user = habitica.user()
 		user.buy(habitica.content.special_items('congrats'))
+	def should_buy_gems(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockDataRequest('get', ['user'], self._user_data()),
+			MockDataRequest('post', ['user', 'purchase', 'gems', 'gem'],
+				self._user_data(),
+				),
+			))
+
+		user = habitica.user()
+		user.buy(habitica.content.gems)
+	def should_buy_eggs_and_food(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockDataRequest('get', ['user'], self._user_data()),
+			MockDataRequest('post', ['user', 'purchase', 'eggs', 'wolf'],
+				self._user_data(),
+				),
+			MockDataRequest('post', ['user', 'purchase', 'food', 'Meat'],
+				self._user_data(),
+				),
+			))
+
+		user = habitica.user()
+		user.buy(habitica.content.eggs('wolf'))
+		user.buy(habitica.content.food('Meat'))
+	def should_buy_hatching_potions(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockDataRequest('get', ['user'], self._user_data()),
+			MockDataRequest('post', ['user', 'purchase', 'hatchingPotions', 'base'],
+				self._user_data(),
+				),
+			MockDataRequest('post', ['user', 'purchase', 'premiumHatchingPotions', 'shadow'],
+				self._user_data(),
+				),
+			))
+
+		user = habitica.user()
+		user.buy(habitica.content.hatchingPotions('base'))
+		user.buy(habitica.content.premiumHatchingPotions('shadow'))
 	def should_buy_gear(self):
 		habitica = core.Habitica(_api=MockAPI(
 			MockDataRequest('get', ['user'], self._user_data()),
 			MockDataRequest('post', ['user', 'buy-gear', 'ninja_katana'],
 				self._user_data(),
 				),
+			MockDataRequest('post', ['user', 'purchase', 'gear', 'dragonstooth'],
+				self._user_data(),
+				),
 			))
 
 		user = habitica.user()
 		user.buy(habitica.content.gear('ninja_katana'))
+		user.buy(habitica.content.gear('dragonstooth'))
 	def should_buy_mystery_sets(self):
 		habitica = core.Habitica(_api=MockAPI(
 			MockDataRequest('get', ['user'], self._user_data()),

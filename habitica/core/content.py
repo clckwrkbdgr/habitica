@@ -42,6 +42,9 @@ class Content(base.ApiInterface):
 			return None
 		return [self.child(entry_type, self._data[collection_name][key], **params) for key, value in self._data[access_list_name].items() if value]
 	@property
+	def gems(self):
+		return self.child_interface(Gems)
+	@property
 	def potion(self):
 		return self.child(HealthPotion, self._data['potion'])
 	@property
@@ -68,7 +71,7 @@ class Content(base.ApiInterface):
 	def dropHatchingPotions(self, key=None):
 		return self._get_collection_entry(HatchingPotion, 'dropHatchingPotions', key=key)
 	def premiumHatchingPotions(self, key=None):
-		return self._get_collection_entry(HatchingPotion, 'premiumHatchingPotions', key=key)
+		return self._get_collection_entry(PremiumHatchingPotion, 'premiumHatchingPotions', key=key)
 	def petInfo(self, key=None):
 		return self._get_collection_entry(Pet, 'petInfo', key=key)
 	def questPets(self, key=None):
@@ -224,6 +227,11 @@ class BaseStats:
 	def constitution(self):
 		return self.con
 
+class Gems(base.ApiInterface, base.Purchasable):
+	def _buy(self, user):
+		# TODO body[quantity] ?
+		return self.api.post('user', 'purchase', 'gems', 'gem')
+
 class Armoire(ContentEntry, MarketableForGold, base.Purchasable):
 	@property
 	def type(self):
@@ -232,15 +240,17 @@ class Armoire(ContentEntry, MarketableForGold, base.Purchasable):
 		# TODO also returns .data.armoire (item that was received).
 		return self.api.post('user', 'buy-armoire')
 
-class Egg(ContentEntry, MarketableForGems):
+class Egg(ContentEntry, MarketableForGems, base.Purchasable):
 	@property
 	def mountText(self):
 		return self._data['mountText']
 	@property
 	def adjective(self):
 		return self._data['adjective']
+	def _buy(self, user):
+		return self.api.post('user', 'purchase', 'eggs', self.key)
 
-class HatchingPotion(ContentEntry, MarketableForGems):
+class HatchingPotion(ContentEntry, MarketableForGems, base.Purchasable):
 	@property
 	def _addlNotes(self):
 		return self._data.get('_addlNotes', '')
@@ -258,8 +268,14 @@ class HatchingPotion(ContentEntry, MarketableForGems):
 		if 'event' not in self._data:
 			return None
 		return parse_habitica_event(self._data['event'])
+	def _buy(self, user):
+		return self.api.post('user', 'purchase', 'hatchingPotions', self.key)
 
-class Food(ContentEntry, MarketableForGems):
+class PremiumHatchingPotion(HatchingPotion):
+	def _buy(self, user):
+		return self.api.post('user', 'purchase', 'premiumHatchingPotions', self.key)
+
+class Food(ContentEntry, MarketableForGems, base.Purchasable):
 	@property
 	def textThe(self):
 		return self._data['textThe']
@@ -272,6 +288,8 @@ class Food(ContentEntry, MarketableForGems):
 	@property
 	def canDrop(self):
 		return self._data['canDrop']
+	def _buy(self, user):
+		return self.api.post('user', 'purchase', 'food', self.key)
 
 class Background(ContentEntry, MarketableForGems):
 	@property
@@ -324,6 +342,7 @@ class StableCreature(ContentEntry):
 		return self._special
 
 class Pet(StableCreature):
+	# TODO POST /user/purchase-hourglass/pet/<key> - where is the value and currency in Pet?
 	def feed(self, food, amount=1):
 		""" Returns pet value after feeding. """
 		params = {}
@@ -334,6 +353,7 @@ class Pet(StableCreature):
 		return self.api.post('user', 'feed', self.key, food.key, **params).data
 
 class Mount(StableCreature):
+	# TODO POST /user/purchase-hourglass/mount/<key> - where is the value and currency in Mount?
 	pass
 
 class Castable:
@@ -429,7 +449,9 @@ class Gear(ContentEntry, BaseStats, MarketableForGold, base.Purchasable):
 	def last(self):
 		return self._data.get('last', False)
 	def _buy(self, user):
-		return self.api.post('user', 'buy-gear', self.key)
+		if self.price.currency == 'gold':
+			return self.api.post('user', 'buy-gear', self.key)
+		return self.api.post('user', 'purchase', 'gear', self.key)
 
 class MysterySet(ContentEntry, base.Purchasable):
 	@property

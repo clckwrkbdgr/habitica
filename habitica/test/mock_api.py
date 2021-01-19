@@ -839,6 +839,7 @@ MockData.CONTENT_DATA = {
 						'category' : 'world',
 						'completion' : 'You have joined Illuminati!',
 						'completionChat' : 'You have joined Illuminati!',
+						'value' : 45,
 						'colors' : {
 							'main' : '#ffffff',
 							},
@@ -1063,7 +1064,8 @@ MockData.CONTENT_DATA = {
 								"index": "special",
 								"type": "weapon",
 								"per": 3,
-								"value": 100,
+								"value": 15,
+								'currency' : 'gems',
 								"con": 0,
 								"str": 5,
 								'event':{

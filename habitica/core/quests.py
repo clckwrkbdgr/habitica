@@ -297,3 +297,4 @@ class Quest(ContentEntry, MarketableForGems, base.Purchasable):
 	def _buy(self, user):
 		if self.goldValue:
 			return self.api.post('user', 'buy-quest', self.key)
+		return self.api.post('user', 'purchase', 'quests', self.key)
