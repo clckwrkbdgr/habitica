@@ -1100,6 +1100,39 @@ class TestUser(unittest.TestCase):
 		self.assertFalse(user.preferences.sleep)
 		user.wake_up()
 		self.assertFalse(user.preferences.sleep)
+	def should_read_special_card(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockDataRequest('get', ['user'], MockData.USER),
+			MockDataRequest('post', ['user', 'read-card', 'congrats'], MockData.USER),
+			))
+		user = habitica.user()
+		user.read_card(habitica.content.special_items('congrats'))
+	def should_release_all_pets_and_mounts(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockDataRequest('get', ['user'], MockData.USER),
+			MockDataRequest('post', ['user', 'release-mounts'], MockData.USER),
+			MockDataRequest('post', ['user', 'release-both'], MockData.USER),
+			))
+		user = habitica.user()
+		key = habitica.market().key_to_the_kennels
+		user.buy(key)
+		key = habitica.market().master_key_to_the_kennels
+		user.buy(key)
+	def should_reroll_tasks_using_fortify_potion(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockDataRequest('get', ['user'], MockData.USER),
+			MockDataRequest('post', ['user', 'reroll'], MockData.USER),
+			))
+		user = habitica.user()
+		potion = habitica.market().fortify_potion
+		user.buy(potion)
+	def should_revive_user_after_death(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockDataRequest('get', ['user'], MockData.USER),
+			MockDataRequest('post', ['user', 'revive'], MockData.USER),
+			))
+		user = habitica.user()
+		user.revive()
 
 class TestNews(unittest.TestCase):
 	def should_get_latest_news(self):

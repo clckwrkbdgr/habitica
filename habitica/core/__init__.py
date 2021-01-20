@@ -57,6 +57,21 @@ class News(base.ApiObject):
 	def tell_me_later(self):
 		self.api.post('news', 'tell-me-later')
 
+class StableKey(base.ApiInterface, base.Purchasable):
+	def __init__(self, _api=None, _content=None, _parent=None, _method=None):
+		super().__init__(_api=_api, _content=_content, _parent=_parent)
+		self._method = _method
+	def _buy(self, user):
+		# TODO costs gems? Should be represented by a purchasable item.
+		# TODO returns message (to display)
+		return self.api.post('user', self._method)
+
+class FortifyPotion(base.ApiInterface, base.Purchasable):
+	def _buy(self, user):
+		# TODO costs gems? Should be represented by a purchasable item.
+		# TODO returns message (to display)
+		return self.api.post('user', 'reroll')
+
 class Market(base.ApiObject):
 	def gear(self):
 		if 'gear' not in self._data:
@@ -70,6 +85,15 @@ class Market(base.ApiObject):
 	def open_mystery_item(self):
 		# TODO also returns message (to display)
 		return self.child(content.Gear, self.api.post('user', 'open-mystery-item').data)
+	@property
+	def key_to_the_kennels(self):
+		return self.child_interface(StableKey, _method='release-mounts')
+	@property
+	def master_key_to_the_kennels(self):
+		return self.child_interface(StableKey, _method='release-both')
+	@property
+	def fortify_potion(self):
+		return self.child_interface(FortifyPotion)
 
 class Habitica(base.ApiInterface):
 	""" Main Habitica entry point. """
@@ -78,6 +102,9 @@ class Habitica(base.ApiInterface):
 	# TODO DELETE /user
 	# TODO DELETE /user/auth/social/:network
 	# TODO GET /user/anonymized
+	# TODO POST /user/auth/local/register
+	# TODO POST /user/reset-password
+	# TODO POST /user/reset
 	def __init__(self, auth=None, _api=None):
 		# TODO POST /user/auth/local/login
 		self.api = _api or api.API(auth['url'], auth['x-api-user'], auth['x-api-key'])

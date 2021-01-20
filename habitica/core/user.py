@@ -548,3 +548,9 @@ class User(base.Entity, _UserMethods):
 		if not self.preferences.sleep:
 			return
 		self._data['preferences']['sleep'] = self.api.post('user', 'sleep').data
+	def read_card(self, card):
+		# TODO returns message (to display)
+		self._data.update(self.api.post('user', 'read-card', card.key).data)
+	def revive(self):
+		# TODO returns message (to display)
+		self._data.update(self.api.post('user', 'revive').data)
