@@ -501,8 +501,8 @@ class User(base.Entity, _UserMethods):
 		# TODO Render as image and cache.
 		return self.api.get('export', 'avatar-{0}.html'.format(self.id), _as_json=False)
 	def buy(self, item):
-		if not isinstance(item, base.Purchasable):
-			raise RuntimeError("Item is not Purchasable: {0}".format(type(item)))
+		if not isinstance(item, base.Marketable):
+			raise RuntimeError("Item is not Marketable, cannot be bought: {0}".format(type(item)))
 		item.buy(user=self)
 	def spells(self):
 		""" Returns list of available spells. """

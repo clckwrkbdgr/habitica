@@ -4,6 +4,7 @@ import datetime
 from collections import namedtuple
 import vintage
 from . import base
+from .base import Marketable, MarketableForGold, MarketableForGems
 
 HabiticaEvent = namedtuple('HabiticaEvent', 'start end')
 
@@ -167,38 +168,6 @@ class ContentEntry(base.ApiObject):
 	def notes(self):
 		return self._data.get('notes', '')
 
-class Marketable:
-	""" Mixin for objects that can be bought (at market, from time travellers etc).
-	Supports both properties .cost and .price (return the same Price object).
-	Searches for 'value', 'cost', 'price' in object's data.
-	If there is no specific currency in data, searches for a class field .CURRENCY.
-	See alse MarketableFor<CurrencyType> descendants.
-	"""
-	CURRENCY = NotImplemented
-	@property
-	def cost(self):
-		return base.Price(
-				self._data.get('value',
-					self._data.get('price')
-					),
-				self._data.get('currency', self.CURRENCY)
-				)
-	@property
-	def price(self):
-		return self.cost
-	@property
-	def value(self):
-		return self.cost
-	@property
-	@vintage.deprecated('Use .cost.currency')
-	def currency(self): # pragma: no cover -- FIXME deprecated
-		return self.cost.currency
-
-class MarketableForGold(Marketable):
-	CURRENCY = 'gold'
-
-class MarketableForGems(Marketable):
-	CURRENCY = 'gems'
 
 class BaseStats:
 	""" Base character stats. """
@@ -227,12 +196,12 @@ class BaseStats:
 	def constitution(self):
 		return self.con
 
-class Gems(base.ApiInterface, base.Purchasable):
+class Gems(base.ApiInterface, MarketableForGold):
 	def _buy(self, user):
 		# TODO body[quantity] ?
 		return self.api.post('user', 'purchase', 'gems', 'gem')
 
-class Armoire(ContentEntry, MarketableForGold, base.Purchasable):
+class Armoire(ContentEntry, MarketableForGold):
 	@property
 	def type(self):
 		return self._data['type']
@@ -240,7 +209,7 @@ class Armoire(ContentEntry, MarketableForGold, base.Purchasable):
 		# TODO also returns .data.armoire (item that was received).
 		return self.api.post('user', 'buy-armoire')
 
-class Egg(ContentEntry, MarketableForGems, base.Purchasable):
+class Egg(ContentEntry, MarketableForGems):
 	@property
 	def mountText(self):
 		return self._data['mountText']
@@ -250,7 +219,7 @@ class Egg(ContentEntry, MarketableForGems, base.Purchasable):
 	def _buy(self, user):
 		return self.api.post('user', 'purchase', 'eggs', self.key)
 
-class HatchingPotion(ContentEntry, MarketableForGems, base.Purchasable):
+class HatchingPotion(ContentEntry, MarketableForGems):
 	@property
 	def _addlNotes(self):
 		return self._data.get('_addlNotes', '')
@@ -275,7 +244,7 @@ class PremiumHatchingPotion(HatchingPotion):
 	def _buy(self, user):
 		return self.api.post('user', 'purchase', 'premiumHatchingPotions', self.key)
 
-class Food(ContentEntry, MarketableForGems, base.Purchasable):
+class Food(ContentEntry, MarketableForGems):
 	@property
 	def textThe(self):
 		return self._data['textThe']
@@ -302,7 +271,7 @@ class HealthOverflowError(Exception):
 	def __str__(self):
 		return 'HP is too high, part of health potion would be wasted.'
 
-class HealthPotion(ContentEntry, MarketableForGold, base.Purchasable):
+class HealthPotion(ContentEntry, MarketableForGold):
 	""" Health potion (+15 hp). """
 	VALUE = 15.0
 	def __init__(self, overflow_check=True, **kwargs):
@@ -365,7 +334,7 @@ class Castable:
 		""" 'self', 'user', 'party', 'task' """
 		return self._data['target']
 
-class SpecialItem(ContentEntry, MarketableForGold, Castable, base.Purchasable):
+class SpecialItem(ContentEntry, MarketableForGold, Castable):
 	""" Cards, seeds, sparkles, debuff potions etc. """
 	@property
 	def purchaseType(self):
@@ -407,7 +376,7 @@ class Spell(ContentEntry, Castable):
 	def lvl(self):
 		return self._data['lvl']
 
-class Gear(ContentEntry, BaseStats, MarketableForGold, base.Purchasable):
+class Gear(ContentEntry, BaseStats, MarketableForGold):
 	@property
 	def klass(self):
 		return self._data['klass']
@@ -453,7 +422,7 @@ class Gear(ContentEntry, BaseStats, MarketableForGold, base.Purchasable):
 			return self.api.post('user', 'buy-gear', self.key)
 		return self.api.post('user', 'purchase', 'gear', self.key)
 
-class MysterySet(ContentEntry, base.Purchasable):
+class MysterySet(ContentEntry, Marketable): # TODO MarketableForHourglass?
 	@property
 	def class_name(self):
 		return self._data['class']

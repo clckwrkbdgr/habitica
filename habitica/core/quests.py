@@ -169,7 +169,7 @@ class LazyQuestData:
 		self._ensure()
 		return self._data.get(key, default)
 
-class Quest(ContentEntry, MarketableForGems, base.Purchasable):
+class Quest(ContentEntry, MarketableForGems):
 	def __init__(self, *args, _content=None, _data=None, _group_progress=None, _user_progress=None, **kwargs):
 		if _data is None:
 			assert _group_progress or _user_progress

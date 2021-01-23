@@ -10,7 +10,7 @@ from .user import UserProxy
 
 # TODO the whole /debug/ route for development
 
-class Coupon(base.ApiObject, base.Purchasable):
+class Coupon(base.ApiObject, base.Marketable):
 	# TODO get/ and generate/ - require sudo permissions.
 	@property
 	def code(self):
@@ -57,18 +57,24 @@ class News(base.ApiObject):
 	def tell_me_later(self):
 		self.api.post('news', 'tell-me-later')
 
-class StableKey(base.ApiInterface, base.Purchasable):
-	def __init__(self, _api=None, _content=None, _parent=None, _method=None):
+class StableKey(base.ApiInterface, base.MarketableForGems):
+	def __init__(self, _api=None, _content=None, _parent=None, _method=None, _value=None):
 		super().__init__(_api=_api, _content=_content, _parent=_parent)
 		self._method = _method
+		self._data = {
+				'value' : _value,
+				}
 	def _buy(self, user):
-		# TODO costs gems? Should be represented by a purchasable item.
 		# TODO returns message (to display)
 		return self.api.post('user', self._method)
 
-class FortifyPotion(base.ApiInterface, base.Purchasable):
+class FortifyPotion(base.ApiInterface, base.MarketableForGems):
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+		self._data = {
+				'value' : 4,
+				}
 	def _buy(self, user):
-		# TODO costs gems? Should be represented by a purchasable item.
 		# TODO returns message (to display)
 		return self.api.post('user', 'reroll')
 
@@ -87,10 +93,10 @@ class Market(base.ApiObject):
 		return self.child(content.Gear, self.api.post('user', 'open-mystery-item').data)
 	@property
 	def key_to_the_kennels(self):
-		return self.child_interface(StableKey, _method='release-mounts')
+		return self.child_interface(StableKey, _method='release-mounts', _value=4)
 	@property
 	def master_key_to_the_kennels(self):
-		return self.child_interface(StableKey, _method='release-both')
+		return self.child_interface(StableKey, _method='release-both', _value=6) # TODO free after all pets+mounts are collected - need to check User inventory for that.
 	@property
 	def fortify_potion(self):
 		return self.child_interface(FortifyPotion)

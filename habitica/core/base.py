@@ -2,6 +2,7 @@
 Mostly non-functional.
 """
 import functools
+import vintage
 
 class ApiInterface:
 	""" Base class for all objects that:
@@ -161,7 +162,34 @@ class Price:
 		self._ensure_same_currency(other)
 		return self.value == other
 
-class Purchasable:
+class Marketable:
+	""" Mixin for objects that can be bought (at market, from time travellers etc).
+	Supports both properties .cost and .price (return the same Price object).
+	Searches for 'value', 'cost', 'price' in object's data.
+	If there is no specific currency in data, searches for a class field .CURRENCY.
+	See alse MarketableFor<CurrencyType> descendants.
+
+	Supports method buy(<user>), which allows user object to .buy(item).
+	"""
+	CURRENCY = NotImplemented
+	@property
+	def cost(self):
+		return Price(
+				self._data.get('value',
+					self._data.get('price')
+					),
+				self._data.get('currency', self.CURRENCY)
+				)
+	@property
+	def price(self):
+		return self.cost
+	@property
+	def value(self):
+		return self.cost
+	@property
+	@vintage.deprecated('Use .cost.currency')
+	def currency(self): # pragma: no cover -- FIXME deprecated
+		return self.cost.currency
 	def buy(self, user):
 		""" Allows User object to buy purchasable items via user.buy(...)
 		May alter User's data upon purchase.
@@ -176,3 +204,9 @@ class Purchasable:
 			user._data.update(response.data)
 	def _buy(self, user): # pragma: no cover
 		raise NotImplementedError
+
+class MarketableForGold(Marketable):
+	CURRENCY = 'gold'
+
+class MarketableForGems(Marketable):
+	CURRENCY = 'gems'
