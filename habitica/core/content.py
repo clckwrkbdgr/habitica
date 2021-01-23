@@ -209,7 +209,7 @@ class Armoire(ContentEntry, MarketableForGold):
 		# TODO also returns .data.armoire (item that was received).
 		return self.api.post('user', 'buy-armoire')
 
-class Egg(ContentEntry, MarketableForGems):
+class Egg(ContentEntry, MarketableForGems, base.Sellable):
 	@property
 	def mountText(self):
 		return self._data['mountText']
@@ -218,8 +218,12 @@ class Egg(ContentEntry, MarketableForGems):
 		return self._data['adjective']
 	def _buy(self, user):
 		return self.api.post('user', 'purchase', 'eggs', self.key)
+	def _sell(self, user, amount=None):
+		if amount:
+			return self.api.post('user', 'sell', 'eggs', self.key, amount=amount)
+		return self.api.post('user', 'sell', 'eggs', self.key)
 
-class HatchingPotion(ContentEntry, MarketableForGems):
+class HatchingPotion(ContentEntry, MarketableForGems, base.Sellable):
 	@property
 	def _addlNotes(self):
 		return self._data.get('_addlNotes', '')
@@ -239,12 +243,16 @@ class HatchingPotion(ContentEntry, MarketableForGems):
 		return parse_habitica_event(self._data['event'])
 	def _buy(self, user):
 		return self.api.post('user', 'purchase', 'hatchingPotions', self.key)
+	def _sell(self, user, amount=None):
+		if amount:
+			return self.api.post('user', 'sell', 'hatchingPotions', self.key, amount=amount)
+		return self.api.post('user', 'sell', 'hatchingPotions', self.key)
 
 class PremiumHatchingPotion(HatchingPotion):
 	def _buy(self, user):
 		return self.api.post('user', 'purchase', 'premiumHatchingPotions', self.key)
 
-class Food(ContentEntry, MarketableForGems):
+class Food(ContentEntry, MarketableForGems, base.Sellable):
 	@property
 	def textThe(self):
 		return self._data['textThe']
@@ -259,6 +267,10 @@ class Food(ContentEntry, MarketableForGems):
 		return self._data['canDrop']
 	def _buy(self, user):
 		return self.api.post('user', 'purchase', 'food', self.key)
+	def _sell(self, user, amount=None):
+		if amount:
+			return self.api.post('user', 'sell', 'food', self.key, amount=amount)
+		return self.api.post('user', 'sell', 'food', self.key)
 
 class Background(ContentEntry, MarketableForGems):
 	@property

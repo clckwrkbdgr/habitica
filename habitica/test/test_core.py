@@ -1133,6 +1133,25 @@ class TestUser(unittest.TestCase):
 			))
 		user = habitica.user()
 		user.revive()
+	def should_sell_items(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockDataRequest('get', ['user'], MockData.USER),
+			MockDataRequest('post', ['user', 'sell', 'hatchingPotions', 'base'], MockData.USER),
+			MockDataRequest('post', ['user', 'sell', 'hatchingPotions', 'base'], MockData.USER),
+			MockDataRequest('post', ['user', 'sell', 'eggs', 'wolf'], MockData.USER),
+			MockDataRequest('post', ['user', 'sell', 'eggs', 'wolf'], MockData.USER),
+			MockDataRequest('post', ['user', 'sell', 'food', 'Meat'], MockData.USER),
+			MockDataRequest('post', ['user', 'sell', 'food', 'Meat'], MockData.USER),
+			))
+		user = habitica.user()
+		with self.assertRaises(RuntimeError):
+			user.sell(habitica.content.petInfo('fox'))
+		user.sell(habitica.content.hatchingPotions('base'))
+		user.sell(habitica.content.hatchingPotions('base'), amount=5)
+		user.sell(habitica.content.eggs('wolf'))
+		user.sell(habitica.content.eggs('wolf'), amount=5)
+		user.sell(habitica.content.food('Meat'))
+		user.sell(habitica.content.food('Meat'), amount=5)
 
 class TestNews(unittest.TestCase):
 	def should_get_latest_news(self):

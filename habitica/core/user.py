@@ -504,6 +504,10 @@ class User(base.Entity, _UserMethods):
 		if not isinstance(item, base.Marketable):
 			raise RuntimeError("Item is not Marketable, cannot be bought: {0}".format(type(item)))
 		item.buy(user=self)
+	def sell(self, item, amount=None):
+		if not isinstance(item, base.Sellable):
+			raise RuntimeError("Item is not Sellable, cannot be sold: {0}".format(type(item)))
+		item.sell(user=self, amount=amount)
 	def spells(self):
 		""" Returns list of available spells. """
 		return self.content.spells(self.stats.class_name)

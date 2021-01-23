@@ -210,3 +210,22 @@ class MarketableForGold(Marketable):
 
 class MarketableForGems(Marketable):
 	CURRENCY = 'gems'
+
+class Sellable:
+	""" Mixin for objects that can be sold at market for gold (potions, eggs, food).
+	Supports method sell(user[, amount]) which allows user object to .buy(item[, amount])
+	"""
+	def sell(self, user, amount=None):
+		""" Allows User object to sell items via user.sell(...)
+		May alter User's data upon selling.
+
+		Each implementation method ._sell(user) should return _full_ response (with .data and .message)
+		or None if no update or notification is needed.
+		"""
+		# TODO gold check?
+		response = self._sell(user, amount=amount)
+		if response:
+			# TODO also returns .message (to display)
+			user._data.update(response.data)
+	def _sell(self, user, amount=None): # pragma: no cover
+		raise NotImplementedError
