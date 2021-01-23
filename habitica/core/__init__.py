@@ -78,6 +78,16 @@ class FortifyPotion(base.ApiInterface, base.MarketableForGems):
 		# TODO returns message (to display)
 		return self.api.post('user', 'reroll')
 
+class OrbOfRebirth(base.ApiInterface, base.MarketableForGems):
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+		self._data = {
+				'value' : 6, # TODO free if level >= 100, but needs user data for that.
+				}
+	def _buy(self, user):
+		# TODO returns message (to display)
+		return self.api.post('user', 'rebirth')
+
 class Market(base.ApiObject):
 	def gear(self):
 		if 'gear' not in self._data:
@@ -100,6 +110,9 @@ class Market(base.ApiObject):
 	@property
 	def fortify_potion(self):
 		return self.child_interface(FortifyPotion)
+	@property
+	def orb_of_rebirth(self):
+		return self.child_interface(OrbOfRebirth)
 
 class Habitica(base.ApiInterface):
 	""" Main Habitica entry point. """
@@ -111,6 +124,10 @@ class Habitica(base.ApiInterface):
 	# TODO POST /user/auth/local/register
 	# TODO POST /user/reset-password
 	# TODO POST /user/reset
+	# TODO PUT /user/auth/update-email
+	# TODO PUT /user/auth/update-password
+	# TODO PUT /user/auth/update-username
+	# TODO webhooks
 	def __init__(self, auth=None, _api=None):
 		# TODO POST /user/auth/local/login
 		self.api = _api or api.API(auth['url'], auth['x-api-user'], auth['x-api-key'])

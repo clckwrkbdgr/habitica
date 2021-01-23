@@ -701,6 +701,15 @@ class TestUser(unittest.TestCase):
 		self.assertFalse(prefs.background)
 		self.assertFalse(prefs.displayInviteToPartyWhenPartyIs1)
 		self.assertFalse(prefs.improvementCategories)
+	def should_set_custom_day_start(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockDataRequest('get', ['user'], self._user_data()),
+			MockDataRequest('post', ['user', 'custom-day-start'], {}),
+			))
+		user = habitica.user()
+		prefs = user.preferences
+		prefs.set_custom_day_start(12)
+		self.assertEqual(prefs.dayStart, 12)
 	def should_get_user_inventory(self):
 		habitica = core.Habitica(_api=MockAPI(
 			MockDataRequest('get', ['user'], self._user_data()),
@@ -1152,6 +1161,14 @@ class TestUser(unittest.TestCase):
 		user.sell(habitica.content.eggs('wolf'), amount=5)
 		user.sell(habitica.content.food('Meat'))
 		user.sell(habitica.content.food('Meat'), amount=5)
+	def should_buy_orb_of_rebirth(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockDataRequest('get', ['user'], MockData.USER),
+			MockDataRequest('post', ['user', 'rebirth'], MockData.USER),
+			))
+		user = habitica.user()
+		orb = habitica.market().orb_of_rebirth
+		user.buy(orb)
 
 class TestNews(unittest.TestCase):
 	def should_get_latest_news(self):

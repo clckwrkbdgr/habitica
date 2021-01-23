@@ -110,6 +110,9 @@ class UserPreferences(base.ApiObject):
 	@property
 	def improvementCategories(self):
 		return self._data['improvementCategories']
+	def set_custom_day_start(self, dayStart):
+		self.api.post('user', 'custom-day-start', _body={'dayStart':dayStart})
+		self._data['dayStart'] = dayStart
 
 class Buffs(base.ApiObject, content.BaseStats):
 	@property
@@ -430,6 +433,7 @@ class User(base.Entity, _UserMethods):
 	# TODO webhooks -- see model
 	# TODO pinnedItems, pinnedItemsOrder, unpinnedItems -- see model
 	# TODO party.order, party.orderAscending -- see model
+	# TODO PUT /user
 	@property
 	def name(self):
 		return self._data['profile']['name']
@@ -473,10 +477,10 @@ class User(base.Entity, _UserMethods):
 		return dotdict(self._data['flags'])
 	@property
 	def preferences(self):
-		return UserPreferences(_data=self._data['preferences'])
+		return self.child(UserPreferences, self._data['preferences'])
 	@property
 	def inventory(self):
-		return Inventory(_data=self._data['items'], _content=self.content)
+		return self.child(Inventory, self._data['items'])
 	@property
 	def balance(self):
 		return base.Price(self._data['balance'], 'gems')
