@@ -4,6 +4,7 @@ from . import base, content, tasks, groups, tags
 from ..api import dotdict
 
 class UserAppearance(base.ApiObject):
+	# TODO unlock hair.color.* etc
 	@property
 	def size(self):
 		return self._data['size']
@@ -432,8 +433,10 @@ class User(base.Entity, _UserMethods):
 	# TODO pushDevices -- see model
 	# TODO webhooks -- see model
 	# TODO pinnedItems, pinnedItemsOrder, unpinnedItems -- see model
+	# TODO POST toggle-pinned-item
 	# TODO party.order, party.orderAscending -- see model
 	# TODO PUT /user
+	# TODO POST /user/unequip/:type
 	@property
 	def name(self):
 		return self._data['profile']['name']

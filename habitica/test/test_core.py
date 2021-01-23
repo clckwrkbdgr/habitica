@@ -1169,6 +1169,21 @@ class TestUser(unittest.TestCase):
 		user = habitica.user()
 		orb = habitica.market().orb_of_rebirth
 		user.buy(orb)
+	def should_buy_background(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockDataRequest('get', ['user'], MockData.USER),
+			MockDataRequest('post', ['user', 'unlock'], MockData.USER),
+			MockDataRequest('post', ['user', 'unlock'], MockData.USER),
+			))
+		user = habitica.user()
+		user.buy(habitica.content.get_background('blizzard'))
+		self.assertEqual(habitica.api.responses[-1].params, {
+			'path' : 'backgrounds.blizzard',
+			})
+		user.buy(habitica.content.get_background_set(2020, 8))
+		self.assertEqual(habitica.api.responses[-1].params, {
+			'path' : 'backgrounds.backgrounds082020',
+			})
 
 class TestNews(unittest.TestCase):
 	def should_get_latest_news(self):
@@ -2147,6 +2162,7 @@ class TestContent(unittest.TestCase):
 		content = habitica.content
 
 		backgrounds = content.get_background_set(2020, 8)
+		self.assertEqual(backgrounds.key, 'backgrounds082020')
 		self.assertEqual(backgrounds[0].key, 'fall')
 		self.assertEqual(backgrounds[0].text, 'Fall')
 		self.assertEqual(backgrounds[0].notes, "Summer's End")
@@ -2154,8 +2170,9 @@ class TestContent(unittest.TestCase):
 		self.assertEqual(backgrounds[0].set_name, 'Fall')
 
 		backgrounds = sorted(content.get_background_set(2020), key=lambda _:_.key)
-		self.assertEqual(backgrounds[0].key, 'blizzard')
-		self.assertEqual(backgrounds[1].key, 'fall')
+		self.assertEqual(backgrounds[0].key, 'backgrounds082020')
+		self.assertEqual(backgrounds[0][0].key, 'fall')
+		self.assertEqual(backgrounds[1][0].key, 'blizzard')
 
 		backgrounds = content.get_background_set(None)
 		self.assertEqual(backgrounds[0].key, 'core')

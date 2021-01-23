@@ -1,7 +1,7 @@
 """ Habitica's content: database of all availables items and definitions.
 """
 import datetime
-from collections import namedtuple
+from collections import namedtuple, defaultdict
 import vintage
 from . import base
 from .base import Marketable, MarketableForGold, MarketableForGems
@@ -115,14 +115,30 @@ class Content(base.ApiInterface):
 		If year is None (explicitly), returns time travel backgrounds.
 		"""
 		if year is None: # TODO time travel - needs some constant name
-			return self.children(Background, self._data['backgrounds']['timeTravelBackgrounds'])
+			return self.child(BackgroundSet, {
+				'key' : 'timeTravelBackgrounds',
+				'items' : self.children(Background, self._data['backgrounds']['timeTravelBackgrounds']),
+				})
 		months = ['{0:02}'.format(month)] if month else ['{0:02}'.format(number) for number in range(1, 13)]
 		patterns = ['backgrounds{month}{year}'.format(year=year, month=month) for month in months]
 		result = []
 		for key in self._data['backgrounds']:
 			if key in patterns:
-				result += self.children(Background, self._data['backgrounds'][key])
-		return result
+				result.append((
+					key,
+					self.children(Background, self._data['backgrounds'][key]),
+					))
+		result = self.children(BackgroundSet, [
+			{
+				'key' : key,
+				'items' : items,
+				}
+			for key, items
+			in result
+			])
+		if len(result) > 1:
+			return result
+		return result[0]
 	def special_items(self, key=None):
 		return self._get_collection_entry(SpecialItem, 'special', key=key)
 	def cards(self):
@@ -276,6 +292,17 @@ class Background(ContentEntry, MarketableForGems):
 	@property
 	def set_name(self):
 		return self._data['set']
+	def _buy(self, user):
+		return self.api.post('user', 'unlock', path='backgrounds.{0}'.format(self.key))
+
+class BackgroundSet(ContentEntry, MarketableForGems):
+	@property
+	def items(self):
+		return self._data['items']
+	def __getitem__(self, index):
+		return self.items[index]
+	def _buy(self, user):
+		return self.api.post('user', 'unlock', path='backgrounds.{0}'.format(self.key))
 
 class HealthOverflowError(Exception):
 	def __init__(self, hp, maxHealth):
