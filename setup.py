@@ -37,6 +37,8 @@ setup(
     install_requires=[
         'requests',
         'vintage',
+        'click',
+        'click-default-group',
     ],
     entry_points={
         'console_scripts': [
