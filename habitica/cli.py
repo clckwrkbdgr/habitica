@@ -146,10 +146,10 @@ def cli(ctx, verbose, debug): # pragma: no cover
 
 	# set up logging
 	if verbose:
-		logging.basicConfig(level=logging.INFO)
+		logging.getLogger().setLevel(logging.INFO)
 
 	if debug:
-		logging.basicConfig(level=logging.DEBUG)
+		logging.getLogger().setLevel(logging.DEBUG)
 
 @cli.command()
 @click.pass_obj
@@ -161,7 +161,10 @@ def status(habitica): # pragma: no cover
 
 	quest = user.party().quest
 	if quest and quest.active:
-		progress = quest.progress
+		if quest.boss:
+			progress = quest.boss.hp
+		else:
+			progress = quest.collect.current
 		quest_info = '{0}/{1} "{2}"'.format(int(progress),
 				int(progress.max_value),
 				quest.title)
