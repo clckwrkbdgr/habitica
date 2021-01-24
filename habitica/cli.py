@@ -116,7 +116,7 @@ def print_task_list(tasks, hide_completed=False, timezoneOffset=0, with_notes=Fa
 		else:
 			print('%s %s' % (i + 1, task.text))
 		if with_notes and task.notes:
-			print('\n'.join('	   {0}'.format(line) for line in task.notes.splitlines()))
+			print('\n'.join('      {0}'.format(line) for line in task.notes.splitlines()))
 		if isinstance(task, core.Checklist):
 			for j, item in enumerate(task.checklist):
 				completed = 'X' if item.is_completed else '_'
