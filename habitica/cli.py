@@ -181,7 +181,7 @@ def status(habitica): # pragma: no cover
 			('XP', '%d/%d' % (int(stats.experience), stats.maxExperience)),
 			('Mana', '%d/%d' % (int(stats.mana), stats.maxMana)),
 			('Gold', '%d' % (int(stats.gold),)),
-			('Pet', '%s (%d food items)' % (user.inventory.pet or '-', len(user.inventory.food))),
+			('Pet', '%s (%d food items)' % (user.inventory.pet or '-', sum(_.amount for _ in user.inventory.food))),
 			('Mount', user.inventory.mount or '-'),
 			('Quest', quest_info),
 			]

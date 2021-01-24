@@ -78,7 +78,7 @@ class QuestBoss(base.ApiObject):
 		data = self._data.get('rage')
 		return self.child(Rage, data, _rage_progress=self._rage_progress) if data else None
 
-QuestCollectItem = namedtuple('QuestCollectItem', 'key text count')
+QuestCollectItem = namedtuple('QuestCollectItem', 'key text')
 
 class QuestCollect(base.ApiObject):
 	def __init__(self, *args, _collect_progress=None, **kwargs):
@@ -89,12 +89,17 @@ class QuestCollect(base.ApiObject):
 		return list(self._data.keys())
 	def get_item(self, key):
 		data = self._data[key]
-		return QuestCollectItem(key, data['text'], data['count'])
+		return base.ItemBundle(
+				QuestCollectItem(key, data['text']),
+				data['count'],
+				)
 	def items(self):
 		return [
-				QuestCollectItem(
-					key,
-					self._data[key]['text'],
+				base.ItemBundle(
+					QuestCollectItem(
+						key,
+						self._data[key]['text'],
+						),
 					base.ValueBar(
 						self._collect_progress[key] if self._collect_progress is not None else self._data[key]['count'],
 						self._data[key]['count'],

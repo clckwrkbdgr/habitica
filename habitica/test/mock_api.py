@@ -190,9 +190,10 @@ MockData.USER = {
 					'body' : 'Dummy',
 					},
 				},
-			'food' : [
-				'Meat', 'Honey',
-				],
+			'food' : {
+				'Meat' : 2,
+				'Honey' : 1,
+				},
 			'currentPet' : 'fox',
 			'currentMount' : 'wolf',
 			},
@@ -698,6 +699,10 @@ MockData.CONTENT_DATA = {
 				'textThe':'The Meat',
 				'target':'Base',
 				'canDrop':True,
+				},
+			'Honey' : {
+				'key':'Honey',
+				'text':'Honey',
 				},
 			},
 		'eggs' : {

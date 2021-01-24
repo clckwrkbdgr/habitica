@@ -229,7 +229,11 @@ class Inventory(base.ApiObject):
 		return dotdict(self._data['lastDrop'])
 	@property
 	def food(self):
-		return self.children(content.Food, self._data['food'])
+		return [
+				base.ItemBundle(self.content.food(key), amount)
+				for key, amount
+				in self._data['food'].items()
+				]
 	@property
 	def pet(self):
 		return self.content.petInfo(self._data['currentPet']) if self._data['currentPet'] else None

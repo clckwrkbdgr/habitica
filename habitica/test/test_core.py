@@ -756,6 +756,7 @@ class TestUser(unittest.TestCase):
 			))
 		user = habitica.user()
 		self.assertEqual(len(user.inventory.food), 2)
+		self.assertEqual(sum(_.amount for _ in user.inventory.food), 3)
 	def should_get_user_pet_and_mount(self):
 		habitica = core.Habitica(_api=MockAPI(
 			MockDataRequest('get', ['user'], self._user_data()),
@@ -1998,7 +1999,7 @@ class TestContent(unittest.TestCase):
 		habitica = core.Habitica(_api=MockAPI())
 		content = habitica.content
 
-		food = content.food()[0]
+		food = content.food()[1]
 		self.assertEqual(food.key, 'Meat')
 		self.assertEqual(food.text, 'Meat')
 		self.assertEqual(food.notes, 'A piece of meat.')
@@ -2330,11 +2331,23 @@ class TestContent(unittest.TestCase):
 		self.assertIsNone(quest.boss)
 		collect = quest.collect
 		self.assertEqual(set(collect.names), {'ambrosia', 'turret'})
-		self.assertEqual(collect.get_item('ambrosia'), ('ambrosia', 'Barrel of Ambrosia', 3))
-		self.assertEqual(collect.get_item('turret'), ('turret', 'Turret', 5))
-		collect_items = sorted(collect.items(), key=lambda _:_[0])
-		self.assertEqual(collect_items[0], ('ambrosia', 'Barrel of Ambrosia', 3))
-		self.assertEqual(collect_items[1], ('turret', 'Turret', 5))
+		item = collect.get_item('ambrosia')
+		self.assertEqual(item.key, 'ambrosia')
+		self.assertEqual(item.text, 'Barrel of Ambrosia', 3)
+		self.assertEqual(item.amount, 3)
+		item = collect.get_item('turret')
+		self.assertEqual(item.key, 'turret')
+		self.assertEqual(item.text, 'Turret')
+		self.assertEqual(item.amount, 5)
+		collect_items = sorted(collect.items(), key=lambda _:_.key)
+		item = collect_items[0]
+		self.assertEqual(item.key, 'ambrosia')
+		self.assertEqual(item.text, 'Barrel of Ambrosia', 3)
+		self.assertEqual(item.amount, 3)
+		item = collect_items[1]
+		self.assertEqual(item.key, 'turret')
+		self.assertEqual(item.text, 'Turret')
+		self.assertEqual(item.amount, 5)
 		self.assertEqual(collect.total, 8)
 	def should_have_world_quest(self):
 		habitica = core.Habitica(_api=MockAPI())

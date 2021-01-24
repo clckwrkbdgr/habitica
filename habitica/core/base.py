@@ -106,6 +106,22 @@ class ValueBar:
 		self._validate()
 		return self.value == other
 
+class ItemBundle:
+	""" Represents a bundle of items of the same type and value,
+	like specific Food (e.g. 141 Meat).
+
+	All item's attributes are accessible directly or via .item:
+		bundle.key
+		bundle.item.key
+
+	Amount of items is accessible via .amount (and may be a ValueBar for that matter).
+	"""
+	def __init__(self, real_item, amount):
+		self.item = real_item
+		self.amount = amount
+	def __getattr__(self, attr):
+		return getattr(self.item, attr)
+
 @functools.total_ordering
 class Price:
 	""" Represents price (value with currency).
