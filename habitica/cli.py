@@ -256,7 +256,7 @@ def habits_up(habitica, tasks, full=False): # pragma: no cover
 	You can pass one or more <task-id> parameters, using either comma-separated lists or ranges or both. For example, `todos done 1,3,6-9,11`.
 	"""
 	habits = habitica.user.habits()
-	for habit in filter_tasks(habits, task):
+	for habit in filter_tasks(habits, tasks):
 		try:
 			habit.up()
 			print('incremented task \'%s\'' % habit.text)
@@ -275,7 +275,7 @@ def habits_down(habitica, tasks, full=False): # pragma: no cover
 	You can pass one or more <task-id> parameters, using either comma-separated lists or ranges or both. For example, `todos done 1,3,6-9,11`.
 	"""
 	habits = habitica.user.habits()
-	for habit in filter_tasks(habits, task):
+	for habit in filter_tasks(habits, tasks):
 		try:
 			habit.down()
 			print('decremented task \'%s\'' % habit.text)
