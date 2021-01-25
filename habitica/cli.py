@@ -304,7 +304,8 @@ def dailies_list(habitica, full=False, list_all=False): # pragma: no cover
 @click.argument('tasks', nargs=-1, required=True)
 @click.option('--full', is_flag=True, help='Print tasks details along with the title.')
 @click.option('--list-all', is_flag=True, help='List all dailies. By default only not done dailies will be displayed')
-def dailies_done(tasks, full=False, list_all=False): # pragma: no cover
+@click.pass_obj
+def dailies_done(habitica, tasks, full=False, list_all=False): # pragma: no cover
 	""" Mark daily complete
 
 	You can pass one or more <task-id> parameters, using either comma-separated lists or ranges or both. For example, `todos done 1,3,6-9,11`.
