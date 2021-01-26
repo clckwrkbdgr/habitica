@@ -495,7 +495,7 @@ def messages(habitica, count=None, seen=False, as_json=False, as_rss=False): # p
 @cli.command('news')
 @click.option('--seen', is_flag=True, help='Mark news post as read.')
 @click.pass_obj
-def show_news(habitica, seen=False):
+def show_news(habitica, seen=False): # pragma: no cover
 	news = habitica.news()
 	print(news.html_text)
 	if seen:
