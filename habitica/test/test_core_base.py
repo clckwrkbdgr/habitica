@@ -2,6 +2,14 @@ import unittest, unittest.mock
 unittest.defaultTestLoader.testMethodPrefix = 'should'
 from ..core import base
 
+class TestUtils(unittest.TestCase):
+	def should_get_text_repr_of_a_number(self):
+		self.assertEqual(base.textsign(-1), '-')
+		self.assertEqual(base.textsign(100), '+')
+		self.assertEqual(base.textsign(0), '')
+		self.assertEqual(base.signed(0.1234), '+0.123')
+		self.assertEqual(base.signed(-1234.56789, 5), '-1234.56789')
+
 class MockApiObject(base.ApiObject):
 	pass
 

@@ -11,6 +11,12 @@ class DropEvent(base.Event):
 	def __str__(self):
 		return self.message
 
+class QuestProgressEvent(base.Event):
+	def __init__(self, questProgress):
+		self.questProgress = questProgress
+	def __str__(self):
+		return 'Quest progress: {0}'.format(base.signed(self.questProgress))
+
 class Approval(base.ApiObject):
 	@property
 	def required(self):
@@ -384,6 +390,8 @@ class Habit(Task, TaskValue):
 		result = self.api.post('tasks', self.id, 'score', 'up').data
 		if result.get('_tmp', {}).get('drop', {}).get('dialog', None):
 			self.events.add(DropEvent(result.get('_tmp', {}).get('drop', {}).get('dialog', None)))
+		if result.get('_tmp', {}).get('quest', {}).get('progressDelta', None):
+			self.events.add(QuestProgressEvent(result.get('_tmp', {}).get('quest', {}).get('progressDelta', None)))
 		self._data['value'] += result['delta']
 	def down(self):
 		if not self._data['down']:

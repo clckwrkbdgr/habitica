@@ -1505,6 +1505,7 @@ class TestEvents(unittest.TestCase):
 		habits[5].up()
 		self.assertEqual(list(map(str, habitica.events.events)), [
 			"You've found a Cotton Candy Blue Hatching Potion!",
+			"Quest progress: +0.695",
 			])
 
 class TestHabits(unittest.TestCase):

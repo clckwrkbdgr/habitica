@@ -4,6 +4,18 @@ Mostly non-functional.
 import functools
 import vintage
 
+def textsign(value):
+	if value < 0:
+		return '-'
+	if value > 0:
+		return '+'
+	return ''
+
+def signed(value, ndigits=3):
+	if ndigits:
+		value = round(value, ndigits)
+	return textsign(value) + str(abs(value))
+
 class ApiInterface:
 	""" Base class for all objects that:
 	- has immediate parent (._parent);
