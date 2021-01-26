@@ -1465,12 +1465,6 @@ class TestRewards(unittest.TestCase):
 			'value': 400,
 			})
 
-class MockEventHandler(core.base.EventHandler):
-	def __init__(self):
-		self.events = []
-	def add(self, event):
-		self.events.append(event)
-
 class TestEvents(unittest.TestCase):
 	def should_handle_events_from_scoring_task(self):
 		habitica = core.Habitica(_api=MockAPI(
@@ -1499,13 +1493,14 @@ class TestEvents(unittest.TestCase):
 				"str": 0,
 				}),
 			))
-		habitica.events = MockEventHandler()
 		user = habitica.user()
 		habits = user.habits()
 		habits[5].up()
-		self.assertEqual(list(map(str, habitica.events.events)), [
+		self.assertEqual(list(map(str, habitica.events.dump())), [
 			"You've found a Cotton Candy Blue Hatching Potion!",
 			"Quest progress: +0.695",
+			"Class changed from 'rogue' to 'warrior'",
+			"Gp: +805.246",
 			])
 
 class TestHabits(unittest.TestCase):

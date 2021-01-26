@@ -63,7 +63,33 @@ class ApiObject(ApiInterface):
 class Event:
 	pass
 
+class TextStatChange(Event):
+	def __init__(self, name, previous, current):
+		self.name = name
+		self.previous = previous
+		self.current = current
+	def __str__(self):
+		return "{0} changed from '{1}' to '{2}'".format(self.name.title(), self.previous, self.current)
+
+class NumericStatChange(Event):
+	def __init__(self, name, previous, current):
+		self.name = name
+		self.previous = previous
+		self.current = current
+	def __str__(self):
+		return "{0}: {1}".format(self.name.title(), signed(self.current - self.previous))
+
 class EventHandler:
+	def __init__(self):
+		self.stats = {}
+	def track_stat(self, name, value): # pragma: no cover
+		if name in self.stats:
+			if value != self.stats[name]:
+				if isinstance(value, str):
+					self.add(TextStatChange(name, self.stats[name], value))
+				else:
+					self.add(NumericStatChange(name, self.stats[name], value))
+		self.stats[name] = value
 	def add(self, event): # pragma: no cover
 		raise NotImplementedError
 

@@ -159,6 +159,16 @@ class Task(base.Entity):
 			_body['tags'] = tags
 		self._data = self.api.put('tasks', self.id, _body=_body).data
 
+	def _handle_events(self, data):
+		if data.get('_tmp', {}).get('drop', {}).get('dialog', None):
+			self.events.add(DropEvent(data.get('_tmp', {}).get('drop', {}).get('dialog', None)))
+		if data.get('_tmp', {}).get('quest', {}).get('progressDelta', None):
+			self.events.add(QuestProgressEvent(data.get('_tmp', {}).get('quest', {}).get('progressDelta', None)))
+		if data.get('class'):
+			self.events.track_stat('class', data.get('class'))
+		if data.get('gp'):
+			self.events.track_stat('gp', data.get('gp'))
+
 	@property
 	def task_type(self):
 		""" Returns string value of task type. """
@@ -388,10 +398,7 @@ class Habit(Task, TaskValue):
 		# TODO data also stores updated user stats, needs to calculate diff and notify.
 		# TODO also data._tmp is a Drop, need to display notification.
 		result = self.api.post('tasks', self.id, 'score', 'up').data
-		if result.get('_tmp', {}).get('drop', {}).get('dialog', None):
-			self.events.add(DropEvent(result.get('_tmp', {}).get('drop', {}).get('dialog', None)))
-		if result.get('_tmp', {}).get('quest', {}).get('progressDelta', None):
-			self.events.add(QuestProgressEvent(result.get('_tmp', {}).get('quest', {}).get('progressDelta', None)))
+		self._handle_events(result)
 		self._data['value'] += result['delta']
 	def down(self):
 		if not self._data['down']:
@@ -399,6 +406,7 @@ class Habit(Task, TaskValue):
 		# TODO data also stores updated user stats, needs to calculate diff and notify.
 		# TODO also data._tmp is a Drop, need to display notification.
 		result = self.api.post('tasks', self.id, 'score', 'down').data
+		self._handle_events(result)
 		self._data['value'] += result['delta']
 
 class Checkable:
@@ -677,6 +685,7 @@ class Daily(Task, TaskValue, Checkable, Checklist):
 		# TODO data also stores updated user stats, needs to calculate diff and notify.
 		# TODO also data._tmp is a Drop, need to display notification.
 		result = self.api.post('tasks', self.id, 'score', 'up').data
+		self._handle_events(result)
 		self._data['value'] += result['delta']
 		super().complete()
 	def undo(self):
@@ -684,6 +693,7 @@ class Daily(Task, TaskValue, Checkable, Checklist):
 		# TODO data also stores updated user stats, needs to calculate diff and notify.
 		# TODO also data._tmp is a Drop, need to display notification.
 		result = self.api.post('tasks', self.id, 'score', 'down').data
+		self._handle_events(result)
 		self._data['value'] += result['delta']
 		super().undo()
 
@@ -743,6 +753,7 @@ class Todo(Task, TaskValue, Checkable, Checklist):
 		# TODO data also stores updated user stats, needs to calculate diff and notify.
 		# TODO also data._tmp is a Drop, need to display notification.
 		result = self.api.post('tasks', self.id, 'score', 'up').data
+		self._handle_events(result)
 		self._data['value'] += result['delta']
 		super().complete()
 	def undo(self):
@@ -750,5 +761,6 @@ class Todo(Task, TaskValue, Checkable, Checklist):
 		# TODO data also stores updated user stats, needs to calculate diff and notify.
 		# TODO also data._tmp is a Drop, need to display notification.
 		result = self.api.post('tasks', self.id, 'score', 'down').data
+		self._handle_events(result)
 		self._data['value'] += result['delta']
 		super().undo()

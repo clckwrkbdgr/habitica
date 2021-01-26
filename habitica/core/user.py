@@ -140,6 +140,11 @@ class Training(base.ApiObject, content.BaseStats):
 
 class UserStats(base.ApiObject, content.BaseStats):
 	# TODO .points - ???
+	def _handle_events(self, data):
+		if data.get('class'):
+			self.events.track_stat('class', data.get('class'))
+		if data.get('gp'):
+			self.events.track_stat('gp', data.get('gp'))
 	@property
 	def class_name(self):
 		return self._data['class']
@@ -190,9 +195,11 @@ class UserStats(base.ApiObject, content.BaseStats):
 			data = self.api.post('user', 'allocate', stat=next(iter(stats.keys()))).data
 		else:
 			data = self.api.post('user', 'allocate-bulk', _body={'stats':stats}).data
+		self._handle_events(data)
 		self._data.update(data)
 	def autoallocate_all(self):
 		data = self.api.post('user', 'allocate-now').data
+		self._handle_events(data)
 		self._data.update(data)
 
 class Gear(base.ApiObject):
@@ -420,6 +427,9 @@ class Member(base.Entity):
 		return self.children(tasks.Task, self._data.get('tasks', []))
 
 class User(base.Entity, _UserMethods):
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+		self.stats._handle_events(self._data['stats'])
 	# TODO auth -- see model
 	# TODO achievements -- see model
 	# TODO backer -- see model
