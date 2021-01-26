@@ -1465,6 +1465,48 @@ class TestRewards(unittest.TestCase):
 			'value': 400,
 			})
 
+class MockEventHandler(core.base.EventHandler):
+	def __init__(self):
+		self.events = []
+	def add(self, event):
+		self.events.append(event)
+
+class TestEvents(unittest.TestCase):
+	def should_handle_events_from_scoring_task(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockDataRequest('get', ['user'], MockData.USER),
+			MockDataRequest('get', ['tasks', 'user'], MockData.ORDERED.HABITS),
+			MockDataRequest('post', ['tasks', 'stealth', 'score', 'up'], {
+				"_tmp": {
+					"drop": {
+						"dialog": "You've found a Cotton Candy Blue Hatching Potion!",
+						},
+					"quest": {
+						"progressDelta": 0.6949999999999932
+						}
+					},
+				"class": "warrior",
+				"con": 0,
+				"delta": 1,
+				"exp": 189,
+				"gp": 820.2457348942492,
+				"hp": 50,
+				"int": 28,
+				"lvl": 36,
+				"mp": 13.139782544906312,
+				"per": 8,
+				"points": 0,
+				"str": 0,
+				}),
+			))
+		habitica.events = MockEventHandler()
+		user = habitica.user()
+		habits = user.habits()
+		habits[5].up()
+		self.assertEqual(list(map(str, habitica.events.events)), [
+			"You've found a Cotton Candy Blue Hatching Potion!",
+			])
+
 class TestHabits(unittest.TestCase):
 	def should_get_list_of_user_habits(self):
 		habitica = core.Habitica(_api=MockAPI(
@@ -1999,7 +2041,7 @@ class TestContent(unittest.TestCase):
 		habitica = core.Habitica(_api=MockAPI())
 		content = habitica.content
 
-		food = content.food()[1]
+		food = sorted(content.food(), key=lambda _:_.key)[1]
 		self.assertEqual(food.key, 'Meat')
 		self.assertEqual(food.text, 'Meat')
 		self.assertEqual(food.notes, 'A piece of meat.')

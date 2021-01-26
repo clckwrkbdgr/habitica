@@ -114,6 +114,10 @@ class Market(base.ApiObject):
 	def orb_of_rebirth(self):
 		return self.child_interface(OrbOfRebirth)
 
+class CLIEventHandler(base.EventHandler): # pragma: no cover -- TODO move to .cli
+	def add(self, event):
+		print(str(event))
+
 class Habitica(base.ApiInterface):
 	""" Main Habitica entry point. """
 	# TODO /hall/{heroes,patrons}
@@ -131,6 +135,7 @@ class Habitica(base.ApiInterface):
 	def __init__(self, auth=None, _api=None):
 		# TODO POST /user/auth/local/login
 		self.api = _api or api.API(auth['url'], auth['x-api-user'], auth['x-api-key'])
+		self.events = CLIEventHandler()
 		self._content = None
 	def home_url(self):
 		""" Returns main Habitica Web URL to open in browser. """

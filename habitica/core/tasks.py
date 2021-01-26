@@ -5,6 +5,12 @@ from bisect import bisect
 from .. import timeutils
 from . import base, tags
 
+class DropEvent(base.Event):
+	def __init__(self, drop_dialog):
+		self.message = drop_dialog
+	def __str__(self):
+		return self.message
+
 class Approval(base.ApiObject):
 	@property
 	def required(self):
@@ -376,6 +382,8 @@ class Habit(Task, TaskValue):
 		# TODO data also stores updated user stats, needs to calculate diff and notify.
 		# TODO also data._tmp is a Drop, need to display notification.
 		result = self.api.post('tasks', self.id, 'score', 'up').data
+		if result.get('_tmp', {}).get('drop', {}).get('dialog', None):
+			self.events.add(DropEvent(result.get('_tmp', {}).get('drop', {}).get('dialog', None)))
 		self._data['value'] += result['delta']
 	def down(self):
 		if not self._data['down']:
