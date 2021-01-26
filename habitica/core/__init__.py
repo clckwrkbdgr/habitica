@@ -58,8 +58,8 @@ class News(base.ApiObject):
 		self.api.post('news', 'tell-me-later')
 
 class StableKey(base.ApiInterface, base.MarketableForGems):
-	def __init__(self, _api=None, _content=None, _parent=None, _method=None, _value=None):
-		super().__init__(_api=_api, _content=_content, _parent=_parent)
+	def __init__(self, *args, _method=None, _value=None, **kwargs):
+		super().__init__(*args, **kwargs)
 		self._method = _method
 		self._data = {
 				'value' : _value,
