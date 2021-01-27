@@ -160,14 +160,10 @@ class Task(base.Entity):
 		self._data = self.api.put('tasks', self.id, _body=_body).data
 
 	def _handle_events(self, data):
-		if data.get('_tmp', {}).get('drop', {}).get('dialog', None):
-			self.events.add(DropEvent(data.get('_tmp', {}).get('drop', {}).get('dialog', None)))
-		if data.get('_tmp', {}).get('quest', {}).get('progressDelta', None):
-			self.events.add(QuestProgressEvent(data.get('_tmp', {}).get('quest', {}).get('progressDelta', None)))
-		if data.get('class'):
-			self.events.track_stat('class', data.get('class'))
-		if data.get('gp'):
-			self.events.track_stat('gp', data.get('gp'))
+		self._add_event(DropEvent, '_tmp', 'drop', 'dialog', data=data)
+		self._add_event(QuestProgressEvent, '_tmp', 'quest', 'progressDelta', data=data)
+		self._track_stat('class', data=data)
+		self._track_stat('gp', data=data)
 
 	@property
 	def task_type(self):

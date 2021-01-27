@@ -49,6 +49,24 @@ class ApiInterface:
 		and passes through API, Content and parent (self).
 		"""
 		return [self.child(obj_type, entry, _parent=_parent, **params) for entry in data_entries]
+	def _add_event(self, event_class, *data_path, data=None):
+		if data is None: # pragma: no cover -- TODO
+			data = self._data
+		data_path = list(data_path)
+		while data is not None and data_path:
+			data = data.get(data_path.pop(0))
+		if data is not None:
+			self.events.add(event_class(data))
+	def _track_stat(self, name, *data_path, data=None):
+		if data is None:
+			data = self._data
+		if not data_path:
+			data_path = [name]
+		data_path = list(data_path)
+		while data is not None and data_path:
+			data = data.get(data_path.pop(0))
+		if data is not None:
+			self.events.track_stat(name, data)
 
 class ApiObject(ApiInterface):
 	""" Base class for all objects that:
