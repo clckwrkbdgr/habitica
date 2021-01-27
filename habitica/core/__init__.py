@@ -232,7 +232,7 @@ class Habitica(base.ApiInterface):
 	def news(self, post_id=None):
 		if post_id:
 			return self.child(NewsPost, self.api.get('news', post_id).data)
-		html_data = self.api.get('news').data
+		html_data = self.api.get('news').html
 		return self.child(News, html_data)
 	def create_tag(self, name):
 		return self.child(Tag, self.api.post('tags', _body={
