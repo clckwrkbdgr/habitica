@@ -1189,7 +1189,7 @@ class TestUser(unittest.TestCase):
 class TestNews(unittest.TestCase):
 	def should_get_latest_news(self):
 		habitica = core.Habitica(_api=MockAPI(
-			MockDataRequest('get', ['news'], MockData.LATEST_NEWS),
+			MockRequest('get', ['news'], MockData.LATEST_NEWS),
 			))
 		news = habitica.news()
 		self.assertEqual(news.html_text, '<h1>Latest news</h1>\n<p>Grey Death strikes again!</p>\n')
@@ -1207,14 +1207,14 @@ class TestNews(unittest.TestCase):
 		self.assertFalse(news.published)
 	def should_postpone_news(self):
 		habitica = core.Habitica(_api=MockAPI(
-			MockDataRequest('get', ['news'], MockData.LATEST_NEWS),
+			MockRequest('get', ['news'], MockData.LATEST_NEWS),
 			MockDataRequest('post', ['news', 'tell-me-later'], {}),
 			))
 		news = habitica.news()
 		news.tell_me_later()
 	def should_mark_news_as_read(self):
 		habitica = core.Habitica(_api=MockAPI(
-			MockDataRequest('get', ['news'], MockData.LATEST_NEWS),
+			MockRequest('get', ['news'], MockData.LATEST_NEWS),
 			MockDataRequest('post', ['news', 'read'], {}),
 			))
 		news = habitica.news()

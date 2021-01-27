@@ -651,9 +651,10 @@ MockData.NEWS = {
 		'publishDate' : '2016-06-20T21:00:00.000Z',
 		'published' : False,
 		}
-MockData.LATEST_NEWS = """<h1>Latest news</h1>
+MockData.LATEST_NEWS = {
+		"html": """<h1>Latest news</h1>
 <p>Grey Death strikes again!</p>
-"""
+"""}
 
 MockData.CONTENT_DATA = {
 		'potion' : {
