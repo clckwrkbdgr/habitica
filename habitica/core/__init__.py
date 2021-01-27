@@ -138,10 +138,10 @@ class Habitica(base.ApiInterface):
 	# TODO PUT /user/auth/update-password
 	# TODO PUT /user/auth/update-username
 	# TODO webhooks
-	def __init__(self, auth=None, _api=None):
+	def __init__(self, auth=None, event_handler=None, _api=None):
 		# TODO POST /user/auth/local/login
 		self.api = _api or api.API(auth['url'], auth['x-api-user'], auth['x-api-key'])
-		self.events = CollectEventHandler()
+		self.events = event_handler or CollectEventHandler()
 		self._content = None
 	def home_url(self):
 		""" Returns main Habitica Web URL to open in browser. """

@@ -134,6 +134,10 @@ TASK_SCORES = {
 
 import click, click_default_group
 
+class PrintEventHandler(core.base.EventHandler): # pragma: no cover
+	def add(self, event):
+		print(str(event))
+
 @click.group()
 @click.version_option(version=VERSION)
 @click.option('-v', '--verbose', is_flag=True, help='Show some logging information')
@@ -142,7 +146,7 @@ import click, click_default_group
 def cli(ctx, verbose, debug): # pragma: no cover
 	""" Habitica command-line interface. """
 	# Click's context object is authenticated Habitica endpoint.
-	ctx.obj = Habitica(auth=config.load_auth())
+	ctx.obj = Habitica(auth=config.load_auth(), event_handler=PrintEventHandler())
 
 	# set up logging
 	if verbose:
