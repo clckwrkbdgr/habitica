@@ -506,6 +506,9 @@ class User(base.Entity, _UserMethods):
 	def invitesSent(self):
 		return self._data['invitesSent']
 	@property
+	def needsCron(self):
+		return self._data['needsCron']
+	@property
 	def lastCron(self):
 		return self._data['lastCron'] # FIXME parse date
 	def notifications(self):
