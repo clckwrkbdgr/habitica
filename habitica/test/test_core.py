@@ -627,6 +627,7 @@ class TestUser(unittest.TestCase):
 		self.assertEqual(user.loginIncentives, 400)
 		self.assertEqual(user.invitesSent, 2)
 		self.assertEqual(user.lastCron, '2016-06-20T21:00:00.000Z')
+		self.assertFalse(user.needsCron)
 	def should_get_user_stats(self):
 		habitica = core.Habitica(_api=MockAPI(
 			MockDataRequest('get', ['user'], self._user_data()),
@@ -853,6 +854,7 @@ class TestUser(unittest.TestCase):
 		user.buy(habitica.content.special_items('congrats'))
 	def should_buy_gems(self):
 		habitica = core.Habitica(_api=MockAPI(
+			MockDataRequest('get', ['user'], self._user_data(purchased={})),
 			MockDataRequest('get', ['user'], self._user_data()),
 			MockDataRequest('post', ['user', 'purchase', 'gems', 'gem'],
 				self._user_data(),
@@ -860,7 +862,11 @@ class TestUser(unittest.TestCase):
 			))
 
 		user = habitica.user()
-		user.buy(habitica.content.gems)
+		self.assertEqual(user.gemsLeft, 0)
+
+		user = habitica.user()
+		self.assertEqual(user.gemsLeft, 47)
+		user.buy(habitica.market().gems(user.gemsLeft))
 	def should_buy_eggs_and_food(self):
 		habitica = core.Habitica(_api=MockAPI(
 			MockDataRequest('get', ['user'], self._user_data()),

@@ -43,9 +43,6 @@ class Content(base.ApiInterface):
 			return None
 		return [self.child(entry_type, self._data[collection_name][key], **params) for key, value in self._data[access_list_name].items() if value]
 	@property
-	def gems(self):
-		return self.child_interface(Gems)
-	@property
 	def potion(self):
 		return self.child(HealthPotion, self._data['potion'])
 	@property
@@ -212,10 +209,12 @@ class BaseStats:
 	def constitution(self):
 		return self.con
 
-class Gems(base.ApiInterface, MarketableForGold):
+class Gems(base.ApiObject, MarketableForGold):
+	@property
+	def quantity(self):
+		return self._data['quantity']
 	def _buy(self, user):
-		# TODO body[quantity] ?
-		return self.api.post('user', 'purchase', 'gems', 'gem')
+		return self.api.post('user', 'purchase', 'gems', 'gem', _body={'quantity':self.quantity})
 
 class Armoire(ContentEntry, MarketableForGold):
 	@property

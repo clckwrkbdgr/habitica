@@ -75,6 +75,7 @@ MockData.USER = {
 		'balance' : 10,
 		'loginIncentives' : 400,
 		'invitesSent' : 2,
+		'needsCron' : False,
 		'lastCron' : '2016-06-20T21:00:00.000Z',
 		'flags' : {
 			'not' : 'explained',
@@ -197,6 +198,14 @@ MockData.USER = {
 			'currentPet' : 'fox',
 			'currentMount' : 'wolf',
 			},
+		'purchased' : {
+				'plan' : {
+					'gemsBought' : 3,
+					'consecutive': {
+						'gemCapExtra' : 25,
+						},
+					},
+				},
 		'notifications' : [
 				{
 					'id' : 'helios1',

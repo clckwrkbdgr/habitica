@@ -113,6 +113,12 @@ class Market(base.ApiObject):
 	@property
 	def orb_of_rebirth(self):
 		return self.child_interface(OrbOfRebirth)
+	def gems(self, quantity):
+		data = {
+				'quantity': quantity,
+				'value': 20 * quantity,
+				}
+		return self.child(content.Gems, data)
 
 class CollectEventHandler(base.EventHandler): # pragma: no cover -- TODO move to .cli
 	def __init__(self, *args, **kwargs):

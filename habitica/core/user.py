@@ -511,6 +511,13 @@ class User(base.Entity, _UserMethods):
 	@property
 	def lastCron(self):
 		return self._data['lastCron'] # FIXME parse date
+	@property
+	def gemsLeft(self):
+		plan = self._data.purchased.get('plan')
+		if not plan:
+			return 0
+		planGemLimits_convCap = 25 # TODO hardcoded in Habitica itself.
+		return planGemLimits_convCap + plan['consecutive']['gemCapExtra'] - plan['gemsBought']
 	def notifications(self):
 		data = self._data['notifications']
 		return self.child(Notifications, data)
