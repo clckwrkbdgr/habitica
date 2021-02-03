@@ -148,13 +148,48 @@ class TestNotifications(unittest.TestCase):
 					},
 				],
 			})
-	def should_detect_working_server(self):
+	def should_ignore_seen_notifications(self):
+		habitica = core.Habitica(_api=MockAPI(
+			self._response_with_notification(type='NEW_CHAT_MESSAGE', seen=True, group={'name':'UNATCO'}),
+			))
+		self.assertTrue(habitica.server_is_up())
+		self.assertEqual(list(map(str, habitica.events.dump())), [
+			])
+	def should_detect_unknown_notifications(self):
+		habitica = core.Habitica(_api=MockAPI(
+			self._response_with_notification(type='UNKNOWN', key='value'),
+			))
+		self.assertTrue(habitica.server_is_up())
+		self.assertEqual(list(map(str, habitica.events.dump())), [
+			"Unknown notification UNKNOWN. Data: {'key': 'value'}",
+			])
+
+	def should_catch_cron_notification(self):
 		habitica = core.Habitica(_api=MockAPI(
 			self._response_with_notification(type='CRON', hp=-1, mp=3.1415),
 			))
 		self.assertTrue(habitica.server_is_up())
 		self.assertEqual(list(map(str, habitica.events.dump())), [
 			'Cron: HP -1, Mana +3.142',
+			])
+	def should_catch_unallocated_stat_points(self):
+		habitica = core.Habitica(_api=MockAPI(
+			self._response_with_notification(type='UNALLOCATED_STATS_POINTS', points=3),
+			self._response_with_notification(type='UNALLOCATED_STATS_POINTS', points=21),
+			))
+		self.assertTrue(habitica.server_is_up())
+		self.assertTrue(habitica.server_is_up())
+		self.assertEqual(list(map(str, habitica.events.dump())), [
+			'You have 3 unallocated stat points',
+			'You have 21 unallocated stat point',
+			])
+	def should_catch_new_message(self):
+		habitica = core.Habitica(_api=MockAPI(
+			self._response_with_notification(type='NEW_CHAT_MESSAGE', group={'name':'UNATCO'}),
+			))
+		self.assertTrue(habitica.server_is_up())
+		self.assertEqual(list(map(str, habitica.events.dump())), [
+			'Group "UNATCO" have new message',
 			])
 
 class TestChallenges(unittest.TestCase):

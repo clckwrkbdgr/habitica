@@ -162,7 +162,7 @@ class API(object):
     def cached(self, cache_entry_name): # pragma: no cover -- TODO see Cached class above.
         return API.Cached(self, cache_entry_name)
 
-    def set_response_hook(self, hook_function):
+    def set_response_hook(self, hook_function): # pragma: no cover -- TODO
         """ Sets hook that accepts full response object
         and called for every successfull response.
         Response object (usually a dict) can be modified in-place.
@@ -251,7 +251,7 @@ class API(object):
         if as_json:
             response = response.json()
         logging.debug('Response: {0}'.format(json.dumps(response, indent=2, sort_keys=True)))
-        if self._response_hook:
+        if self._response_hook: # pragma: no cover -- TODO
             try:
                 self._response_hook(response)
             except:

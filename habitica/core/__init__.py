@@ -153,7 +153,7 @@ class Notification:
 			return 'You have {0} unallocated stat point{1}'.format(self.data.points, '' if self.data.points % 10 == 1 else 's')
 		if self.type == 'NEW_CHAT_MESSAGE':
 			return 'Group "{0}" have new message'.format(self.data.group.name)
-		return 'Unknown event {0}. Data: {1}'.format(self.type, self.data)
+		return 'Unknown notification {0}. Data: {1}'.format(self.type, self.data)
 
 class Habitica(base.ApiInterface):
 	""" Main Habitica entry point. """
