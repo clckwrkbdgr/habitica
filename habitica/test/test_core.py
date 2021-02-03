@@ -136,6 +136,27 @@ class TestBaseHabitica(unittest.TestCase):
 		gear = market.open_mystery_item()
 		self.assertEqual(gear.key, 'mysterykatana')
 
+class TestNotifications(unittest.TestCase):
+	def _response_with_notification(self, type=None, seen=False, **data):
+		return MockRequest('get', ['status'], {
+			'data': {'status': 'up'},
+			'notifications' : [
+				{
+					'type' : type,
+					'data' : data,
+					'seen' : seen,
+					},
+				],
+			})
+	def should_detect_working_server(self):
+		habitica = core.Habitica(_api=MockAPI(
+			self._response_with_notification(type='CRON', hp=-1, mp=3.1415),
+			))
+		self.assertTrue(habitica.server_is_up())
+		self.assertEqual(list(map(str, habitica.events.dump())), [
+			'Cron: HP -1, Mana +3.142',
+			])
+
 class TestChallenges(unittest.TestCase):
 	def _challenge(self, path=('groups', 'unatco')):
 		return MockDataRequest('get', ['challenges'] + list(path), MockData.ORDERED.CHALLENGES)

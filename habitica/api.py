@@ -147,6 +147,7 @@ class API(object):
               'x-client': USER_ID + '-habitica', # TODO take appName from package?
               'content-type': 'application/json',
               }
+        self._response_hook = None
         if batch_mode:
             # Third-party API tools should introduce delays between calls
             # to reduce load on Habitica server.
@@ -161,6 +162,13 @@ class API(object):
     def cached(self, cache_entry_name): # pragma: no cover -- TODO see Cached class above.
         return API.Cached(self, cache_entry_name)
 
+    def set_response_hook(self, hook_function):
+        """ Sets hook that accepts full response object
+        and called for every successfull response.
+        Response object (usually a dict) can be modified in-place.
+        Return value is not checked.
+        """
+        self._response_hook = hook_function
     def get_url(self, *parts):
         """ Makes URL to call specified .../subpath/of/parts. """
         return '/'.join([self.base_url, 'api', 'v3'] + list(parts))
@@ -243,4 +251,9 @@ class API(object):
         if as_json:
             response = response.json()
         logging.debug('Response: {0}'.format(json.dumps(response, indent=2, sort_keys=True)))
+        if self._response_hook:
+            try:
+                self._response_hook(response)
+            except:
+                logging.exception('Exception in custom API response hook!')
         return dotdict(response)

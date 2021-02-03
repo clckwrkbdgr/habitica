@@ -1,4 +1,5 @@
 from .. import api
+from ..api import dotdict
 from . import base, content, tasks, groups, user, quests, tags
 from .content import *
 from .groups import *
@@ -130,6 +131,30 @@ class CollectEventHandler(base.EventHandler): # pragma: no cover -- TODO move to
 		result, self.buffer = self.buffer, []
 		return result
 
+class Notification:
+	def __init__(self, _data):
+		self._data = _data
+	@property
+	def id(self): # pragma: no cover -- TODO really unused in CLI version.
+		return self._data['id']
+	@property
+	def seen(self):
+		return self._data['seen']
+	@property
+	def type(self):
+		return self._data['type']
+	@property
+	def data(self):
+		return dotdict(self._data['data'])
+	def __str__(self):
+		if self.type == 'CRON':
+			return 'Cron: HP {0}, Mana {1}'.format(base.signed(self.data.hp), base.signed(self.data.mp))
+		if self.type == 'UNALLOCATED_STATS_POINTS':
+			return 'You have {0} unallocated stat point{1}'.format(self.data.points, '' if self.data.points % 10 == 1 else 's')
+		if self.type == 'NEW_CHAT_MESSAGE':
+			return 'Group "{0}" have new message'.format(self.data.group.name)
+		return 'Unknown event {0}. Data: {1}'.format(self.type, self.data)
+
 class Habitica(base.ApiInterface):
 	""" Main Habitica entry point. """
 	# TODO /hall/{heroes,patrons}
@@ -148,7 +173,16 @@ class Habitica(base.ApiInterface):
 		# TODO POST /user/auth/local/login
 		self.api = _api or api.API(auth['url'], auth['x-api-user'], auth['x-api-key'])
 		self.events = event_handler or CollectEventHandler()
+		self.api.set_response_hook(self._api_notifications_hook)
 		self._content = None
+	def _api_notifications_hook(self, response):
+		if not isinstance(response, dict):
+			return
+		notifications = response.get('notifications', [])
+		for notification in map(Notification, notifications):
+			if notification.seen:
+				continue
+			self.events.add(str(notification))
 	def home_url(self):
 		""" Returns main Habitica Web URL to open in browser. """
 		return self.api.base_url + '/#/tasks'

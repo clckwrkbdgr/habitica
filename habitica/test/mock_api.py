@@ -25,6 +25,9 @@ class MockAPI:
 		self.cache = [
 			MockRequest('get', ['content'], {'data': MockData.CONTENT_DATA}, cached=True),
 			]
+		self.hook = None
+	def set_response_hook(self, hook):
+		self.hook = hook
 	def cached(self, *args, **kwargs):
 		return self
 	def _perform_request(self, method, path, params=None, body=None):
@@ -44,6 +47,8 @@ class MockAPI:
 		self.responses.append(request)
 		if request.cached: # pragma: no cover
 			self.cache.append(request)
+		if self.hook:
+			self.hook(request.response)
 		return request.response
 	def get(self, *path, **params):
 		return self._perform_request('get', path, params=params)
