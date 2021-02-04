@@ -22,6 +22,7 @@ import operator
 from time import sleep
 from webbrowser import open_new_tab
 from collections import namedtuple
+from pathlib import Path
 
 from . import api, core
 from .core import Habitica, Group
@@ -135,18 +136,27 @@ TASK_SCORES = {
 import click, click_default_group
 
 class PrintEventHandler(core.base.EventHandler): # pragma: no cover
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+		self._enabled = True
+	def printing_enabled(self, value):
+		self._enabled = bool(value)
 	def add(self, event):
-		print(str(event))
+		if self._enabled:
+			print(str(event), file=sys.stderr)
 
 @click.group()
 @click.version_option(version=VERSION)
 @click.option('-v', '--verbose', is_flag=True, help='Show some logging information')
 @click.option('-d', '--debug', is_flag=True, help='Show all logging information')
+@click.option('--notifications/--no-notifications', default=True, help='Display notifications from Habitica (prints to stderr). By default is enabled.')
 @click.pass_context
-def cli(ctx, verbose, debug): # pragma: no cover
+def cli(ctx, verbose=False, debug=False, notifications=False): # pragma: no cover
 	""" Habitica command-line interface. """
 	# Click's context object is authenticated Habitica endpoint.
 	ctx.obj = Habitica(auth=config.load_auth(), event_handler=PrintEventHandler())
+	if not notifications:
+		ctx.obj.events.printing_enabled(False)
 
 	# set up logging
 	if verbose:
@@ -452,15 +462,22 @@ def spells(habitica, cast=None, habits=None, todos=None): # pragma: no cover
 @click.option('--seen', is_flag=True, help='Mark all messages as read.')
 @click.option('--json', 'as_json', is_flag=True, help='Print all messages in JSON format.')
 @click.option('--rss', 'as_rss', is_flag=True, help='Print all messages in RSS format.')
+@click.option('-o', '--output', help="File to store fetched messages. By default or if specified as '-', prints to stdout.")
 @click.pass_obj
-def messages(habitica, count=None, seen=False, as_json=False, as_rss=False): # pragma: no cover
+def messages(habitica, count=None, seen=False, as_json=False, as_rss=False, output=None): # pragma: no cover
 	""" Lists last messages for all guilds user is in.
 
 	If max COUNT of messages is not specified or specified as 0, displays all messages.
+
+	If output is stdout, disables displaying notifications.
 	"""
+	if output == '-':
+		output = None
+	if not output:
+		habitica.events.printing_enabled(False)
 	mark_as_seen = seen
 	if as_json and as_rss:
-		print('Only one type of export could be specified: --rss, --json')
+		logging.error('Only one type of export could be specified: --rss, --json')
 		sys.exit(1)
 	max_count = 0 # By default no restriction - print all messages.
 	if count:
@@ -468,7 +485,7 @@ def messages(habitica, count=None, seen=False, as_json=False, as_rss=False): # p
 
 	groups = habitica.groups(Group.GUILDS, Group.PARTY)
 	if not groups:
-		print('Failed to fetch list of user guilds', file=sys.stderr)
+		logging.error('Failed to fetch list of user guilds', file=sys.stderr)
 		return
 	if as_rss:
 		exporter = extra.RSSMessageFeed()
@@ -494,7 +511,10 @@ def messages(habitica, count=None, seen=False, as_json=False, as_rss=False): # p
 		if mark_as_seen:
 			group.mark_chat_as_read()
 	exporter.done()
-	print(exporter.getvalue())
+	if output:
+		Path(output).write_text(exporter.getvalue())
+	else:
+		print(exporter.getvalue())
 
 @cli.command('news')
 @click.option('--seen', is_flag=True, help='Mark news post as read.')
