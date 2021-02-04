@@ -571,7 +571,6 @@ class User(base.Entity, _UserMethods):
 			raise RuntimeError("Can ride only Mount, not {0}".format(type(mount)))
 		self._data.update(self.api.post('user', 'equip', 'mount', mount.key).data)
 	def hatch_pet(self, egg, potion):
-		# TODO also returns message (to display).
 		self._data.update(self.api.post('user', 'hatch', egg.key, potion.key).data)
 	def sleep(self):
 		if self.preferences.sleep:
@@ -582,8 +581,6 @@ class User(base.Entity, _UserMethods):
 			return
 		self._data['preferences']['sleep'] = self.api.post('user', 'sleep').data
 	def read_card(self, card):
-		# TODO returns message (to display)
 		self._data.update(self.api.post('user', 'read-card', card.key).data)
 	def revive(self):
-		# TODO returns message (to display)
 		self._data.update(self.api.post('user', 'revive').data)

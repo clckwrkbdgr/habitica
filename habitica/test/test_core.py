@@ -191,6 +191,20 @@ class TestNotifications(unittest.TestCase):
 		self.assertEqual(list(map(str, habitica.events.dump())), [
 			'Group "UNATCO" have new message',
 			])
+	def should_catch_messages_in_responses(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockDataRequest('get', ['user'], MockData.USER),
+			MockRequest('post', ['user', 'rebirth'], {
+				'data' : MockData.USER,
+				'message' : "You've restarted your adventure!",
+				}),
+			))
+		user = habitica.user()
+		orb = habitica.market().orb_of_rebirth
+		user.buy(orb)
+		self.assertEqual(list(map(str, habitica.events.dump())), [
+			"You've restarted your adventure!",
+			])
 
 class TestChallenges(unittest.TestCase):
 	def _challenge(self, path=('groups', 'unatco')):

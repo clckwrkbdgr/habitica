@@ -356,7 +356,6 @@ class Pet(StableCreature):
 		if amount > 1:
 			params['amount'] = int(amount)
 		# TODO check: Pet can eat 50 units. Preferred food offers 5 units per food, other food 2 units.
-		# TODO also returns message (to display)
 		return self.api.post('user', 'feed', self.key, food.key, **params).data
 
 class Mount(StableCreature):

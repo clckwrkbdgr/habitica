@@ -66,7 +66,6 @@ class StableKey(base.ApiInterface, base.MarketableForGems):
 				'value' : _value,
 				}
 	def _buy(self, user):
-		# TODO returns message (to display)
 		return self.api.post('user', self._method)
 
 class FortifyPotion(base.ApiInterface, base.MarketableForGems):
@@ -76,7 +75,6 @@ class FortifyPotion(base.ApiInterface, base.MarketableForGems):
 				'value' : 4,
 				}
 	def _buy(self, user):
-		# TODO returns message (to display)
 		return self.api.post('user', 'reroll')
 
 class OrbOfRebirth(base.ApiInterface, base.MarketableForGems):
@@ -86,7 +84,6 @@ class OrbOfRebirth(base.ApiInterface, base.MarketableForGems):
 				'value' : 6, # TODO free if level >= 100, but needs user data for that.
 				}
 	def _buy(self, user):
-		# TODO returns message (to display)
 		return self.api.post('user', 'rebirth')
 
 class Market(base.ApiObject):
@@ -100,7 +97,6 @@ class Market(base.ApiObject):
 			self._data['rewards'] = self.children(content.Gear, self.api.get('user', 'in-app-rewards').data)
 		return self._data['rewards']
 	def open_mystery_item(self):
-		# TODO also returns message (to display)
 		return self.child(content.Gear, self.api.post('user', 'open-mystery-item').data)
 	@property
 	def key_to_the_kennels(self):
@@ -178,6 +174,9 @@ class Habitica(base.ApiInterface):
 	def _api_notifications_hook(self, response):
 		if not isinstance(response, dict):
 			return
+		message = response.get('message')
+		if message:
+			self.events.add(str(message))
 		notifications = response.get('notifications', [])
 		for notification in map(Notification, notifications):
 			if notification.seen:
