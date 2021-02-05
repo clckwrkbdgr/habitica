@@ -171,6 +171,7 @@ class Habitica(base.ApiInterface):
 		self.events = event_handler or CollectEventHandler()
 		self.api.set_response_hook(self._api_notifications_hook)
 		self._content = None
+		self._reported_notification_ids = []
 	def _api_notifications_hook(self, response):
 		if not isinstance(response, dict):
 			return
@@ -181,6 +182,9 @@ class Habitica(base.ApiInterface):
 		for notification in map(Notification, notifications):
 			if notification.seen:
 				continue
+			if notification.id in self._reported_notification_ids:
+				continue
+			self._reported_notification_ids.append(notification.id)
 			self.events.add(str(notification))
 	def home_url(self):
 		""" Returns main Habitica Web URL to open in browser. """

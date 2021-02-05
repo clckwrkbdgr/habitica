@@ -137,11 +137,12 @@ class TestBaseHabitica(unittest.TestCase):
 		self.assertEqual(gear.key, 'mysterykatana')
 
 class TestNotifications(unittest.TestCase):
-	def _response_with_notification(self, type=None, seen=False, **data):
+	def _response_with_notification(self, type=None, seen=False, _id=None, **data):
 		return MockRequest('get', ['status'], {
 			'data': {'status': 'up'},
 			'notifications' : [
 				{
+					'id' : _id or 'notification-1',
 					'type' : type,
 					'data' : data,
 					'seen' : seen,
@@ -154,6 +155,16 @@ class TestNotifications(unittest.TestCase):
 			))
 		self.assertTrue(habitica.server_is_up())
 		self.assertEqual(list(map(str, habitica.events.dump())), [
+			])
+	def should_ignore_previously_captured_notifications(self):
+		habitica = core.Habitica(_api=MockAPI(
+			self._response_with_notification(type='NEW_CHAT_MESSAGE', group={'name':'UNATCO'}, _id='msg1'),
+			self._response_with_notification(type='NEW_CHAT_MESSAGE', group={'name':'UNATCO'}, _id='msg1'),
+			))
+		self.assertTrue(habitica.server_is_up())
+		self.assertTrue(habitica.server_is_up())
+		self.assertEqual(list(map(str, habitica.events.dump())), [
+			'Group "UNATCO" have new message',
 			])
 	def should_detect_unknown_notifications(self):
 		habitica = core.Habitica(_api=MockAPI(
@@ -174,13 +185,15 @@ class TestNotifications(unittest.TestCase):
 			])
 	def should_catch_unallocated_stat_points(self):
 		habitica = core.Habitica(_api=MockAPI(
-			self._response_with_notification(type='UNALLOCATED_STATS_POINTS', points=3),
-			self._response_with_notification(type='UNALLOCATED_STATS_POINTS', points=21),
+			self._response_with_notification(type='UNALLOCATED_STATS_POINTS', points=3, _id='first'),
+			self._response_with_notification(type='UNALLOCATED_STATS_POINTS', points=21, _id='second'),
 			))
-		self.assertTrue(habitica.server_is_up())
 		self.assertTrue(habitica.server_is_up())
 		self.assertEqual(list(map(str, habitica.events.dump())), [
 			'You have 3 unallocated stat points',
+			])
+		self.assertTrue(habitica.server_is_up())
+		self.assertEqual(list(map(str, habitica.events.dump())), [
 			'You have 21 unallocated stat point',
 			])
 	def should_catch_new_message(self):
