@@ -443,6 +443,9 @@ MockData.GROUPS = {
 		'name' : 'UNATCO',
 		'type' : 'guild',
 		'privacy' : 'public',
+		'quest' : {
+			'active': False,
+			},
 		},
 	'nsf' : {
 		'id' : 'nsf',

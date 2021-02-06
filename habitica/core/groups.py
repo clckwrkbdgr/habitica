@@ -299,6 +299,8 @@ class Group(base.Entity):
 class Party(Group):
 	@property
 	def quest(self):
+		if not self._data['quest'].get('key'):
+			return None
 		return self.child(quests.Quest, None, _group_progress=self._data['quest'])
 	def invite_to_quest(self, quest):
 		self._data['quest'] = self.api.post('groups', self.id, 'quests', 'invite', quest.key).data

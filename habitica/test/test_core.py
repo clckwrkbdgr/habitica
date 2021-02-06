@@ -1322,6 +1322,14 @@ class TestQuest(unittest.TestCase):
 		self.assertEqual(quest.title, 'Find 3 more barrels of Ambrosia')
 		self.assertEqual(quest.collect.current, 6)
 		self.assertEqual(quest.collect.total, 8)
+	def should_detect_if_quest_is_not_active(self):
+		habitica = core.Habitica(_api=MockAPI(
+			MockDataRequest('get', ['user'], MockData.USER),
+			MockDataRequest('get', ['groups', 'party'], MockData.GROUPS['unatco']),
+			))
+		party = habitica.user().party()
+		quest = party.quest
+		self.assertIsNone(quest)
 	def should_show_progress_of_boss_quest(self):
 		habitica = core.Habitica(_api=MockAPI(
 			MockDataRequest('get', ['user'], MockData.USER),
