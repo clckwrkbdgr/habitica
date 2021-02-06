@@ -127,10 +127,10 @@ TASK_SCORES = {
 		core.Task.DARK_RED	  : '<<<   ',
 		core.Task.RED		  : ' <<   ',
 		core.Task.ORANGE	  : '  <   ',
-		core.Task.YELLOW	  : '	   ',
-		core.Task.GREEN		  : '	>  ',
-		core.Task.LIGHT_BLUE  : '	>> ',
-		core.Task.BRIGHT_BLUE : '	>>>',
+		core.Task.YELLOW	  : '      ',
+		core.Task.GREEN		  : '   >  ',
+		core.Task.LIGHT_BLUE  : '   >> ',
+		core.Task.BRIGHT_BLUE : '   >>>',
 		}
 
 import click, click_default_group
@@ -183,7 +183,7 @@ def status(habitica): # pragma: no cover
 				int(progress.max_value),
 				quest.title)
 	else:
-		quest_info = 'Not currently on a quest'
+		quest_info = '-'
 
 	# prepare and print status strings
 	title = 'Level %d %s' % (stats.level, stats.class_name.capitalize())
