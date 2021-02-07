@@ -160,12 +160,14 @@ class TestNotifications(unittest.TestCase):
 		habitica = core.Habitica(_api=MockAPI(
 			self._response_with_notification(type='NEW_CHAT_MESSAGE', group={'name':'UNATCO'}, _id='msg1'),
 			self._response_with_notification(type='NEW_CHAT_MESSAGE', group={'name':'UNATCO'}, _id='msg1'),
+			MockDataRequest('post', ['notifications', 'see'], []),
 			))
 		self.assertTrue(habitica.server_is_up())
 		self.assertTrue(habitica.server_is_up())
 		self.assertEqual(list(map(str, habitica.events.dump())), [
 			'Group "UNATCO" have new message',
 			])
+		habitica.mark_all_notifications_as_seen()
 	def should_detect_unknown_notifications(self):
 		habitica = core.Habitica(_api=MockAPI(
 			self._response_with_notification(type='UNKNOWN', key='value'),

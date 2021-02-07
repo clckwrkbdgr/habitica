@@ -127,9 +127,7 @@ class CollectEventHandler(base.EventHandler): # pragma: no cover -- TODO move to
 		result, self.buffer = self.buffer, []
 		return result
 
-class Notification:
-	def __init__(self, _data):
-		self._data = _data
+class Notification(base.Entity):
 	@property
 	def id(self): # pragma: no cover -- TODO really unused in CLI version.
 		return self._data['id']
@@ -150,6 +148,25 @@ class Notification:
 		if self.type == 'NEW_CHAT_MESSAGE':
 			return 'Group "{0}" have new message'.format(self.data.group.name)
 		return 'Unknown notification {0}. Data: {1}'.format(self.type, self.data)
+	def mark_as_read(self):
+		self.api.post('notifications', self.id, 'read')
+	def mark_as_seen(self):
+		self.api.post('notifications', self.id, 'see')
+		self._data['seen'] = True
+
+class Notifications(base.ApiObject):
+	def add(self, notification):
+		self._data.append(notification._data)
+	def __contains__(self, other):
+		return any(other.id == n['id'] for n in self._data)
+	def __iter__(self):
+		return iter(self.children(Notification, self._data))
+	def mark_as_read(self):
+		if self._data:
+			self._data = self.api.post('notifications', 'read')
+	def mark_as_seen(self):
+		if self._data:
+			self._data = self.api.post('notifications', 'see')
 
 class Habitica(base.ApiInterface):
 	""" Main Habitica entry point. """
@@ -171,21 +188,23 @@ class Habitica(base.ApiInterface):
 		self.events = event_handler or CollectEventHandler()
 		self.api.set_response_hook(self._api_notifications_hook)
 		self._content = None
-		self._reported_notification_ids = []
+		self._reported_notifications = self.child(Notifications, [])
 	def _api_notifications_hook(self, response):
 		if not isinstance(response, dict):
 			return
 		message = response.get('message')
 		if message:
 			self.events.add(str(message))
-		notifications = response.get('notifications', [])
-		for notification in map(Notification, notifications):
+		notifications = self.child(Notifications, response.get('notifications', []))
+		for notification in notifications:
 			if notification.seen:
 				continue
-			if notification.id in self._reported_notification_ids:
+			if notification in self._reported_notifications:
 				continue
-			self._reported_notification_ids.append(notification.id)
+			self._reported_notifications.add(notification)
 			self.events.add(str(notification))
+	def mark_all_notifications_as_seen(self):
+		self._reported_notifications.mark_as_seen()
 	def home_url(self):
 		""" Returns main Habitica Web URL to open in browser. """
 		return self.api.base_url + '/#/tasks'
