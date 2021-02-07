@@ -220,6 +220,14 @@ class TestNotifications(unittest.TestCase):
 		self.assertEqual(list(map(str, habitica.events.dump())), [
 			"You've restarted your adventure!",
 			])
+	def should_catch_achievements(self):
+		habitica = core.Habitica(_api=MockAPI(
+			self._response_with_notification(type='ACHIEVEMENT_BONE_COLLECTOR', modalText='You collected all the Skeleton Pets!', achievement='boneCollector', message='Achievement! Bone Collector'),
+			))
+		self.assertTrue(habitica.server_is_up())
+		self.assertEqual(list(map(str, habitica.events.dump())), [
+			'Achievement! Bone Collector: You collected all the Skeleton Pets!',
+			])
 
 class TestChallenges(unittest.TestCase):
 	def _challenge(self, path=('groups', 'unatco')):

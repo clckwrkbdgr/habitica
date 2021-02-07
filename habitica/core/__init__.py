@@ -147,6 +147,8 @@ class Notification(base.Entity):
 			return 'You have {0} unallocated stat point{1}'.format(self.data.points, '' if self.data.points % 10 == 1 else 's')
 		if self.type == 'NEW_CHAT_MESSAGE':
 			return 'Group "{0}" have new message'.format(self.data.group.name)
+		if self.type.startswith('ACHIEVEMENT_'):
+			return '{0}: {1}'.format(self.data.message, self.data.modalText)
 		return 'Unknown notification {0}. Data: {1}'.format(self.type, self.data)
 	def mark_as_read(self):
 		self.api.post('notifications', self.id, 'read')
