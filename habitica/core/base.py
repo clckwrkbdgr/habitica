@@ -185,6 +185,10 @@ class ItemBundle:
 		self.amount = amount
 	def __getattr__(self, attr):
 		return getattr(self.item, attr)
+	def __repr__(self): # pragma: no cover
+		return 'ItemBundle({1}, {0})'.format(self.amount, repr(self.item))
+	def __str__(self): # pragma: no cover
+		return '{0}x"{1}"'.format(self.amount, str(self.item))
 
 @functools.total_ordering
 class Price:
