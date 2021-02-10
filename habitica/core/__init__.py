@@ -168,7 +168,9 @@ class Notifications(base.ApiObject):
 			self._data = self.api.post('notifications', 'read')
 	def mark_as_seen(self):
 		if self._data:
-			self._data = self.api.post('notifications', 'see')
+			self._data = self.api.post('notifications', 'see', _body={
+				'notificationIds' : [n['id'] for n in self._data],
+				})
 
 class Habitica(base.ApiInterface):
 	""" Main Habitica entry point. """
