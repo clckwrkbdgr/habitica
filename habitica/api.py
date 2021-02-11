@@ -112,8 +112,8 @@ class API(object):
             cache_file = Path(config.get_cache_dir())/("{0}.cache.json".format(self.name))
             logging.debug("Using cache entry '{0}'".format(self.name))
             invalidated = not cache_file.exists() or time.time() > cache_file.stat().st_mtime + 60*60*24 # TODO how to invalidate Habitica content cache
-            if not invalidated and self.api._inside_response_hook:
-                invalidated = True # Protection from direct API calls within response hook. TODO: Cached requests are ok, but what to do with explicit direct API calls?
+            if invalidated and self.api._inside_response_hook:
+                invalidated = False # Protection from direct API calls within response hook.
             if invalidated:
                 logging.debug("Cache was invalid, making actual request...")
                 data = getattr(self.api, method)(*args, **kwargs)
@@ -255,7 +255,7 @@ class API(object):
         if as_json:
             response = response.json()
         logging.debug('Response: {0}'.format(json.dumps(response, indent=2, sort_keys=True)))
-        if self._response_hook: # pragma: no cover -- TODO
+        if self._response_hook and not self._inside_response_hook: # pragma: no cover -- TODO
             try:
                 self._inside_response_hook = True
                 self._response_hook(response)
