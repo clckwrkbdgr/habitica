@@ -111,7 +111,10 @@ class API(object):
         def _cached_request(self, method, *args, **kwargs):
             cache_file = Path(config.get_cache_dir())/("{0}.cache.json".format(self.name))
             logging.debug("Using cache entry '{0}'".format(self.name))
-            if not cache_file.exists() or time.time() > cache_file.stat().st_mtime + 60*60*24: # TODO how to invalidate Habitica content cache?
+            invalidated = not cache_file.exists() or time.time() > cache_file.stat().st_mtime + 60*60*24 # TODO how to invalidate Habitica content cache
+            if not invalidated and self.api._inside_response_hook:
+                invalidated = True # Protection from direct API calls within response hook. TODO: Cached requests are ok, but what to do with explicit direct API calls?
+            if invalidated:
                 logging.debug("Cache was invalid, making actual request...")
                 data = getattr(self.api, method)(*args, **kwargs)
                 cache_file.write_text(json.dumps(data))
@@ -148,6 +151,7 @@ class API(object):
               'content-type': 'application/json',
               }
         self._response_hook = None
+        self._inside_response_hook = False
         if batch_mode:
             # Third-party API tools should introduce delays between calls
             # to reduce load on Habitica server.
@@ -253,7 +257,10 @@ class API(object):
         logging.debug('Response: {0}'.format(json.dumps(response, indent=2, sort_keys=True)))
         if self._response_hook: # pragma: no cover -- TODO
             try:
+                self._inside_response_hook = True
                 self._response_hook(response)
             except:
                 logging.exception('Exception in custom API response hook!')
+            finally:
+                self._inside_response_hook = False
         return dotdict(response)
