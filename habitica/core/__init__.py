@@ -142,7 +142,14 @@ class Notification(base.Entity):
 		return dotdict(self._data['data'])
 	def __str__(self):
 		if self.type == 'CRON':
-			return 'Cron: HP {0}, Mana {1}'.format(base.signed(self.data.hp), base.signed(self.data.mp))
+			stats = []
+			if self.data.hp:
+				stats.append('HP {0}'.format(base.signed(self.data.hp)))
+			if self.data.mp:
+				stats.append('Mana {0}'.format(base.signed(self.data.mp)))
+			if not stats:
+				return 'Cron!'
+			return 'Cron: ' + ', '.join(stats)
 		if self.type == 'UNALLOCATED_STATS_POINTS':
 			return 'You have {0} unallocated stat point{1}'.format(self.data.points, '' if self.data.points % 10 == 1 else 's')
 		if self.type == 'NEW_CHAT_MESSAGE':

@@ -179,11 +179,18 @@ class TestNotifications(unittest.TestCase):
 
 	def should_catch_cron_notification(self):
 		habitica = core.Habitica(_api=MockAPI(
-			self._response_with_notification(type='CRON', hp=-1, mp=3.1415),
+			self._response_with_notification(type='CRON', _id='1', hp=-1, mp=3.1415),
+			self._response_with_notification(type='CRON', _id='2', hp=-1),
+			self._response_with_notification(type='CRON', _id='3', mp=3.1415),
+			self._response_with_notification(type='CRON', _id='4', hp=0, mp=0),
 			))
-		self.assertTrue(habitica.server_is_up())
+		for _ in range(4):
+			self.assertTrue(habitica.server_is_up())
 		self.assertEqual(list(map(str, habitica.events.dump())), [
 			'Cron: HP -1, Mana +3.142',
+			'Cron: HP -1',
+			'Cron: Mana +3.142',
+			'Cron!',
 			])
 	def should_catch_unallocated_stat_points(self):
 		habitica = core.Habitica(_api=MockAPI(
