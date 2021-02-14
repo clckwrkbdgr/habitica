@@ -149,6 +149,8 @@ class Notification(base.Entity):
 			return 'Group "{0}" have new message'.format(self.data.group.name)
 		if self.type.startswith('ACHIEVEMENT_'):
 			return '{0}: {1}'.format(self.data.message, self.data.modalText)
+		if self.type == 'STREAK_ACHIEVEMENT':
+			return 'Streak achievement!'
 		return 'Unknown notification {0}. Data: {1}'.format(self.type, self.data)
 	def mark_as_read(self):
 		self.api.post('notifications', self.id, 'read')

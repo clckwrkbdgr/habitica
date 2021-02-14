@@ -228,6 +228,14 @@ class TestNotifications(unittest.TestCase):
 		self.assertEqual(list(map(str, habitica.events.dump())), [
 			'Achievement! Bone Collector: You collected all the Skeleton Pets!',
 			])
+	def should_catch_streak_achievement(self):
+		habitica = core.Habitica(_api=MockAPI(
+			self._response_with_notification(type='STREAK_ACHIEVEMENT'),
+			))
+		self.assertTrue(habitica.server_is_up())
+		self.assertEqual(list(map(str, habitica.events.dump())), [
+			'Streak achievement!',
+			])
 
 class TestChallenges(unittest.TestCase):
 	def _challenge(self, path=('groups', 'unatco')):
