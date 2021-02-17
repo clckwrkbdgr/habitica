@@ -532,7 +532,11 @@ class User(base.Entity, _UserMethods):
 		params = {}
 		if target:
 			params = {'targetId' : target.id}
-		return self.api.post('user', 'class', 'cast', spell.key, **params).data
+		result = self.api.post('user', 'class', 'cast', spell.key, **params).data
+		if 'user' in result:
+			self._data.update(result['user'])
+			del result['user']
+		return result
 	def change_class(self, new_class):
 		self._data.update(self.api.post('user', 'change-class', **({'class':new_class})).data)
 	def disable_classes(self):

@@ -1,6 +1,7 @@
 import unittest, unittest.mock
 unittest.defaultTestLoader.testMethodPrefix = 'should'
 import datetime
+import copy
 from collections import namedtuple
 from .. import core, api, timeutils
 from ..core.base import Price
@@ -2055,9 +2056,12 @@ class TestSpells(unittest.TestCase):
 		self.assertEqual(spell.key, 'stealth')
 		self.assertEqual(spell.text, "Stealth")
 	def should_cast_spell(self):
+		updated_stats = copy.deepcopy(MockData.USER['stats'])
+		updated_stats['buffs']['per'] = 100
+
 		habitica = core.Habitica(_api=MockAPI(
 			MockDataRequest('get', ['user'], MockData.USER),
-			MockDataRequest('post', ['user', 'class', 'cast', 'stealth'], {}),
+			MockDataRequest('post', ['user', 'class', 'cast', 'stealth'], {'user':{'stats':updated_stats}}),
 			MockDataRequest('get', ['tasks', 'user'], MockData.ORDERED.TODOS),
 			MockDataRequest('post', ['user', 'class', 'cast', 'backStab'], {}),
 			))
@@ -2066,6 +2070,7 @@ class TestSpells(unittest.TestCase):
 			user.cast(user.inventory.pet)
 		spell = user.get_spell('stealth')
 		user.cast(spell)
+		self.assertEqual(user.stats.buffs.perception, 100)
 		target = user.todos()[0]
 		spell = user.get_spell('backStab')
 		user.cast(spell, target)
