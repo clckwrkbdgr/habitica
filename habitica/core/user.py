@@ -536,6 +536,9 @@ class User(base.Entity, _UserMethods):
 		if 'user' in result:
 			self._update(result['user'])
 			del result['user']
+		if 'task' in result and isinstance(target, tasks.Task):
+			target._update(result['task'])
+			del result['task']
 		return result
 	def change_class(self, new_class):
 		self._update(self.api.post('user', 'change-class', **({'class':new_class})).data)

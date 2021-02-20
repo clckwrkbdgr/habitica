@@ -2063,7 +2063,9 @@ class TestSpells(unittest.TestCase):
 			MockDataRequest('get', ['user'], MockData.USER),
 			MockDataRequest('post', ['user', 'class', 'cast', 'stealth'], {'user':{'stats':updated_stats}}),
 			MockDataRequest('get', ['tasks', 'user'], MockData.ORDERED.TODOS),
-			MockDataRequest('post', ['user', 'class', 'cast', 'backStab'], {}),
+			MockDataRequest('post', ['user', 'class', 'cast', 'backStab'], {'task':{
+				'value' : -1.2,
+				}}),
 			))
 		user = habitica.user()
 		with self.assertRaises(RuntimeError):
@@ -2074,6 +2076,7 @@ class TestSpells(unittest.TestCase):
 		target = user.todos()[0]
 		spell = user.get_spell('backStab')
 		user.cast(spell, target)
+		self.assertEqual(target.value, -1.2)
 
 class TestTags(unittest.TestCase):
 	def should_create_new_tag(self):
