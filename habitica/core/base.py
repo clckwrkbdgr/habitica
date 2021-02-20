@@ -16,6 +16,20 @@ def signed(value, ndigits=3):
 		value = round(value, ndigits)
 	return textsign(value) + str(abs(value))
 
+def update_dict_deep(original, new_values):
+	""" Updates dict *in-place* recursively, adding new keys in depth
+	instead of replacing key-value pairs on top levels like `dict.update()` does.
+	Returns updated dict.
+	"""
+	for key in new_values:
+		if key not in original:
+			original[key] = new_values[key]
+		elif isinstance(original[key], dict):
+			update_dict_deep(original[key], new_values[key])
+		else:
+			original[key] = new_values[key]
+	return original
+
 class ApiInterface:
 	""" Base class for all objects that:
 	- has immediate parent (._parent);
@@ -77,6 +91,9 @@ class ApiObject(ApiInterface):
 	def __init__(self, _api=None, _data=None, _events=None, _content=None, _parent=None):
 		super().__init__(_api=_api, _content=_content, _events=_events, _parent=_parent)
 		self._data = _data
+	def _update(self, new_values):
+		""" Updates internal object data recursively with new values. """
+		update_dict_deep(self._data, new_values)
 
 class Event:
 	pass

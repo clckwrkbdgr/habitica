@@ -1,6 +1,7 @@
 import unittest, unittest.mock
 unittest.defaultTestLoader.testMethodPrefix = 'should'
 from ..core import base
+from ..api import dotdict
 
 class TestUtils(unittest.TestCase):
 	def should_get_text_repr_of_a_number(self):
@@ -9,6 +10,69 @@ class TestUtils(unittest.TestCase):
 		self.assertEqual(base.textsign(0), '')
 		self.assertEqual(base.signed(0.1234), '+0.123')
 		self.assertEqual(base.signed(-1234.56789, 5), '-1234.56789')
+	def should_update_dict_recursively(self):
+		original = {
+				'topvalue' : 'foo',
+				'untouched' : 'foo',
+				'toplevel' : {
+					'subvalue' : 'bar',
+					'untouched' : 'bar',
+					'sublevel' : {
+						},
+					},
+				'dotdict' : dotdict({'key':'value', 'untouched':'value'}),
+				'nested' : { 'nested' : { 'nested' : {
+					'untouched' : 'baz',
+					'nested' : { 'nested' : {
+						'bottom' : 'baz',
+						},
+						}, },
+					}, },
+				}
+		new_values = {
+				'topvalue' : 'new foo',
+				'toplevel' : {
+					'subvalue' : 'new bar',
+					'sublevel' : {
+						'key' : 'value',
+						},
+					'new sublevel' : {
+						'another key' : 'another value',
+						},
+					},
+				'dotdict' : {
+					'key' : 'new value',
+					},
+				'nested' : { 'nested' : { 'nested' : {
+					'nested' : { 'nested' : {
+						'bottom' : 'new baz',
+						},
+						}, },
+					}, },
+				}
+
+		base.update_dict_deep(original, new_values)
+
+		self.assertEqual(set(original.keys()), {'topvalue', 'untouched', 'toplevel', 'dotdict', 'nested'})
+		self.assertEqual(original['topvalue'], 'new foo')
+		self.assertEqual(original['untouched'], 'foo')
+		self.assertEqual(set(original['toplevel'].keys()), {'subvalue', 'untouched', 'sublevel', 'new sublevel'})
+		self.assertEqual(original['toplevel']['subvalue'], 'new bar')
+		self.assertEqual(original['toplevel']['untouched'], 'bar')
+		self.assertEqual(original['toplevel']['sublevel'], {'key':'value'})
+		self.assertEqual(original['toplevel']['new sublevel'], {'another key':'another value'})
+		self.assertEqual(set(original['dotdict'].keys()), {'key', 'untouched'})
+		self.assertEqual(original['dotdict'].key, 'new value')
+		self.assertEqual(original['dotdict'].untouched, 'value')
+		self.assertEqual(original['nested'], {
+			'nested' : { 'nested' : {
+				'untouched' : 'baz',
+				'nested' : { 'nested' : {
+					'bottom' : 'new baz',
+					},
+					}, },
+				},
+			})
 
 class MockApiObject(base.ApiObject):
 	pass

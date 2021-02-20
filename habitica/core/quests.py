@@ -264,22 +264,22 @@ class Quest(ContentEntry, MarketableForGems):
 		return self.child(user.Member, self.api.get('members', self._group_progress['leader']).data)
 	def abort(self):
 		data = self.api.post('groups', self._get_group().id, 'quests', 'abort').data
-		self._group_progress.update(data)
+		base.update_dict_deep(self._group_progress, data)
 	def accept(self):
 		data = self.api.post('groups', self._get_group().id, 'quests', 'accept').data
-		self._group_progress.update(data)
+		base.update_dict_deep(self._group_progress, data)
 	def cancel(self):
 		data = self.api.post('groups', self._get_group().id, 'quests', 'cancel').data
-		self._group_progress.update(data)
+		base.update_dict_deep(self._group_progress, data)
 	def force_start(self):
 		data = self.api.post('groups', self._get_group().id, 'quests', 'force-start').data
-		self._group_progress.update(data)
+		base.update_dict_deep(self._group_progress, data)
 	def leave(self):
 		data = self.api.post('groups', self._get_group().id, 'quests', 'leave').data
-		self._group_progress.update(data)
+		base.update_dict_deep(self._group_progress, data)
 	def reject(self):
 		data = self.api.post('groups', self._get_group().id, 'quests', 'reject').data
-		self._group_progress.update(data)
+		base.update_dict_deep(self._group_progress, data)
 	# User progress (/user/.party.quest):
 	@property
 	def up(self): # TODO is it pending damage to the boss by user?

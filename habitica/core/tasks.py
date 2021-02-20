@@ -583,9 +583,9 @@ class Daily(Task, TaskValue, Checkable, Checklist):
 						}
 				self._data['frequency'] = frequency_type[type(frequency)]
 				if self._data['frequency'] == self.Frequency.WEEKLY:
-					self._data.update(frequency._data)
+					self._update(frequency._data)
 				elif self._data['frequency'] == self.Frequency.DAILY:
-					self._data.update(frequency._data)
+					self._update(frequency._data)
 				else: # pragma: no cover
 					# TODO daysOfMonth for Daily (monthly?)
 					# TODO weeksOfMonth for Daily (monthly?)

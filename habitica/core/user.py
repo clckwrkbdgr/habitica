@@ -194,11 +194,11 @@ class UserStats(base.ApiObject, content.BaseStats):
 		else:
 			data = self.api.post('user', 'allocate-bulk', _body={'stats':stats}).data
 		self._handle_events()
-		self._data.update(data)
+		self._update(data)
 	def autoallocate_all(self):
 		data = self.api.post('user', 'allocate-now').data
 		self._handle_events()
-		self._data.update(data)
+		self._update(data)
 
 class Gear(base.ApiObject):
 	@property
@@ -534,31 +534,31 @@ class User(base.Entity, _UserMethods):
 			params = {'targetId' : target.id}
 		result = self.api.post('user', 'class', 'cast', spell.key, **params).data
 		if 'user' in result:
-			self._data.update(result['user'])
+			self._update(result['user'])
 			del result['user']
 		return result
 	def change_class(self, new_class):
-		self._data.update(self.api.post('user', 'change-class', **({'class':new_class})).data)
+		self._update(self.api.post('user', 'change-class', **({'class':new_class})).data)
 	def disable_classes(self):
-		self._data.update(self.api.post('user', 'disable-classes').data)
+		self._update(self.api.post('user', 'disable-classes').data)
 	def wear_costume(self, item):
 		if not isinstance(item, content.Gear):
 			raise RuntimeError("Can wear only Gear as costume, not {0}".format(type(item)))
-		self._data.update(self.api.post('user', 'equip', 'costume', item.key).data)
+		self._update(self.api.post('user', 'equip', 'costume', item.key).data)
 	def equip_gear(self, item):
 		if not isinstance(item, content.Gear):
 			raise RuntimeError("Can equip only Gear, not {0}".format(type(item)))
-		self._data.update(self.api.post('user', 'equip', 'equipped', item.key).data)
+		self._update(self.api.post('user', 'equip', 'equipped', item.key).data)
 	def select_pet(self, pet):
 		if not isinstance(pet, content.Pet):
 			raise RuntimeError("Can select only Pet as a pet, not {0}".format(type(pet)))
-		self._data.update(self.api.post('user', 'equip', 'pet', pet.key).data)
+		self._update(self.api.post('user', 'equip', 'pet', pet.key).data)
 	def ride_mount(self, mount):
 		if not isinstance(mount, content.Mount):
 			raise RuntimeError("Can ride only Mount, not {0}".format(type(mount)))
-		self._data.update(self.api.post('user', 'equip', 'mount', mount.key).data)
+		self._update(self.api.post('user', 'equip', 'mount', mount.key).data)
 	def hatch_pet(self, egg, potion):
-		self._data.update(self.api.post('user', 'hatch', egg.key, potion.key).data)
+		self._update(self.api.post('user', 'hatch', egg.key, potion.key).data)
 	def sleep(self):
 		if self.preferences.sleep:
 			return
@@ -568,6 +568,6 @@ class User(base.Entity, _UserMethods):
 			return
 		self._data['preferences']['sleep'] = self.api.post('user', 'sleep').data
 	def read_card(self, card):
-		self._data.update(self.api.post('user', 'read-card', card.key).data)
+		self._update(self.api.post('user', 'read-card', card.key).data)
 	def revive(self):
-		self._data.update(self.api.post('user', 'revive').data)
+		self._update(self.api.post('user', 'revive').data)
