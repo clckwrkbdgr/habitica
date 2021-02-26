@@ -149,9 +149,10 @@ class Chat(base.ApiInterface):
 	def post(self, message_text):
 		if self._entries:
 			new_entries = self.api.post('groups', self.group.id, 'chat', previousMsg=self._entries[-1].id,  _body={'message':message_text}).data
+			self._entries = self.children(ChatMessage, new_entries, _parent=self.group)
+			return new_entries
 		else:
-			new_entries = self.api.post('groups', self.group.id, 'chat', _body={'message':message_text}).data
-		self._entries = self.children(ChatMessage, new_entries, _parent=self.group)
+			return self.api.post('groups', self.group.id, 'chat', _body={'message':message_text})
 
 class Group(base.Entity):
 	""" Habitica's user group: a guild, a party, the Tavern. """

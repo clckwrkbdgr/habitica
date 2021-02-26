@@ -539,6 +539,7 @@ class TestChat(unittest.TestCase):
 		habitica = core.Habitica(_api=MockAPI(
 			MockDataRequest('get', ['groups'], MockData.ORDERED.GROUPS),
 			MockDataRequest('post', ['groups', 'party', 'chat'], [MockData.LONG_CHAT[0]]),
+			MockDataRequest('get', ['groups', 'party', 'chat'], MockData.LONG_CHAT),
 			MockDataRequest('post', ['groups', 'party', 'chat'], MockData.LONG_CHAT),
 			))
 
