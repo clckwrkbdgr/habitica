@@ -158,6 +158,9 @@ class Notification(base.Entity):
 			return '{0}: {1}'.format(self.data.message, self.data.modalText)
 		if self.type == 'STREAK_ACHIEVEMENT':
 			return 'Streak achievement!'
+		if self.type == 'NEW_MYSTERY_ITEMS':
+			number = len(self.data['items'])
+			return 'New {0} mystery item{1}!'.format(number, 's' if number > 1 else '')
 		return 'Unknown notification {0}. Data: {1}'.format(self.type, self.data)
 	def mark_as_read(self):
 		self.api.post('notifications', self.id, 'read')
