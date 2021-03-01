@@ -180,9 +180,14 @@ class Notifications(base.ApiObject):
 			self._data = self.api.post('notifications', 'read')
 	def mark_as_seen(self):
 		if self._data:
-			self._data = self.api.post('notifications', 'see', _body={
-				'notificationIds' : [n['id'] for n in self._data],
-				})
+			import requests # TODO should convert to some kind of Habitica Logic exception.
+			try:
+				self._data = self.api.post('notifications', 'see', _body={
+					'notificationIds' : [n['id'] for n in self._data],
+					})
+			except requests.exceptions.HTTPError as e: # pragma: no cover -- TODO should convert to some kind of Habitica Logic exception.
+				import logging
+				logging.error(e)
 
 class Habitica(base.ApiInterface):
 	""" Main Habitica entry point. """
