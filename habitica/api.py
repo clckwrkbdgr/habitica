@@ -135,6 +135,29 @@ class API(object):
         def __getattr__(self, attr):
             return getattr(self.api, attr)
 
+    class APIv4:
+        """ Proxy wrapper for APIv4 calls.
+        Overrides only URL (v3->v4), everything is proxied to basic API.
+        """
+        def __init__(self, api):
+            self.api = api
+        def get_url(self, *parts):
+            return '/'.join([self.base_url, 'api', 'v4'] + list(parts))
+        def post(self, *path, _body=None, **kwargs): # pragma: no cover
+            uri = self.get_url(*path)
+            return self.call('POST', uri, body=_body, query=kwargs)
+        def put(self, *path, _body=None, **kwargs): # pragma: no cover
+            uri = self.get_url(*path)
+            return self.call('PUT', uri, body=_body, query=kwargs)
+        def delete(self, *path, **query): # pragma: no cover
+            uri = self.get_url(*path)
+            return self.call('DELETE', uri, query=query)
+        def get(self, *path, _as_json=True, **query): # pragma: no cover
+            uri = self.get_url(*path)
+            return self.call('GET', uri, query=query, as_json=_as_json)
+        def __getattr__(self, attr): # pragma: no cover
+            return getattr(self.api, attr)
+
     def __init__(self, base_url, login, password, batch_mode=True):
         """ Creates authenticated API instance.
         If batch_mode is True (default), introduces significant delays
@@ -165,6 +188,10 @@ class API(object):
 
     def cached(self, cache_entry_name): # pragma: no cover -- TODO see Cached class above.
         return API.Cached(self, cache_entry_name)
+
+    @property
+    def v4(self):
+        return self.APIv4(self)
 
     def set_response_hook(self, hook_function): # pragma: no cover -- TODO
         """ Sets hook that accepts full response object

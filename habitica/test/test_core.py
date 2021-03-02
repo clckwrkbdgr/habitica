@@ -1343,6 +1343,7 @@ class TestNews(unittest.TestCase):
 			))
 		news = habitica.news()
 		news.mark_as_read()
+		self.assertTrue(habitica.api.responses[-1].v4)
 
 class TestQuest(unittest.TestCase):
 	def should_show_progress_of_collection_quest(self):

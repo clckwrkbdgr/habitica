@@ -5,6 +5,7 @@ MockData = types.SimpleNamespace()
 
 class MockRequest:
 	def __init__(self, method, path, response, cached=False):
+		self.v4 = False
 		self.method = method
 		self.path = path
 		self.response = api.dotdict(response) if type(response) is dict else response
@@ -18,6 +19,24 @@ class MockDataRequest(MockRequest):
 
 class MockAPI:
 	""" /content call is cached. """
+	class MockAPIv4:
+		def __init__(self, api):
+			self.api = api
+		def _perform_request(self, *args, **kwargs):
+			response = self.api._perform_request(*args, **kwargs)
+			self.api.responses[-1].v4 = True
+			return response
+		def get(self, *path, **params): # pragma: no cover
+			return self._perform_request('get', path, params=params)
+		def post(self, *path, _body=None, **params): # pragma: no cover
+			return self._perform_request('post', path, params=params, body=_body)
+		def put(self, *path, _body=None, **params): # pragma: no cover
+			return self._perform_request('put', path, params=params, body=_body)
+		def delete(self, *path, **params): # pragma: no cover
+			return self._perform_request('delete', path, params=params)
+		def __getattr__(self, attr): # pragma: no cover
+			return getattr(self.api, attr)
+
 	def __init__(self, *requests):
 		self.base_url = 'http://localhost'
 		self.requests = list(requests)
@@ -26,6 +45,9 @@ class MockAPI:
 			MockRequest('get', ['content'], {'data': MockData.CONTENT_DATA}, cached=True),
 			]
 		self.hook = None
+	@property
+	def v4(self):
+		return self.MockAPIv4(self)
 	def set_response_hook(self, hook):
 		self.hook = hook
 	def cached(self, *args, **kwargs):

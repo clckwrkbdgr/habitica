@@ -54,7 +54,7 @@ class News(base.ApiObject):
 	def html_text(self):
 		return self._data
 	def mark_as_read(self):
-		self.api.post('news', 'read')
+		self.api.v4.post('news', 'read')
 	def tell_me_later(self):
 		self.api.post('news', 'tell-me-later')
 

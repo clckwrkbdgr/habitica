@@ -296,3 +296,16 @@ class TestAPI(unittest.TestCase):
 
 			response = obj.post('path', 'to', 'request', query1='param1', query2='param2', _body={'request':'value'})
 			self.assertEqual(response, {'data':'test'})
+	def should_make_v4_calls(self):
+		obj = MockAPI('http://localhost/', 'login', 'password', batch_mode=False)
+		mock_session = MockRequestSession(MockRequestSession.Response(
+			status_code=200,
+			content={'data':'test'},
+			))
+		with unittest.mock.patch('requests.Session', mock_session):
+			response = obj.v4.post('path', 'to', 'request', query1='param1', query2='param2', _body={'request':'value'})
+			self.assertEqual(response, {'data':'test'})
+			self.assertEqual(mock_session._request[0], 'post')
+			self.assertEqual(mock_session._request[1], ('http://localhost/api/v4/path/to/request',))
+			self.assertEqual(json.loads(mock_session._request[2]['data']), {'request':'value'})
+			self.assertEqual(mock_session._request[2]['params'], {'query1':'param1', 'query2':'param2'})
