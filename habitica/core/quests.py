@@ -179,9 +179,9 @@ class Quest(ContentEntry, MarketableForGems):
 		if _data is None:
 			assert _group_progress or _user_progress
 			if _group_progress:
-				quest_key = _group_progress['key'] or _group_progress['completed']
+				quest_key = _group_progress.get('key') or _group_progress.get('completed')
 			elif _user_progress:
-				quest_key = _user_progress['key'] or _user_progress['completed']
+				quest_key = _user_progress.get('key') or _user_progress.get('completed')
 			else: # pragma: no cover
 				raise RuntimeError('Expected either quest data, or group progress, or user progress, received nothing at all.')
 			_data = LazyQuestData(quest_key, _content=_content)
