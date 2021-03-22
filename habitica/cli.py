@@ -19,7 +19,6 @@ import re
 import argparse
 import functools, itertools
 import operator
-from time import sleep
 from webbrowser import open_new_tab
 from collections import namedtuple
 from pathlib import Path
@@ -524,6 +523,33 @@ def show_news(habitica, seen=False): # pragma: no cover
 	print(news.html_text)
 	if seen:
 		news.mark_as_read()
+
+@cli.command('tavern')
+@click.option('--in', 'go_in', is_flag=True, help='Enter tavern to rest.')
+@click.option('--out', 'go_out', is_flag=True, help='Exit tavern.')
+@click.option('--toggle', is_flag=True, help='Toggle current state of resting in/out.')
+@click.pass_obj
+def tavern(habitica, go_in=False, go_out=False, toggle=False):
+	""" Controls tavern state (in/out).
+	Without options just prints current state.
+	"""
+	if sum(map(int, (go_in, go_out, toggle))) > 1:
+		logging.error('Only one flag can be specified')
+		return False
+	user = habitica.user()
+	if toggle:
+		if user.preferences.sleep:
+			go_out = True
+		else:
+			go_in = True
+	if go_in:
+		user.sleep()
+	elif go_out:
+		user.wake_up()
+	if user.preferences.sleep:
+		print('Resting in inn.')
+	else:
+		print('Out of tavern.')
 
 if __name__ == '__main__': # pragma: no cover
 	cli()
