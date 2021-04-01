@@ -304,8 +304,8 @@ class _UserMethods:
 	def create_task(self, task_obj):
 		data = self.api.post('tasks', 'user', _body=task_obj._data).data
 		return self.child(tasks.Task.type_from_str(data['type']), data)
-	def challenges(self):
-		return self.children(groups.Challenge, self.api.get('challenges', 'user').data)
+	def challenges(self, page=0):
+		return self.children(groups.Challenge, self.api.get('challenges', 'user', member=True, page=page).data)
 	def tags(self):
 		return self.children(tags.Tag, self.api.get('tags').data)
 	def clearCompletedTodos(self):
