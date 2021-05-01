@@ -301,7 +301,7 @@ class Marketable:
 		# TODO gold check?
 		response = self._buy(user)
 		if response:
-			user._data.update(response.data)
+			update_dict_deep(user._data, response.data)
 	def _buy(self, user): # pragma: no cover
 		raise NotImplementedError
 
@@ -325,6 +325,6 @@ class Sellable:
 		# TODO gold check?
 		response = self._sell(user, amount=amount)
 		if response:
-			user._data.update(response.data)
+			update_dict_deep(user._data, response.data)
 	def _sell(self, user, amount=None): # pragma: no cover
 		raise NotImplementedError
