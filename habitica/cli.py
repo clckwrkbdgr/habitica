@@ -6,12 +6,10 @@ Phil Adams http://philadams.net
 
 habitica: commandline interface for http://habitica.com
 http://github.com/philadams/habitica
-
-TODO:philadams add logging to .api
-TODO:philadams get logger named, like requests!
 """
 
 import logging
+logger = logging.getLogger('habitica')
 import os.path
 import datetime
 import sys
@@ -157,12 +155,15 @@ def cli(ctx, verbose=False, debug=False, notifications=False): # pragma: no cove
 	if not notifications:
 		ctx.obj.events.printing_enabled(False)
 
+	if not logger.handlers:
+		handler = logging.StreamHandler()
+		logger.addHandler(handler)
 	# set up logging
 	if verbose:
-		logging.getLogger().setLevel(logging.INFO)
+		logger.setLevel(logging.INFO)
 
 	if debug:
-		logging.getLogger().setLevel(logging.DEBUG)
+		logger.setLevel(logging.DEBUG)
 
 @cli.command()
 @click.pass_obj
@@ -476,7 +477,7 @@ def messages(habitica, count=None, seen=False, as_json=False, as_rss=False, outp
 		habitica.events.printing_enabled(False)
 	mark_as_seen = seen
 	if as_json and as_rss:
-		logging.error('Only one type of export could be specified: --rss, --json')
+		logger.error('Only one type of export could be specified: --rss, --json')
 		sys.exit(1)
 	max_count = 0 # By default no restriction - print all messages.
 	if count:
@@ -484,7 +485,7 @@ def messages(habitica, count=None, seen=False, as_json=False, as_rss=False, outp
 
 	groups = habitica.groups(Group.GUILDS, Group.PARTY)
 	if not groups:
-		logging.error('Failed to fetch list of user guilds', file=sys.stderr)
+		logger.error('Failed to fetch list of user guilds', file=sys.stderr)
 		return
 	if as_rss:
 		exporter = extra.RSSMessageFeed()
@@ -495,7 +496,7 @@ def messages(habitica, count=None, seen=False, as_json=False, as_rss=False, outp
 	for group in groups:
 		chat_messages = group.chat()
 		if not chat_messages:
-			logging.error('Failed to fetch messages of chat {0}'.format(group.name))
+			logger.error('Failed to fetch messages of chat {0}'.format(group.name))
 			continue
 		if max_count:
 			chat_messages = chat_messages[:max_count]
@@ -534,7 +535,7 @@ def tavern(habitica, go_in=False, go_out=False, toggle=False):
 	Without options just prints current state.
 	"""
 	if sum(map(int, (go_in, go_out, toggle))) > 1:
-		logging.error('Only one flag can be specified')
+		logger.error('Only one flag can be specified')
 		return False
 	user = habitica.user()
 	if toggle:

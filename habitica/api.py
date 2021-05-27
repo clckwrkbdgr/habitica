@@ -4,6 +4,7 @@ import sys
 import json, re
 import time
 import logging
+logger = logging.getLogger('habitica')
 import contextlib
 import pkg_resources
 from pathlib import Path
@@ -57,10 +58,10 @@ class Delay:
         """
         delay = self.method_delays.get(method.lower(), self.default_delay)
         passed = (time.time() - self._last_request_time)
-        logging.debug('Last request time: {0}, passed since then: {1}'.format(self._last_request_time, passed))
-        logging.debug('Max delay: {0}'.format(delay))
+        logger.debug('Last request time: {0}, passed since then: {1}'.format(self._last_request_time, passed))
+        logger.debug('Max delay: {0}'.format(delay))
         delay = delay - passed
-        logging.debug('Actual delay: {0}'.format(delay))
+        logger.debug('Actual delay: {0}'.format(delay))
         if delay > 0:
             time.sleep(delay)
     def update(self):
@@ -110,16 +111,16 @@ class API(object):
             self.name = cache_entry_name
         def _cached_request(self, method, *args, **kwargs):
             cache_file = Path(config.get_cache_dir())/("{0}.cache.json".format(self.name))
-            logging.debug("Using cache entry '{0}'".format(self.name))
+            logger.debug("Using cache entry '{0}'".format(self.name))
             invalidated = not cache_file.exists() or time.time() > cache_file.stat().st_mtime + 60*60*24 # TODO how to invalidate Habitica content cache
             if invalidated and self.api._inside_response_hook:
                 invalidated = False # Protection from direct API calls within response hook.
             if invalidated:
-                logging.debug("Cache was invalid, making actual request...")
+                logger.debug("Cache was invalid, making actual request...")
                 data = getattr(self.api, method)(*args, **kwargs)
                 cache_file.write_text(json.dumps(data))
             else:
-                logging.debug("Cache was still valid, loading cached data...")
+                logger.debug("Cache was still valid, loading cached data...")
                 data = dotdict(json.loads(cache_file.read_text()))
             return data
         def get(self, *args, **kwargs):
@@ -246,9 +247,9 @@ class API(object):
         return self._retry_call(method, uri, query=query, body=body, as_json=as_json)
     def _retry_call(self, method, uri, query=None, body=None, as_json=True, tries=MAX_RETRY):
         try:
-            logging.debug('Sending {0} {1}'.format(method.upper(), uri))
-            logging.debug('Query: {0}'.format(query))
-            logging.debug('Body: {0}'.format(body))
+            logger.debug('Sending {0} {1}'.format(method.upper(), uri))
+            logger.debug('Query: {0}'.format(query))
+            logger.debug('Body: {0}'.format(body))
             return self._direct_call(method, uri, query=query, body=body, as_json=as_json)
         except requests.exceptions.ReadTimeout as e:
             if tries <= 0:
@@ -275,19 +276,19 @@ class API(object):
             response = getattr(session, method.lower())(uri, headers=self.headers,
                                             params=query, timeout=API.TIMEOUT)
         self._delay.update()
-        logging.debug('Answered: {0} {1}'.format(response.status_code, response.reason))
+        logger.debug('Answered: {0} {1}'.format(response.status_code, response.reason))
         if response.status_code != requests.codes.ok:
-            logging.debug('Responded with error: {0}'.format(response.content))
+            logger.debug('Responded with error: {0}'.format(response.content))
             response.raise_for_status()
         if as_json:
             response = response.json()
-        logging.debug('Response: {0}'.format(json.dumps(response, indent=2, sort_keys=True)))
+        logger.debug('Response: {0}'.format(json.dumps(response, indent=2, sort_keys=True)))
         if self._response_hook and not self._inside_response_hook: # pragma: no cover -- TODO
             try:
                 self._inside_response_hook = True
                 self._response_hook(response)
             except:
-                logging.exception('Exception in custom API response hook!')
+                logger.exception('Exception in custom API response hook!')
             finally:
                 self._inside_response_hook = False
         return dotdict(response)

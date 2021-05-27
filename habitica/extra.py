@@ -1,6 +1,7 @@
 import datetime
 import html, json
 import logging
+logger = logging.getLogger('habitica')
 from collections import defaultdict
 try:
 	import markdown
@@ -74,7 +75,7 @@ class RSSMessageFeed(BaseMessageFeed):
 	""" Dumps RSS feed to stdout. """
 	def __init__(self):
 		if markdown is None: # pragma: no cover
-			logging.error("Markdown module was not found; will dump messages as text.")
+			logger.error("Markdown module was not found; will dump messages as text.")
 		self.output = RSS_HEADER
 	def add_message(self, group, message):
 		timestamp = str(datetime.datetime.fromtimestamp(message['timestamp']))

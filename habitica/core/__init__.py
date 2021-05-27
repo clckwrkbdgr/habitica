@@ -187,7 +187,8 @@ class Notifications(base.ApiObject):
 					})
 			except requests.exceptions.HTTPError as e: # pragma: no cover -- TODO should convert to some kind of Habitica Logic exception.
 				import logging
-				logging.error(e)
+				logger = logging.getLogger('habitica')
+				logger.error(e)
 
 class Habitica(base.ApiInterface):
 	""" Main Habitica entry point. """
