@@ -727,7 +727,7 @@ class Todo(Task, TaskValue, Checkable, Checklist):
 			):
 		specific_args = {}
 		if date is not None:
-			specific_args['date'] = date
+			specific_args['date'] = date.strftime('%Y-%m-%d')
 		super().update(
 				text=text,
 				attribute=attribute,
@@ -740,10 +740,10 @@ class Todo(Task, TaskValue, Checkable, Checklist):
 				)
 	@property
 	def date(self):
-		return self._data['date']
+		return datetime.datetime.strptime(self._data['date'], '%Y-%m-%d')
 	@property
 	def dateCompleted(self):
-		return self._data['dateCompleted'] # FIXME parse date
+		return datetime.datetime.strptime(self._data['dateCompleted'], '%Y-%m-%d')
 	def complete(self):
 		""" Marks todo as completed. """
 		# TODO data also stores updated user stats, needs to calculate diff and notify.
