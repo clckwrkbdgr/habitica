@@ -300,8 +300,10 @@ class Marketable:
 		"""
 		# TODO gold check?
 		response = self._buy(user)
+		logging.debug('Bought {0}: {1}'.format(self, json.dumps(response, indent=2)))
 		if response:
 			update_dict_deep(user._data, response.data)
+			logging.debug('Updated user: {1}'.format(self, json.dumps(user._data, indent=2)))
 	def _buy(self, user): # pragma: no cover
 		raise NotImplementedError
 
