@@ -165,13 +165,17 @@ class LazyQuestData:
 		self.key = quest_key
 		self._data = None
 	def _ensure(self):
-		if self._data is None:
+		if self._data is None and self.key:
 			self._data = self.content['quests'][self.key]
 	def __getitem__(self, key):
 		self._ensure()
+		if key == 'key':
+			return self.key
 		return self._data[key]
 	def get(self, key, default=None):
 		self._ensure()
+		if key == 'key':
+			return self.key
 		return self._data.get(key, default)
 
 class Quest(ContentEntry, MarketableForGems):
