@@ -85,60 +85,64 @@ class TestPrinter(unittest.TestCase):
 					}),
 				]
 	def should_print_task_list(self):
-		output = io.StringIO()
 		tasks = self._get_tasks()
-		with contextlib.redirect_stdout(output):
-			cli.print_task_list(tasks, hide_completed=False, timezoneOffset=0, with_notes=False, time_now=datetime.datetime(2020, 2, 22, 0, 0, 1))
-			self.assertEqual(output.getvalue(), textwrap.dedent("""\
-					1 Keep Calm
-					[_] 2 Wake up and yawn
-					    [X] 2.1 wake up
-					    [_] 2.2 yawn
-					[X] 3 Complete all tasks
-					    [_] 3.1 cross this item
-					    [X] 3.2 complete all tasks
-					    [_] 3.3 rest
-					"""))
+		def _printer(line):
+			_printer.output += line + '\n'
+		_printer.output = ''
+		cli.print_task_list(tasks, hide_completed=False, timezoneOffset=0, with_notes=False, time_now=datetime.datetime(2020, 2, 22, 0, 0, 1), printer=_printer)
+		self.assertEqual(_printer.output, textwrap.dedent("""\
+				1 Keep Calm
+				[_] 2 Wake up and yawn
+				    [X] 2.1 wake up
+				    [_] 2.2 yawn
+				[X] 3 Complete all tasks
+				    [_] 3.1 cross this item
+				    [X] 3.2 complete all tasks
+				    [_] 3.3 rest
+				"""))
 	def should_print_notes(self):
-		output = io.StringIO()
 		tasks = self._get_tasks()
-		with contextlib.redirect_stdout(output):
-			cli.print_task_list(tasks, hide_completed=False, timezoneOffset=0, with_notes=True, time_now=datetime.datetime(2020, 2, 22, 0, 0, 1))
-			self.assertEqual(output.getvalue(), textwrap.dedent("""\
-					1 Keep Calm
-					      and Carry On
-					[_] 2 Wake up and yawn
-					      This is the only daily for today
-					    [X] 2.1 wake up
-					    [_] 2.2 yawn
-					[X] 3 Complete all tasks
-					      New Year Resolution
-					    [_] 3.1 cross this item
-					    [X] 3.2 complete all tasks
-					    [_] 3.3 rest
-					"""))
+		def _printer(line):
+			_printer.output += line + '\n'
+		_printer.output = ''
+		cli.print_task_list(tasks, hide_completed=False, timezoneOffset=0, with_notes=True, time_now=datetime.datetime(2020, 2, 22, 0, 0, 1), printer=_printer)
+		self.assertEqual(_printer.output, textwrap.dedent("""\
+				1 Keep Calm
+				      and Carry On
+				[_] 2 Wake up and yawn
+				      This is the only daily for today
+				    [X] 2.1 wake up
+				    [_] 2.2 yawn
+				[X] 3 Complete all tasks
+				      New Year Resolution
+				    [_] 3.1 cross this item
+				    [X] 3.2 complete all tasks
+				    [_] 3.3 rest
+				"""))
 	def should_hide_completed_tasks(self):
-		output = io.StringIO()
 		tasks = self._get_tasks()
-		with contextlib.redirect_stdout(output):
-			cli.print_task_list(tasks, hide_completed=True, timezoneOffset=0, with_notes=False, time_now=datetime.datetime(2020, 2, 22, 0, 0, 1))
-			self.assertEqual(output.getvalue(), textwrap.dedent("""\
-					1 Keep Calm
-					[_] 2 Wake up and yawn
-					    [X] 2.1 wake up
-					    [_] 2.2 yawn
-					"""))
+		def _printer(line):
+			_printer.output += line + '\n'
+		_printer.output = ''
+		cli.print_task_list(tasks, hide_completed=True, timezoneOffset=0, with_notes=False, time_now=datetime.datetime(2020, 2, 22, 0, 0, 1), printer=_printer)
+		self.assertEqual(_printer.output, textwrap.dedent("""\
+				1 Keep Calm
+				[_] 2 Wake up and yawn
+				    [X] 2.1 wake up
+				    [_] 2.2 yawn
+				"""))
 	def should_hide_wront_time_dailies(self):
-		output = io.StringIO()
 		tasks = self._get_tasks()
-		with contextlib.redirect_stdout(output):
-			cli.print_task_list(tasks, hide_completed=False, timezoneOffset=0, with_notes=True, time_now=datetime.datetime(2020, 2, 21, 0, 0, 1))
-			self.assertEqual(output.getvalue(), textwrap.dedent("""\
-					1 Keep Calm
-					      and Carry On
-					[X] 3 Complete all tasks
-					      New Year Resolution
-					    [_] 3.1 cross this item
-					    [X] 3.2 complete all tasks
-					    [_] 3.3 rest
-					"""))
+		def _printer(line):
+			_printer.output += line + '\n'
+		_printer.output = ''
+		cli.print_task_list(tasks, hide_completed=False, timezoneOffset=0, with_notes=True, time_now=datetime.datetime(2020, 2, 21, 0, 0, 1), printer=_printer)
+		self.assertEqual(_printer.output, textwrap.dedent("""\
+				1 Keep Calm
+				      and Carry On
+				[X] 3 Complete all tasks
+				      New Year Resolution
+				    [_] 3.1 cross this item
+				    [X] 3.2 complete all tasks
+				    [_] 3.3 rest
+				"""))

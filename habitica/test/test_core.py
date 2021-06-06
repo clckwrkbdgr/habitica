@@ -1959,8 +1959,8 @@ class TestTodos(unittest.TestCase):
 		self.assertFalse(todo[1].is_completed)
 
 		todo = todos[0]
-		self.assertEqual(todo.date, '2016-06-20')
-		self.assertEqual(todo.dateCompleted, 'not-explained')
+		self.assertEqual(todo.date, datetime.date(2016, 6, 20))
+		self.assertEqual(todo.dateCompleted, datetime.date(3000, 1, 1))
 
 		group = todo.group
 		self.assertFalse(group.broken)
@@ -2038,14 +2038,14 @@ class TestTodos(unittest.TestCase):
 				notes='and resque agents',
 				collapseChecklist=False,
 				priority=core.tasks.Task.Priority.HARD,
-				date='today',
+				date=datetime.date.today(),
 				)
 		self.assertEqual(habitica.api.responses[-1].body, {
 			'text' : 'Liberate Liberty statue',
 			'notes' : 'and resque agents',
 			'collapseChecklist' : False,
 			'priority' : core.tasks.Task.Priority.HARD,
-			'date' : 'today',
+			'date' : str(datetime.date.today()),
 			})
 
 class TestSpells(unittest.TestCase):

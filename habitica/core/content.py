@@ -176,7 +176,7 @@ class ContentEntry(base.ApiObject):
 		return self._data['key']
 	@property
 	def text(self):
-		return self._data['text']
+		return self._data.get('text', self.key)
 	@property
 	def notes(self):
 		return self._data.get('notes', '')

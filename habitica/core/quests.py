@@ -167,12 +167,12 @@ class LazyQuestData:
 	def _ensure(self):
 		if self._data is None and self.key:
 			self._data = self.content['quests'][self.key]
-	def __getitem__(self, key):
+	def __getitem__(self, key): # pragma: no cover -- TODO rare conditions
 		self._ensure()
 		if key == 'key':
 			return self.key
 		return self._data[key]
-	def get(self, key, default=None):
+	def get(self, key, default=None): # pragma: no cover -- TODO rare conditions
 		self._ensure()
 		if key == 'key':
 			return self.key

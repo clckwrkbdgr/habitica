@@ -30,15 +30,15 @@ from . import extra
 
 logging.PRINT = (logging.INFO + logging.WARNING)//2
 logging.addLevelName(logging.PRINT, 'PRINT')
-def _log_print(self, message, *args, **kwargs):
+def _log_print(self, message, *args, **kwargs): # pragma: no cover
 	if self.isEnabledFor(logging.PRINT):
 		self._log(logging.PRINT, message, args, **kwargs)
 logger.print = _log_print.__get__(logger)
 
-if sys.stdout and not sys.stdout.isatty():
+if sys.stdout and not sys.stdout.isatty(): # pragma: no cover
 	os.environ['ANSI_COLORS_DISABLED'] = '1'
 
-class ComplexFormatter:
+class ComplexFormatter: # pragma: no cover
 	def __init__(self):
 		self._formatters = {
 				logging.DEBUG: logging.Formatter(
@@ -141,7 +141,8 @@ def filter_tasks(tasks, patterns):
 	if unprocessed:
 		raise RuntimeError("couldn't find task that includes {0}".format(', '.join(map(repr, unprocessed))))
 
-def print_task_list(tasks, hide_completed=False, timezoneOffset=0, with_notes=False, time_now=None):
+def print_task_list(tasks, hide_completed=False, timezoneOffset=0, with_notes=False, time_now=None, printer=None):
+	printer = printer or logger.print
 	time_now = time_now or datetime.datetime.now()
 	for i, task in enumerate(tasks):
 		if isinstance(task, core.Daily) and not task.is_due(time_now, timezoneOffset=timezoneOffset):
@@ -149,15 +150,15 @@ def print_task_list(tasks, hide_completed=False, timezoneOffset=0, with_notes=Fa
 		if isinstance(task, core.Checkable):
 			if task.is_completed and hide_completed:
 				continue
-			logger.print('[%s] %s %s' % ('X' if task.is_completed else '_', i + 1, task.text))
+			printer('[%s] %s %s' % ('X' if task.is_completed else '_', i + 1, task.text))
 		else:
-			logger.print('%s %s' % (i + 1, task.text))
+			printer('%s %s' % (i + 1, task.text))
 		if with_notes and task.notes:
-			logger.print('\n'.join('      {0}'.format(line) for line in task.notes.splitlines()))
+			printer('\n'.join('      {0}'.format(line) for line in task.notes.splitlines()))
 		if isinstance(task, core.Checklist):
 			for j, item in enumerate(task.checklist):
 				completed = 'X' if item.is_completed else '_'
-				logger.print('    [%s] %s.%s %s' % (completed, i + 1, j + 1, item.text))
+				printer('    [%s] %s.%s %s' % (completed, i + 1, j + 1, item.text))
 
 TASK_SCORES = {
 		core.Task.DARK_RED	  : '<<<   ',
@@ -179,7 +180,7 @@ class PrintEventHandler(core.base.EventHandler): # pragma: no cover
 		self._enabled = bool(value)
 	def add(self, event):
 		if self._enabled:
-			logger.print(str(event), file=sys.stderr)
+			print(str(event), file=sys.stderr)
 
 @click.group()
 @click.version_option(version=VERSION)
@@ -192,7 +193,7 @@ def cli(ctx, quiet=False, verbose=False, debug=False, notifications=False): # pr
 	""" Habitica command-line interface. """
 	# Click's context object is authenticated Habitica endpoint.
 	ctx.obj = Habitica(auth=config.load_auth(), event_handler=PrintEventHandler())
-	if not notifications:
+	if not notifications or quiet:
 		ctx.obj.events.printing_enabled(False)
 
 	if not logger.handlers:
@@ -530,7 +531,7 @@ def messages(habitica, count=None, seen=False, as_json=False, as_rss=False, outp
 
 	groups = habitica.groups(Group.GUILDS, Group.PARTY)
 	if not groups:
-		logger.error('Failed to fetch list of user guilds', file=sys.stderr)
+		logger.error('Failed to fetch list of user guilds')
 		return
 	if as_rss:
 		exporter = extra.RSSMessageFeed()
@@ -575,7 +576,7 @@ def show_news(habitica, seen=False): # pragma: no cover
 @click.option('--out', 'go_out', is_flag=True, help='Exit tavern.')
 @click.option('--toggle', is_flag=True, help='Toggle current state of resting in/out.')
 @click.pass_obj
-def tavern(habitica, go_in=False, go_out=False, toggle=False):
+def tavern(habitica, go_in=False, go_out=False, toggle=False): # pragma: no cover
 	""" Controls tavern state (in/out).
 	Without options just prints current state.
 	"""

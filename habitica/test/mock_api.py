@@ -295,7 +295,7 @@ MockData.TODOS = {
 			'text': 'Free Liberty statue and resque agent.',
 			'alias' : 'liberty statue',
 			'date' : '2016-06-20',
-			'dateCompleted' : 'not-explained',
+			'dateCompleted' : '3000-01-01',
 			'group' : {
 				'id' : 'unatco',
 				'broken' : False,

@@ -2,6 +2,7 @@
 Also rewards.
 """
 from bisect import bisect
+import datetime
 from .. import timeutils
 from . import base, tags
 
@@ -740,10 +741,10 @@ class Todo(Task, TaskValue, Checkable, Checklist):
 				)
 	@property
 	def date(self):
-		return datetime.datetime.strptime(self._data['date'], '%Y-%m-%d')
+		return datetime.datetime.strptime(self._data['date'], '%Y-%m-%d').date()
 	@property
 	def dateCompleted(self):
-		return datetime.datetime.strptime(self._data['dateCompleted'], '%Y-%m-%d')
+		return datetime.datetime.strptime(self._data['dateCompleted'], '%Y-%m-%d').date()
 	def complete(self):
 		""" Marks todo as completed. """
 		# TODO data also stores updated user stats, needs to calculate diff and notify.
