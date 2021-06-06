@@ -228,7 +228,7 @@ class Quest(ContentEntry, MarketableForGems):
 	def boss(self):
 		result = self._data.get('boss')
 		rage_progress = self._group_progress.get('rage') if self._group_progress else None
-		hp_progress = self._group_progress['progress']['hp'] if self._group_progress else None
+		hp_progress = self._group_progress['progress'].get('hp') if self._group_progress else None
 		return self.child(QuestBoss, result, _rage_progress=rage_progress, _hp_progress=hp_progress) if result else None
 	@property
 	def collect(self):
