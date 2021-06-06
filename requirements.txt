@@ -1,4 +1,5 @@
 requests
 vintage
+termcolor
 click
 click-default_group

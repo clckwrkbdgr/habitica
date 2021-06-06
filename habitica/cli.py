@@ -21,10 +21,49 @@ from webbrowser import open_new_tab
 from collections import namedtuple
 from pathlib import Path
 
+import termcolor
+
 from . import api, core
 from .core import Habitica, Group
 from . import timeutils, config
 from . import extra
+
+logging.PRINT = (logging.INFO + logging.WARNING)//2
+logging.addLevelName(logging.PRINT, 'PRINT')
+def _log_print(self, message, *args, **kwargs):
+	if self.isEnabledFor(logging.PRINT):
+		self._log(logging.PRINT, message, args, **kwargs)
+logger.print = _log_print.__get__(logger)
+
+if sys.stdout and not sys.stdout.isatty():
+	os.environ['ANSI_COLORS_DISABLED'] = '1'
+
+class ComplexFormatter:
+	def __init__(self):
+		self._formatters = {
+				logging.DEBUG: logging.Formatter(
+					'%(asctime)s:%(name)s:%(levelname)s:%(module)s:%(lineno)d:%(funcName)s: %(message)s',
+					),
+				logging.INFO: logging.Formatter(
+					termcolor.colored('%(message)s', 'green'),
+					),
+				logging.PRINT: logging.Formatter(
+					'%(message)s',
+					),
+				logging.WARNING: logging.Formatter(
+					termcolor.colored('%(message)s', 'yellow'),
+					),
+				logging.ERROR: logging.Formatter(
+					termcolor.colored('%(message)s', 'red'),
+					),
+				logging.CRITICAL: logging.Formatter(
+					termcolor.colored('!!! %(message)s', 'red', attrs=['bold']),
+					),
+				}
+		self._default = logging.Formatter('%(message)s')
+	def format(self, record):
+		formatter = self._formatters.get(record.levelno, self._default)
+		return formatter.format(record)
 
 VERSION = 'habitica version 0.1.0'
 # https://trello.com/c/4C8w1z5h/17-task-difficulty-settings-v2-priority-multiplier
@@ -110,15 +149,15 @@ def print_task_list(tasks, hide_completed=False, timezoneOffset=0, with_notes=Fa
 		if isinstance(task, core.Checkable):
 			if task.is_completed and hide_completed:
 				continue
-			print('[%s] %s %s' % ('X' if task.is_completed else '_', i + 1, task.text))
+			logger.print('[%s] %s %s' % ('X' if task.is_completed else '_', i + 1, task.text))
 		else:
-			print('%s %s' % (i + 1, task.text))
+			logger.print('%s %s' % (i + 1, task.text))
 		if with_notes and task.notes:
-			print('\n'.join('      {0}'.format(line) for line in task.notes.splitlines()))
+			logger.print('\n'.join('      {0}'.format(line) for line in task.notes.splitlines()))
 		if isinstance(task, core.Checklist):
 			for j, item in enumerate(task.checklist):
 				completed = 'X' if item.is_completed else '_'
-				print('    [%s] %s.%s %s' % (completed, i + 1, j + 1, item.text))
+				logger.print('    [%s] %s.%s %s' % (completed, i + 1, j + 1, item.text))
 
 TASK_SCORES = {
 		core.Task.DARK_RED	  : '<<<   ',
@@ -140,15 +179,16 @@ class PrintEventHandler(core.base.EventHandler): # pragma: no cover
 		self._enabled = bool(value)
 	def add(self, event):
 		if self._enabled:
-			print(str(event), file=sys.stderr)
+			logger.print(str(event), file=sys.stderr)
 
 @click.group()
 @click.version_option(version=VERSION)
+@click.option('-q', '--quiet', is_flag=True, help='Hide any normal output, show only warnings and errors.')
 @click.option('-v', '--verbose', is_flag=True, help='Show some logging information')
 @click.option('-d', '--debug', is_flag=True, help='Show all logging information')
 @click.option('--notifications/--no-notifications', default=True, help='Display notifications from Habitica (prints to stderr). By default is enabled.')
 @click.pass_context
-def cli(ctx, verbose=False, debug=False, notifications=False): # pragma: no cover
+def cli(ctx, quiet=False, verbose=False, debug=False, notifications=False): # pragma: no cover
 	""" Habitica command-line interface. """
 	# Click's context object is authenticated Habitica endpoint.
 	ctx.obj = Habitica(auth=config.load_auth(), event_handler=PrintEventHandler())
@@ -157,11 +197,15 @@ def cli(ctx, verbose=False, debug=False, notifications=False): # pragma: no cove
 
 	if not logger.handlers:
 		handler = logging.StreamHandler()
+		handler.setFormatter(ComplexFormatter())
 		logger.addHandler(handler)
+
 	# set up logging
+	logger.setLevel(logging.PRINT)
+	if quiet:
+		logger.setLevel(logging.WARNING)
 	if verbose:
 		logger.setLevel(logging.INFO)
-
 	if debug:
 		logger.setLevel(logging.DEBUG)
 
@@ -187,9 +231,9 @@ def status(habitica): # pragma: no cover
 
 	# prepare and print status strings
 	title = 'Level %d %s' % (stats.level, stats.class_name.capitalize())
-	print('-' * len(title))
-	print(title)
-	print('-' * len(title))
+	logger.print('-' * len(title))
+	logger.print(title)
+	logger.print('-' * len(title))
 	rows = [
 			('Health', '%d/%d' % (stats.hp, stats.maxHealth)),
 			('XP', '%d/%d' % (int(stats.experience), stats.maxExperience)),
@@ -201,23 +245,24 @@ def status(habitica): # pragma: no cover
 			]
 	len_ljust = max(map(len, map(operator.itemgetter(0), rows))) + 2
 	for row_title, value in rows:
-		print('%s: %s' % (row_title.rjust(len_ljust, ' '), value))
+		logger.print('%s: %s' % (row_title.rjust(len_ljust, ' '), value))
 
 @cli.command()
 @click.pass_obj
 def server(habitica): # pragma: no cover
 	""" Show status of Habitica service """
 	if habitica.server_is_up():
-		print('Habitica server is up')
+		logger.info('Habitica server is up')
 	else:
-		print('Habitica server down... or your computer cannot connect')
+		logger.error('Habitica server down... or your computer cannot connect')
+		sys.exit(1)
 
 @cli.command()
 @click.pass_obj
 def home(habitica): # pragma: no cover
 	""" Open tasks page in default browser """
 	home_url = habitica.home_url()
-	print('Opening %s' % home_url)
+	logger.info('Opening %s' % home_url)
 	open_new_tab(home_url)
 
 @cli.command()
@@ -236,7 +281,7 @@ def reward(habitica, item=None, full=False): # pragma: no cover
 	else:
 		for reward in filter_tasks(rewards, [item]):
 			user.buy(reward)
-			print('bought reward \'%s\'' % reward.text)
+			logger.print('bought reward \'%s\'' % reward.text)
 
 @cli.group(cls=click_default_group.DefaultGroup, default='list', default_if_no_args=True)
 @click.pass_obj
@@ -248,9 +293,9 @@ def print_habits(habits, full=False): # pragma: no cover
 	for i, task in enumerate(habits):
 		score = TASK_SCORES[task.color]
 		updown = {0:' ', 1:'-', 2:'+', 3:'±'}[int(task.can_score_up)*2 + int(task.can_score_down)] # [up][down] as binary number
-		print('[{3}|{0}] {1} {2}'.format(score, i + 1, task.text, updown))
+		logger.print('[{3}|{0}] {1} {2}'.format(score, i + 1, task.text, updown))
 		if with_notes:
-			print('\n'.join('	   {0}'.format(line) for line in task.notes.splitlines()))
+			logger.print('\n'.join('	   {0}'.format(line) for line in task.notes.splitlines()))
 
 @habits.command('list')
 @click.option('--full', is_flag=True, help='Print tasks details along with the title.')
@@ -273,9 +318,9 @@ def habits_up(habitica, tasks, full=False): # pragma: no cover
 	for habit in filter_tasks(habits, tasks):
 		try:
 			habit.up()
-			print('incremented task \'%s\'' % habit.text)
+			logger.print('incremented task \'%s\'' % habit.text)
 		except CannotScoreUp as e:
-			print(e)
+			logger.error(e)
 			continue
 	print_habits(habits, full=full)
 
@@ -292,9 +337,9 @@ def habits_down(habitica, tasks, full=False): # pragma: no cover
 	for habit in filter_tasks(habits, tasks):
 		try:
 			habit.down()
-			print('decremented task \'%s\'' % habit.text)
+			logger.print('decremented task \'%s\'' % habit.text)
 		except CannotScoreDown as e:
-			print(e)
+			logger.error(e)
 			continue
 	print_habits(habits, full=full)
 
@@ -332,7 +377,7 @@ def dailies_done(habitica, tasks, full=False, list_all=False): # pragma: no cove
 		if hasattr(task, 'parent'):
 			title = task.parent.text + ' : ' + title
 		task.complete()
-		print('marked daily \'%s\' completed' % title)
+		logger.print('marked daily \'%s\' completed' % title)
 	print_task_list(dailies, hide_completed=not list_all, timezoneOffset=timezoneOffset, with_notes=full)
 
 @dailies.command('undo')
@@ -353,7 +398,7 @@ def dailies_undo(habitica, tasks, full=False, list_all=False): # pragma: no cove
 		if hasattr(task, 'parent'):
 			title = task.parent.text + ' : ' + title
 		task.undo()
-		print('marked daily \'%s\' incomplete' % title)
+		logger.print('marked daily \'%s\' incomplete' % title)
 	print_task_list(dailies, hide_completed=not list_all, timezoneOffset=timezoneOffset, with_notes=full)
 
 @cli.group(cls=click_default_group.DefaultGroup, default='list', default_if_no_args=True)
@@ -385,7 +430,7 @@ def todos_done(habitica, tasks, full=False): # pragma: no cover
 		if hasattr(task, 'parent'):
 			title = task.parent.text + ' : ' + title
 		task.complete()
-		print('marked todo \'%s\' completed' % title)
+		logger.print('marked todo \'%s\' completed' % title)
 	with_notes = full
 	print_task_list(todos, with_notes=full, hide_completed=True)
 
@@ -402,7 +447,7 @@ def todos_add(habitica, difficuly=None): # pragma: no cover -- FIXME not tested 
 				   priority=PRIORITY[difficulty],
 				   _method='post')
 	todos.insert(0, {'completed': False, 'text': ttext})
-	print('added new todo \'%s\'' % ttext)
+	logger.print('added new todo \'%s\'' % ttext)
 	with_notes = full
 	print_task_list(todos, with_notes=full, hide_completed=True)
 
@@ -413,10 +458,10 @@ def health(habitica): # pragma: no cover
 	user = habitica.user()
 	try:
 		user.buy(habitica.content.potion)
-		print('Bought Health Potion, HP: {0:.1f}/{1}'.format(user.stats.hp, user.stats.maxHealth))
+		logger.print('Bought Health Potion, HP: {0:.1f}/{1}'.format(user.stats.hp, user.stats.maxHealth))
 	except core.HealthOverflowError as e:
-		print(e)
-		print('HP: {0:.1f}/{1}, need at most {2:.1f}'.format(user.stats.hp, user.stats.maxHealth, user.stats.maxHealth - core.HealthPotion.VALUE))
+		logger.error(e)
+		logger.error('HP: {0:.1f}/{1}, need at most {2:.1f}'.format(user.stats.hp, user.stats.maxHealth, user.stats.maxHealth - core.HealthPotion.VALUE))
 
 @cli.command()
 @click.argument('cast', required=False)
@@ -432,14 +477,14 @@ def spells(habitica, cast=None, habits=None, todos=None): # pragma: no cover
 	user_class = user.stats.class_name
 	if not cast:
 		for spell in user.spells():
-			print('{0} - {1}: {2}'.format(spell.key, spell.text, spell.description))
+			logger.print('{0} - {1}: {2}'.format(spell.key, spell.text, spell.description))
 		return
 
 	spell_key = cast
 	try:
 		spell = user.get_spell(spell_key)
 	except KeyError:
-		print('{1} cannot cast spell {0}'.format(user_class.title(), spell_key))
+		logger.error('{1} cannot cast spell {0}'.format(user_class.title(), spell_key))
 		return False
 
 	targets = []
@@ -450,12 +495,12 @@ def spells(habitica, cast=None, habits=None, todos=None): # pragma: no cover
 	if targets:
 		for target in targets:
 			if user.cast(spell, target):
-				print('Casted spell "{0}"'.format(spell.text))
+				logger.print('Casted spell "{0}"'.format(spell.text))
 			else:
 				sys.exit(1)
 	else:
 		user.cast(spell)
-		print('Casted spell "{0}"'.format(spell.text))
+		logger.print('Casted spell "{0}"'.format(spell.text))
 
 @cli.command()
 @click.argument('count', required=False, type=int, default=0)
@@ -514,14 +559,14 @@ def messages(habitica, count=None, seen=False, as_json=False, as_rss=False, outp
 	if output:
 		Path(output).write_text(exporter.getvalue())
 	else:
-		print(exporter.getvalue())
+		sys.stdout.write(exporter.getvalue())
 
 @cli.command('news')
 @click.option('--seen', is_flag=True, help='Mark news post as read.')
 @click.pass_obj
 def show_news(habitica, seen=False): # pragma: no cover
 	news = habitica.news()
-	print(news.html_text)
+	sys.stdout.write(news.html_text)
 	if seen:
 		news.mark_as_read()
 
@@ -548,9 +593,9 @@ def tavern(habitica, go_in=False, go_out=False, toggle=False):
 	elif go_out:
 		user.wake_up()
 	if user.preferences.sleep:
-		print('Resting in inn.')
+		logger.print('Resting in inn.')
 	else:
-		print('Out of tavern.')
+		logger.print('Out of tavern.')
 
 if __name__ == '__main__': # pragma: no cover
 	cli()

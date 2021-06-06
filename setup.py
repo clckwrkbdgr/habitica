@@ -37,6 +37,7 @@ setup(
     install_requires=[
         'requests',
         'vintage',
+        'termcolor',
         'click',
         'click-default-group',
     ],
