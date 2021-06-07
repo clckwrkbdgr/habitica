@@ -197,7 +197,7 @@ def cli(ctx, quiet=False, verbose=False, debug=False, notifications=False): # pr
 		ctx.obj.events.printing_enabled(False)
 
 	if not logger.handlers:
-		handler = logging.StreamHandler()
+		handler = logging.StreamHandler(sys.stdout)
 		handler.setFormatter(ComplexFormatter())
 		logger.addHandler(handler)
 
