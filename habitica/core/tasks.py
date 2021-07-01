@@ -741,10 +741,10 @@ class Todo(Task, TaskValue, Checkable, Checklist):
 				)
 	@property
 	def date(self):
-		return datetime.datetime.strptime(self._data['date'], '%Y-%m-%d').date()
+		return timeutils.time_from_string(self._data['date']).date()
 	@property
 	def dateCompleted(self):
-		return datetime.datetime.strptime(self._data['dateCompleted'], '%Y-%m-%d').date()
+		return timeutils.time_from_string(self._data['dateCompleted']).date()
 	def complete(self):
 		""" Marks todo as completed. """
 		# TODO data also stores updated user stats, needs to calculate diff and notify.
