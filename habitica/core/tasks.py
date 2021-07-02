@@ -715,7 +715,9 @@ class Todo(Task, TaskValue, Checkable, Checklist):
 				)
 		if text is not None:
 			if date is not None:
-				self._data['date'] = date.strftime('%Y-%m-%d')
+				if hasattr(date, 'strftime'):
+					date = date.strftime('%Y-%m-%d')
+				self._data['date'] = date
 	def update(self, text=None,
 			attribute=None,
 			collapseChecklist=None,
@@ -728,7 +730,9 @@ class Todo(Task, TaskValue, Checkable, Checklist):
 			):
 		specific_args = {}
 		if date is not None:
-			specific_args['date'] = date.strftime('%Y-%m-%d')
+			if hasattr(date, 'strftime'):
+				date = date.strftime('%Y-%m-%d')
+			specific_args['date'] = date
 		super().update(
 				text=text,
 				attribute=attribute,
