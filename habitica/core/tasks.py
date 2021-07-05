@@ -454,6 +454,8 @@ class Checklist:
 		>>> task.checklist[item_id]
 		>>> task[item_id]
 		"""
+		if 'checklist' not in self._data:
+			return []
 		return self.children(SubItem, self._data['checklist'])
 	def __getitem__(self, key):
 		""" Returns SubItem object for given item index. """
