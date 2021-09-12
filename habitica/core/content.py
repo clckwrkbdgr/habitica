@@ -292,7 +292,7 @@ class Background(ContentEntry, MarketableForGems):
 	def set_name(self):
 		return self._data['set']
 	def _buy(self, user):
-		return self.api.post('user', 'unlock', path='backgrounds.{0}'.format(self.key))
+		return self.api.post('user', 'unlock', path='background.{0}'.format(self.key))
 
 class BackgroundSet(ContentEntry, MarketableForGems):
 	@property
