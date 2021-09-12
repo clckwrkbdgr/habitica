@@ -978,7 +978,7 @@ MockData.CONTENT_DATA = {
 				'premiumMounts': {
 						'fox':True,
 						},
-				'backgroundFlats': {
+				'backgroundsFlat': {
 						'blizzard' : {
 							'key' : 'blizzard',
 							'text' : 'Blizzard',

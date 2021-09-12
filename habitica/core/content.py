@@ -105,7 +105,7 @@ class Content(base.ApiInterface):
 				_special=True,
 				)
 	def get_background(self, name):
-		return self.child(Background, self._data['backgroundFlats'][name])
+		return self.child(Background, self._data['backgroundsFlat'][name])
 	def get_background_set(self, year, month=None):
 		""" Returns background set for given year and month.
 		If month is None, returns all sets for this year.
