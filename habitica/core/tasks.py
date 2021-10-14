@@ -358,12 +358,18 @@ class Habit(Task, TaskValue):
 			# Habit-specific args:
 			up=None,
 			down=None,
+			counterUp=None,
+			counterDown=None,
 			):
 		specific_args = {}
 		if up is not None:
 			specific_args['up'] = up
 		if down is not None:
 			specific_args['down'] = down
+		if counterUp is not None:
+			specific_args['counterUp'] = counterUp
+		if counterDown is not None:
+			specific_args['counterDown'] = counterDown
 		super().update(
 				text=text,
 				attribute=attribute,
