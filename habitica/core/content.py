@@ -1,6 +1,7 @@
 """ Habitica's content: database of all availables items and definitions.
 """
 import datetime
+import functools
 from collections import namedtuple, defaultdict
 import vintage
 from . import base
@@ -165,12 +166,19 @@ class Content(base.ApiInterface):
 		except AttributeError:
 			return self._data[key]
 
+@functools.total_ordering
 class ContentEntry(base.ApiObject):
 	""" Base class for all content entries. """
 	def __repr__(self): # pragma: no cover
 		return '{0}({1})'.format(type(self).__name__, repr(self.key))
 	def __str__(self):
 		return self.text
+	def __lt__(self, other):
+		return self.key < other.key
+	def __eq__(self, other):
+		return self.key == other.key
+	def __hash__(self):
+		return hash(self.key)
 	@property
 	def key(self):
 		return self._data['key']

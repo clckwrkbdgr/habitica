@@ -2146,6 +2146,52 @@ class TestTags(unittest.TestCase):
 		self.assertEqual(tag.name, 'Ex-UNATCO')
 
 class TestContent(unittest.TestCase):
+	def should_compare_and_sort_content_entries(self):
+		habitica = core.Habitica(_api=MockAPI())
+		content = habitica.content
+
+		badger = content.questEggs()[0]
+		other_badger = core.content.Egg(_data={'key':'badger'})
+		wolf = content.eggs()[0]
+		fox = content.dropEggs()[0]
+		self.assertTrue(badger == badger)
+		self.assertFalse(badger != badger)
+		self.assertTrue(badger == other_badger)
+		self.assertFalse(badger != other_badger)
+		self.assertTrue(other_badger == badger)
+		self.assertFalse(other_badger != badger)
+		self.assertTrue(fox != other_badger)
+		self.assertTrue(other_badger != fox)
+		self.assertTrue(badger != fox)
+		self.assertEqual(badger, badger)
+		self.assertNotEqual(badger, fox)
+		self.assertTrue(badger < fox)
+		self.assertTrue(badger < wolf)
+		self.assertTrue(wolf >= badger)
+
+		self.assertEqual(sorted([wolf, badger, fox]), [badger, fox, wolf])
+	def should_store_content_entries_in_sets_and_use_as_dict_keys(self):
+		habitica = core.Habitica(_api=MockAPI())
+		content = habitica.content
+
+		badger = content.questEggs()[0]
+		wolf = content.eggs()[0]
+		fox = content.dropEggs()[0]
+
+		eggs = {badger, wolf}
+		self.assertTrue(badger in eggs)
+		self.assertTrue(wolf in eggs)
+		self.assertTrue(fox not in eggs)
+		self.assertFalse(fox in eggs)
+
+		eggs = {
+				badger: 'Badger',
+				fox: 'Fox',
+				}
+		self.assertEqual(eggs[badger], 'Badger')
+		self.assertTrue(badger in eggs)
+		self.assertTrue(wolf not in eggs)
+		self.assertFalse(wolf in eggs)
 	def should_retrieve_health_potion(self):
 		habitica = core.Habitica(_api=MockAPI())
 		content = habitica.content
