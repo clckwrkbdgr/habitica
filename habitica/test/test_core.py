@@ -1303,7 +1303,7 @@ class TestUser(unittest.TestCase):
 		user = habitica.user()
 		user.buy(habitica.content.get_background('blizzard'))
 		self.assertEqual(habitica.api.responses[-1].params, {
-			'path' : 'backgrounds.blizzard',
+			'path' : 'background.blizzard',
 			})
 		user.buy(habitica.content.get_background_set(2020, 8))
 		self.assertEqual(habitica.api.responses[-1].params, {
@@ -1718,6 +1718,8 @@ class TestHabits(unittest.TestCase):
 				tags=[],
 				up=False,
 				down=True,
+				counterUp=150,
+				counterDown=75,
 				)
 		self.assertEqual(habitica.api.responses[-1].body, {
 			'text' : 'Use Stealth ability',
@@ -1729,6 +1731,8 @@ class TestHabits(unittest.TestCase):
 			'tags' : [],
 			'up' : False,
 			'down' : True,
+			'counterUp' : 150,
+			'counterDown' : 75,
 			})
 
 class TestDailies(unittest.TestCase):
@@ -1758,6 +1762,9 @@ class TestDailies(unittest.TestCase):
 		self.assertEqual(dailies[0][1].id, 'lockpick')
 		self.assertEqual(dailies[0][1].text, 'Choose lockpick')
 		self.assertFalse(dailies[0][1].is_completed)
+
+		checklist = dailies[1].checklist
+		self.assertEqual(checklist, [])
 	def should_detect_due_dailies(self):
 		habitica = core.Habitica(_api=MockAPI(
 			MockDataRequest('get', ['user'], MockData.USER),
