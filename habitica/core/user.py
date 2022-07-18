@@ -522,7 +522,9 @@ class User(base.Entity, _UserMethods):
 		item.sell(user=self, amount=amount)
 	def spells(self):
 		""" Returns list of available spells. """
-		return self.content.spells(self.stats.class_name)
+		available_spells = self.content.spells(self.stats.class_name)
+		available_spells = [spell for spell in available_spells if self.stats.level >= spell.lvl]
+		return available_spells
 	def get_spell(self, spell_key):
 		""" Returns spell by its spell key if available to the user, otherwise None. """
 		return self.content.get_spell(self.stats.class_name, spell_key)
