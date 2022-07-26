@@ -244,7 +244,7 @@ class Inventory(base.ApiObject):
 		return self.content.petInfo(self._data['currentPet']) if self._data['currentPet'] else None
 	@property
 	def mount(self):
-		return self.content.mountInfo(self._data['currentMount']) if self._data['currentMount'] else None
+		return self.content.mountInfo(self._data['currentMount']) if self._data.get('currentMount') else None
 	@property
 	def eggs(self):
 		return self._data['eggs'] # FIXME is it a dict of IDs?
