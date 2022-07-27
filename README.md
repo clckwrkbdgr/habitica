@@ -169,8 +169,10 @@ Via `habitica --help`:
 thanks
 ------
 
-Many thanks to the following excellent projects:
+Was originally based on <https://github.com/philadams/habitica> (by [Phil Adams](https://github.com/philadams)):
 
-- [requests](https://github.com/kennethreitz/requests)
-
-And to [contributors to this project](./CONTRIBUTORS.md).
+> Many thanks to the following excellent projects:
+> 
+> - [requests](https://github.com/kennethreitz/requests)
+> 
+> And to [contributors to this project](./CONTRIBUTORS.md).
