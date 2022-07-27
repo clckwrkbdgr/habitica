@@ -241,7 +241,7 @@ class Inventory(base.ApiObject):
 				]
 	@property
 	def pet(self):
-		return self.content.petInfo(self._data['currentPet']) if self._data['currentPet'] else None
+		return self.content.petInfo(self._data['currentPet']) if self._data.get('currentPet') else None
 	@property
 	def mount(self):
 		return self.content.mountInfo(self._data['currentMount']) if self._data.get('currentMount') else None

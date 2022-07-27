@@ -876,6 +876,17 @@ class TestUser(unittest.TestCase):
 		user = habitica.user()
 		self.assertEqual(len(user.inventory.food), 2)
 		self.assertEqual(sum(_.amount for _ in user.inventory.food), 3)
+	def should_not_crash_if_pet_or_mount_are_not_present(self):
+		user_data_without_pets = {}
+		user_data_without_pets.update(MockData.USER)
+		del user_data_without_pets['items']['currentPet']
+		del user_data_without_pets['items']['currentMount']
+		habitica = core.Habitica(_api=MockAPI(
+			MockDataRequest('get', ['user'], self._user_data()),
+			))
+		user = habitica.user()
+		self.assertIsNone(user.inventory.pet)
+		self.assertIsNone(user.inventory.mount)
 	def should_get_user_pet_and_mount(self):
 		habitica = core.Habitica(_api=MockAPI(
 			MockDataRequest('get', ['user'], self._user_data()),
