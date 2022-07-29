@@ -757,6 +757,7 @@ class TestUser(unittest.TestCase):
 		self.assertEqual(user.stats.level, 33)
 		self.assertEqual(user.stats.experience, 1049.4)
 		self.assertEqual(user.stats.maxExperience, 1101.0)
+		self.assertEqual(user.stats.unallocated_points, 10)
 		self.assertEqual(user.stats.mana, 11.0)
 		self.assertEqual(user.stats.maxMana, 55.0)
 		self.assertEqual(user.stats.gold, 15.0)

@@ -139,10 +139,12 @@ class Training(base.ApiObject, content.BaseStats):
 	pass
 
 class UserStats(base.ApiObject, content.BaseStats):
-	# TODO .points - ???
 	def _handle_events(self):
 		self._track_stat('class')
 		self._track_stat('gp')
+	@property
+	def unallocated_points(self):
+		return self._data['points']
 	@property
 	def class_name(self):
 		return self._data['class']

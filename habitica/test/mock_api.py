@@ -113,6 +113,7 @@ MockData.USER = {
 			'maxHealth': 50.0,
 			'lvl': 33,
 			'exp': 1049.4,
+			'points': 10,
 			'toNextLevel': 51.6,
 			'mp': 11.0,
 			'maxMP': 55.0,
