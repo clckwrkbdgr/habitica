@@ -753,7 +753,7 @@ class Todo(Task, TaskValue, Checkable, Checklist):
 				)
 	@property
 	def date(self):
-		return timeutils.time_from_string(self._data['date']).date()
+		return timeutils.time_from_string(self._data['date']).date() if self._data.get('date') else None
 	@property
 	def dateCompleted(self):
 		return timeutils.time_from_string(self._data['dateCompleted']).date()
