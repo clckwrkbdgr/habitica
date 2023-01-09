@@ -1006,6 +1006,13 @@ MockData.CONTENT_DATA = {
 								'price' : 7,
 								'set' : 'Fall',
 								},
+							{
+								'key' : 'summer',
+								'text' : 'Summer',
+								'notes' : "Summer's Beginning",
+								'price' : 7,
+								'set' : 'Fall',
+								},
 							],
 						'timeTravelBackgrounds' : [
 							{

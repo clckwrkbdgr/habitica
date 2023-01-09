@@ -309,7 +309,7 @@ class BackgroundSet(ContentEntry, MarketableForGems):
 	def __getitem__(self, index):
 		return self.items[index]
 	def _buy(self, user):
-		return self.api.post('user', 'unlock', path='backgrounds.{0}'.format(self.key))
+		return self.api.post('user', 'unlock', path=','.join('background.{0}'.format(item.key) for item in self.items))
 
 class HealthOverflowError(Exception):
 	def __init__(self, hp, maxHealth):

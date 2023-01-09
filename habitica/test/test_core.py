@@ -1319,7 +1319,7 @@ class TestUser(unittest.TestCase):
 			})
 		user.buy(habitica.content.get_background_set(2020, 8))
 		self.assertEqual(habitica.api.responses[-1].params, {
-			'path' : 'backgrounds.backgrounds082020',
+			'path' : 'background.fall,background.summer',
 			})
 
 class TestNews(unittest.TestCase):
