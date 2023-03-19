@@ -124,9 +124,10 @@ def filter_tasks(tasks, patterns):
 			text_patterns.add(raw_arg)
 
 	processed_patterns = set()
+	result = []
 	for index, task in enumerate_with_subitems(tasks):
 		if index in indexes:
-			yield task
+			result.append(task)
 			continue
 		matched = {pattern for pattern in text_patterns if pattern in task.text}
 		if not matched:
@@ -136,10 +137,11 @@ def filter_tasks(tasks, patterns):
 		if matched & processed_patterns:
 			raise RuntimeError("Pattern {0} matches multiple tasks!".format(', '.join(map(repr, matched & processed_patterns))))
 		processed_patterns |= matched
-		yield task
+		result.append(task)
 	unprocessed = text_patterns - processed_patterns
 	if unprocessed:
 		raise RuntimeError("couldn't find task that includes {0}".format(', '.join(map(repr, unprocessed))))
+	return result
 
 def print_task_list(tasks, hide_completed=False, timezoneOffset=0, with_notes=False, time_now=None, printer=None):
 	printer = printer or logger.print
