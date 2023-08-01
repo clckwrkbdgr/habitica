@@ -252,6 +252,20 @@ class TestNotifications(unittest.TestCase):
 		self.assertEqual(list(map(str, habitica.events.dump())), [
 			'New 2 mystery items!',
 			])
+	def should_catch_items_received(self):
+		data = {
+				'icon': 'notif_namingDay_cake',
+				'title': 'Happy Naming Day!',
+				'text': 'To celebrate the day we became Habitica, we’ve awarded you some cake!',
+				'destination': '/inventory/items',
+				}
+		habitica = core.Habitica(_api=MockAPI(
+			self._response_with_notification(type='ITEM_RECEIVED', **data),
+			))
+		self.assertTrue(habitica.server_is_up())
+		self.assertEqual(list(map(str, habitica.events.dump())), [
+			'Happy Naming Day! To celebrate the day we became Habitica, we’ve awarded you some cake!',
+			])
 
 class TestChallenges(unittest.TestCase):
 	def _challenge(self, path=('groups', 'unatco')):
