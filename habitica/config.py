@@ -14,6 +14,22 @@ def get_data_dir(*args): # pragma: no cover
 	os.makedirs(app_data_dir, exist_ok=True)
 	return app_data_dir
 
+def get_config_dir(*args): # pragma: no cover
+	xdg_config_dir = os.environ.get('XDG_CONFIG_HOME')
+	if not xdg_config_dir:
+		xdg_config_dir = os.path.join(os.path.expanduser("~"), ".config")
+	app_data_dir = os.path.join(xdg_config_dir, "habitica")
+	os.makedirs(app_data_dir, exist_ok=True)
+	return app_data_dir
+
+def get_config_local_dir(*args): # pragma: no cover
+	xdg_config_dir = os.environ.get('XDG_CONFIG_HOME')
+	if not xdg_config_dir:
+		xdg_config_dir = os.path.join(os.path.expanduser("~"), ".config")
+	app_data_dir = os.path.join(xdg_config_dir, "local", "habitica")
+	os.makedirs(app_data_dir, exist_ok=True)
+	return app_data_dir
+
 def get_cache_dir(*args): # pragma: no cover
 	xdg_cache_dir = os.environ.get('XDG_CACHE_HOME')
 	if not xdg_cache_dir:
@@ -22,7 +38,11 @@ def get_cache_dir(*args): # pragma: no cover
 	os.makedirs(app_cache_dir, exist_ok=True)
 	return app_cache_dir
 
-AUTH_CONF = os.path.join(get_data_dir(), "auth.cfg")
+AUTH_CONF = os.path.join(get_config_local_dir(), "auth.cfg")
+if not AUTH_CONF.exists(): # pragma: no cover
+	AUTH_CONF = os.path.join(get_data_dir(), "auth.cfg")
+	if not AUTH_CONF.exists(): # pragma: no cover
+		AUTH_CONF = os.path.join(get_config_dir(), "auth.cfg")
 
 def load_auth(configfile=AUTH_CONF): # pragma: no cover
 	"""Get authentication data from the AUTH_CONF file."""
