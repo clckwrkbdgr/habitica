@@ -39,9 +39,9 @@ def get_cache_dir(*args): # pragma: no cover
 	return app_cache_dir
 
 AUTH_CONF = os.path.join(get_config_local_dir(), "auth.cfg")
-if not AUTH_CONF.exists(): # pragma: no cover
+if not os.path.exists(AUTH_CONF): # pragma: no cover
 	AUTH_CONF = os.path.join(get_data_dir(), "auth.cfg")
-	if not AUTH_CONF.exists(): # pragma: no cover
+	if not os.path.exists(AUTH_CONF): # pragma: no cover
 		AUTH_CONF = os.path.join(get_config_dir(), "auth.cfg")
 
 def load_auth(configfile=AUTH_CONF): # pragma: no cover
