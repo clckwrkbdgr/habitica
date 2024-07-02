@@ -1,7 +1,7 @@
 """ Habitica's content: database of all availables items and definitions.
 """
 import datetime
-import functools
+import functools, itertools
 from collections import namedtuple, defaultdict
 import vintage
 from . import base
@@ -56,7 +56,42 @@ class Content(base.ApiInterface):
 	def gearTypes(self):
 		return self._data['gearTypes']
 	def food(self, key=None):
-		return self._get_collection_entry(Food, 'food', key=key)
+		try:
+			return self._get_collection_entry(Food, 'food', key=key)
+		except KeyError: # Suddenly "food" branch in absent in cache.
+			food = {}
+			food_types = ['Candy', 'Cake', 'Pie']
+			food_colors = ['Golden', 'Golden', 'Red', 'Zombie', 'White', 'Base', 'Skeleton', 'CottonCandyBlue', 'CottonCandyPink', 'Shade', 'Desert']
+			for food_type, food_color in itertools.product(food_types, food_colors):
+				new_key = '{0}_{1}'.format(food_type, food_color)
+				food[new_key] = {
+						"text": new_key,
+						"textA": new_key,
+						"textThe": new_key,
+						"target": food_color,
+						"value": 1,
+						"key": new_key,
+						"canDrop": False,
+						"notes": "-",
+						}
+			food['Saddle'] = {
+					"sellWarningNote": "-",
+					"text": "Saddle",
+					"value": 5,
+					"notes": "-",
+					"canDrop": False,
+					"key": "Saddle"
+					}
+			for entry in self._data["loginIncentives"].values():
+				if 'reward' not in entry:
+					continue
+				for item in entry['reward']:
+					if 'textThe' not in item:
+						continue
+					food[item['key']] = item
+			if key:
+				return self.child(Food, food[key])
+			return self.children(Food, food.values())
 	def questEggs(self, key=None):
 		return self._get_collection_entry(Egg, 'questEggs', key=key)
 	def eggs(self, key=None):
