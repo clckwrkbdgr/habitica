@@ -461,10 +461,10 @@ def health(habitica): # pragma: no cover
 	user = habitica.user()
 	try:
 		user.buy(habitica.content.potion)
-		logger.print('Bought Health Potion, HP: {0:.1f}/{1}'.format(user.stats.hp, user.stats.maxHealth))
+		logger.print('Bought Health Potion, HP: {0:.1f}/{1:.0f}'.format(user.stats.hp, user.stats.maxHealth))
 	except core.HealthOverflowError as e:
 		logger.error(e)
-		logger.error('HP: {0:.1f}/{1}, need at most {2:.1f}'.format(user.stats.hp, user.stats.maxHealth, user.stats.maxHealth - core.HealthPotion.VALUE))
+		logger.error('HP: {0:.1f}/{1:.0f}, need at most {2:.1f}'.format(user.stats.hp, user.stats.maxHealth, user.stats.maxHealth - core.HealthPotion.VALUE))
 
 @cli.command()
 @click.argument('cast', required=False)

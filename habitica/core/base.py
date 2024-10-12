@@ -159,6 +159,8 @@ class ValueBar:
 			self.value = 0
 		elif self.value > self.max_value:
 			self.value = self.max_value
+	def __format__(self, spec):
+		return ('{0:'+spec+'}').format(self.value)
 	def __str__(self):
 		return '{0}/{1}'.format(self.value, self.max_value)
 	def __repr__(self):

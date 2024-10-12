@@ -930,6 +930,7 @@ class TestUser(unittest.TestCase):
 		user = habitica.user()
 		potion = habitica.content.potion
 		user.buy(potion)
+		self.assertEqual('45.0/50', '{0:.1f}/{1:.0f}'.format(user.stats.hp, user.stats.maxHealth))
 		self.assertEqual(user.stats.hp, 45.0)
 
 		with self.assertRaises(core.HealthOverflowError) as e:
