@@ -244,6 +244,14 @@ class TestNotifications(unittest.TestCase):
 		self.assertEqual(list(map(str, habitica.events.dump())), [
 			'Streak achievement!',
 			])
+	def should_catch_unlock_of_rebirth(self):
+		habitica = core.Habitica(_api=MockAPI(
+			self._response_with_notification(type='REBIRTH_ENABLED'),
+			))
+		self.assertTrue(habitica.server_is_up())
+		self.assertEqual(list(map(str, habitica.events.dump())), [
+			"You've unlocked Rebirth!",
+			])
 	def should_catch_mystery_items(self):
 		habitica = core.Habitica(_api=MockAPI(
 			self._response_with_notification(type='NEW_MYSTERY_ITEMS', items=['armor_mystery_202103', 'head_mystery_202103']),

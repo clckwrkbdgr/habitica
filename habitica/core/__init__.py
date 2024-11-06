@@ -163,6 +163,8 @@ class Notification(base.Entity):
 			return 'New {0} mystery item{1}!'.format(number, 's' if number > 1 else '')
 		if self.type == 'ITEM_RECEIVED':
 			return self.data['title'] + ' ' + self.data['text']
+		if self.type == 'REBIRTH_ENABLED':
+			return "You've unlocked Rebirth!"
 		return 'Unknown notification {0}. Data: {1}'.format(self.type, self.data)
 	def mark_as_read(self):
 		self.api.post('notifications', self.id, 'read')
